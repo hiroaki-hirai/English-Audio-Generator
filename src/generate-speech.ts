@@ -12,30 +12,37 @@ async function main(): Promise<void> {
     .map((phrase) => phrase.trim())
     .filter((phrase) => phrase.length > 0);
 
-  const firstPhrase = phrases[0];
-
-  if (!firstPhrase) {
+  if (phrases.length === 0) {
     throw new Error("No phrases found in input/phrases.txt");
   }
 
   const client = new OpenAI();
 
-  console.log(`Generating speech: ${firstPhrase}`);
-
-  const response = await client.audio.speech.create({
-    model: "gpt-4o-mini-tts",
-    voice: "coral",
-    input: firstPhrase,
-    instructions: "Speak clearly and naturally for an English learner.",
-  });
-
   await mkdir("output", { recursive: true });
 
-  const audioBuffer = Buffer.from(await response.arrayBuffer());
+  for (const [index, phrase] of phrases.entries()) {
+    const fileNumber = String(index + 1).padStart(3, "0");
+    const outputPath = `output/phrase-${fileNumber}.mp3`;
 
-  await writeFile("output/phrase-001.mp3", audioBuffer);
+    console.log(
+      `Generating ${index + 1}/${phrases.length}: ${phrase}`,
+    );
 
-  console.log("Created output/phrase-001.mp3");
+    const response = await client.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "coral",
+      input: phrase,
+      instructions: "Speak clearly and naturally for an English learner.",
+    });
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+    await writeFile(outputPath, audioBuffer);
+
+    console.log(`Created ${outputPath}`);
+  }
+
+  console.log(`Finished generating ${phrases.length} audio files.`);
 }
 
 main().catch((error: unknown) => {
