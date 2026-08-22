@@ -22,6 +22,7 @@ async function loadRecentScenarios(): Promise<string[]> {
       .reverse();
 
     const recentScenarios: string[] = [];
+    const seenScenarios = new Set<string>();
 
     for (const dateDirectory of dateDirectories) {
       const datedLessonDirectory = `${lessonArchiveDirectory}/${dateDirectory}`;
@@ -41,7 +42,8 @@ async function loadRecentScenarios(): Promise<string[]> {
         try {
           const scenario = (await readFile(scenarioPath, 'utf8')).trim();
 
-          if (scenario.length > 0) {
+          if (scenario.length > 0 && !seenScenarios.has(scenario)) {
+            seenScenarios.add(scenario);
             recentScenarios.push(scenario);
           }
         } catch {
@@ -60,7 +62,8 @@ async function loadRecentScenarios(): Promise<string[]> {
       try {
         const scenario = (await readFile(legacyScenarioPath, 'utf8')).trim();
 
-        if (scenario.length > 0) {
+        if (scenario.length > 0 && !seenScenarios.has(scenario)) {
+          seenScenarios.add(scenario);
           recentScenarios.push(scenario);
         }
       } catch {
