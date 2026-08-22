@@ -1,4 +1,4 @@
-﻿import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+﻿import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 
 const silenceSeconds = 5;
@@ -7,6 +7,7 @@ const outputDirectory = 'output';
 const silencePath = `${outputDirectory}/silence-${silenceSeconds}s.mp3`;
 const lessonPath = `${outputDirectory}/lesson.mp3`;
 const lessonTextPath = `${outputDirectory}/lesson.txt`;
+const lessonArchiveDirectory = `${outputDirectory}/lessons`;
 const concatListPath = `${outputDirectory}/concat-list.txt`;
 
 function runFfmpeg(args: string[]): Promise<void> {
@@ -44,7 +45,18 @@ async function main(): Promise<void> {
     throw new Error(`No phrases found in ${inputPath}`);
   }
 
+  const now = new Date();
+
+  const dateStamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  const datedLessonDirectory = `${lessonArchiveDirectory}/${dateStamp}`;
+
   await mkdir(outputDirectory, { recursive: true });
+  await mkdir(datedLessonDirectory, { recursive: true });
 
   const lessonText = [
     'English Audio Lesson',
@@ -117,6 +129,14 @@ async function main(): Promise<void> {
   ]);
 
   console.log(`Created ${lessonPath}`);
+
+  const archivedLessonPath = `${datedLessonDirectory}/lesson.mp3`;
+  const archivedLessonTextPath = `${datedLessonDirectory}/lesson.txt`;
+
+  await copyFile(lessonPath, archivedLessonPath);
+  await copyFile(lessonTextPath, archivedLessonTextPath);
+
+  console.log(`Archived lesson to ${datedLessonDirectory}`);
 }
 
 main().catch((error: unknown) => {
