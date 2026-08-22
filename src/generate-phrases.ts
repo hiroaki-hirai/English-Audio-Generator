@@ -7,34 +7,68 @@ loadEnvFile('.env');
 const outputPath = 'input/phrases.txt';
 const scenarioOutputPath = 'input/scenario.txt';
 const lessonArchiveDirectory = 'output/lessons';
-const recentLessonLimit = 3;
+const recentScenarioLimit = 3;
 
 async function loadRecentScenarios(): Promise<string[]> {
   try {
-    const entries = await readdir(lessonArchiveDirectory, {
+    const dateEntries = await readdir(lessonArchiveDirectory, {
       withFileTypes: true,
     });
 
-    const lessonDirectories = entries
+    const dateDirectories = dateEntries
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-      .reverse()
-      .slice(0, recentLessonLimit);
+      .reverse();
 
     const recentScenarios: string[] = [];
 
-    for (const directory of lessonDirectories) {
-      const scenarioPath = `${lessonArchiveDirectory}/${directory}/scenario.txt`;
+    for (const dateDirectory of dateDirectories) {
+      const datedLessonDirectory = `${lessonArchiveDirectory}/${dateDirectory}`;
+
+      const lessonEntries = await readdir(datedLessonDirectory, {
+        withFileTypes: true,
+      });
+
+      const numberedLessonDirectories = lessonEntries
+        .filter((entry) => entry.isDirectory() && /^\d+$/.test(entry.name))
+        .map((entry) => entry.name)
+        .sort((a, b) => Number(b) - Number(a));
+
+      for (const lessonDirectory of numberedLessonDirectories) {
+        const scenarioPath = `${datedLessonDirectory}/${lessonDirectory}/scenario.txt`;
+
+        try {
+          const scenario = (await readFile(scenarioPath, 'utf8')).trim();
+
+          if (scenario.length > 0) {
+            recentScenarios.push(scenario);
+          }
+        } catch {
+          // Skip lesson directories without a readable scenario.txt.
+        }
+
+        if (recentScenarios.length >= recentScenarioLimit) {
+          return recentScenarios;
+        }
+      }
+
+      // Backward compatibility for archives created before
+      // numbered lesson directories were introduced.
+      const legacyScenarioPath = `${datedLessonDirectory}/scenario.txt`;
 
       try {
-        const scenario = (await readFile(scenarioPath, 'utf8')).trim();
+        const scenario = (await readFile(legacyScenarioPath, 'utf8')).trim();
 
         if (scenario.length > 0) {
           recentScenarios.push(scenario);
         }
       } catch {
-        // Skip archive directories without a readable scenario.txt.
+        // Skip date directories without a legacy scenario.txt.
+      }
+
+      if (recentScenarios.length >= recentScenarioLimit) {
+        return recentScenarios;
       }
     }
 
