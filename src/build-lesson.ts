@@ -9,6 +9,7 @@ const lessonPath = `${outputDirectory}/lesson.mp3`;
 const lessonTextPath = `${outputDirectory}/lesson.txt`;
 const lessonArchiveDirectory = `${outputDirectory}/lessons`;
 const concatListPath = `${outputDirectory}/concat-list.txt`;
+const scenarioPath = 'input/scenario.txt';
 
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -40,6 +41,11 @@ async function loadPhrases(): Promise<string[]> {
 
 async function main(): Promise<void> {
   const phrases = await loadPhrases();
+  const scenario = (await readFile(scenarioPath, 'utf8')).trim();
+
+  if (!scenario) {
+    throw new Error(`No scenario found in ${scenarioPath}`);
+  }
 
   if (phrases.length === 0) {
     throw new Error(`No phrases found in ${inputPath}`);
@@ -132,9 +138,11 @@ async function main(): Promise<void> {
 
   const archivedLessonPath = `${datedLessonDirectory}/lesson.mp3`;
   const archivedLessonTextPath = `${datedLessonDirectory}/lesson.txt`;
+  const archivedScenarioPath = `${datedLessonDirectory}/scenario.txt`;
 
   await copyFile(lessonPath, archivedLessonPath);
   await copyFile(lessonTextPath, archivedLessonTextPath);
+  await copyFile(scenarioPath, archivedScenarioPath);
 
   console.log(`Archived lesson to ${datedLessonDirectory}`);
 }

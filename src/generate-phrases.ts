@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 loadEnvFile('.env');
 
 const outputPath = 'input/phrases.txt';
+const scenarioOutputPath = 'input/scenario.txt';
 const lessonArchiveDirectory = 'output/lessons';
 const recentLessonLimit = 3;
 
@@ -65,8 +66,10 @@ async function main(): Promise<void> {
     'Generate exactly 5 English sentences for today.',
     'Focus on one realistic Uber Eats delivery situation.',
     'Avoid repeating the same main situation or closely similar phrases from recent lessons.',
-    'Return only the 5 English sentences, one sentence per line.',
-    'Do not number them. Do not add explanations, headings, translations, or bullet points.',
+    'Return exactly 6 lines.',
+    'Line 1 must be a short English scenario label.',
+    'Lines 2 through 6 must be exactly 5 English practice sentences.',
+    'Do not number them. Do not add explanations, translations, headings, or bullet points.',
     '',
     recentLessonContext,
   ].join('\n');
@@ -81,15 +84,25 @@ async function main(): Promise<void> {
     input: prompt,
   });
 
-  const phrases = response.output_text
+  const lines = response.output_text
     .split(/\r?\n/)
-    .map((phrase) =>
-      phrase
+    .map((line) =>
+      line
         .trim()
         .replace(/[\u2018\u2019]/g, "'")
         .replace(/[\u201C\u201D]/g, '"'),
     )
-    .filter((phrase) => phrase.length > 0);
+    .filter((line) => line.length > 0);
+
+  if (lines.length !== 6) {
+    throw new Error(`Expected exactly 6 lines, but received ${lines.length}.`);
+  }
+
+  const [scenario, ...phrases] = lines;
+
+  if (!scenario) {
+    throw new Error('Scenario label was empty.');
+  }
 
   if (phrases.length !== 5) {
     throw new Error(
@@ -97,9 +110,12 @@ async function main(): Promise<void> {
     );
   }
 
+  await writeFile(scenarioOutputPath, `${scenario}\n`, 'utf8');
   await writeFile(outputPath, `${phrases.join('\n')}\n`, 'utf8');
 
+  console.log(`Created ${scenarioOutputPath}`);
   console.log(`Created ${outputPath}`);
+  console.log(`Scenario: ${scenario}`);
 
   phrases.forEach((phrase, index) => {
     console.log(`${index + 1}: ${phrase}`);
