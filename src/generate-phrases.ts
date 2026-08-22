@@ -1,15 +1,75 @@
 ﻿import { loadEnvFile } from 'node:process';
-import { writeFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
 
 loadEnvFile('.env');
 
 const outputPath = 'input/phrases.txt';
+const lessonArchiveDirectory = 'output/lessons';
+const recentLessonLimit = 3;
+
+async function loadRecentLessons(): Promise<string[]> {
+  try {
+    const entries = await readdir(lessonArchiveDirectory, {
+      withFileTypes: true,
+    });
+
+    const lessonDirectories = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+      .reverse()
+      .slice(0, recentLessonLimit);
+
+    const recentLessons: string[] = [];
+
+    for (const directory of lessonDirectories) {
+      const lessonTextPath = `${lessonArchiveDirectory}/${directory}/lesson.txt`;
+
+      try {
+        const content = await readFile(lessonTextPath, 'utf8');
+        recentLessons.push(content.trim());
+      } catch {
+        // Skip archive directories without a readable lesson.txt.
+      }
+    }
+
+    return recentLessons;
+  } catch {
+    return [];
+  }
+}
 
 async function main(): Promise<void> {
   const client = new OpenAI();
+  const recentLessons = await loadRecentLessons();
 
-  console.log('Generating English practice phrases...');
+  console.log(
+    `Generating English practice phrases with ${recentLessons.length} recent lesson(s) of context...`,
+  );
+
+  const recentLessonContext =
+    recentLessons.length > 0
+      ? [
+          'Recent lessons:',
+          '',
+          ...recentLessons.map(
+            (lesson, index) => `Lesson ${index + 1}:\n${lesson}`,
+          ),
+          '',
+          'Choose a meaningfully different delivery situation from these recent lessons.',
+        ].join('\n')
+      : 'There are no recent lessons yet.';
+
+  const prompt = [
+    'Generate exactly 5 English sentences for today.',
+    'Focus on one realistic Uber Eats delivery situation.',
+    'Avoid repeating the same main situation or closely similar phrases from recent lessons.',
+    'Return only the 5 English sentences, one sentence per line.',
+    'Do not number them. Do not add explanations, headings, translations, or bullet points.',
+    '',
+    recentLessonContext,
+  ].join('\n');
 
   const response = await client.responses.create({
     model: 'gpt-5.6',
@@ -18,11 +78,7 @@ async function main(): Promise<void> {
       'Use natural spoken English that could realistically be used during delivery. ' +
       'Keep each sentence short enough for listen-and-repeat practice.' +
       'Use straight ASCII apostrophes and quotation marks.',
-    input:
-      'Generate exactly 5 English sentences for today. ' +
-      'Focus on one realistic Uber Eats delivery situation. ' +
-      'Return only the 5 English sentences, one sentence per line. ' +
-      'Do not number them. Do not add explanations, headings, translations, or bullet points.',
+    input: prompt,
   });
 
   const phrases = response.output_text
