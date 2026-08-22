@@ -76,7 +76,7 @@ async function main(): Promise<void> {
     instructions:
       'You create practical English practice material for a Japanese Uber Eats delivery rider. ' +
       'Use natural spoken English that could realistically be used during delivery. ' +
-      'Keep each sentence short enough for listen-and-repeat practice.' +
+      'Keep each sentence short enough for listen-and-repeat practice. ' +
       'Use straight ASCII apostrophes and quotation marks.',
     input: prompt,
   });
