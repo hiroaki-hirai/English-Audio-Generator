@@ -9,7 +9,7 @@ const scenarioOutputPath = 'input/scenario.txt';
 const lessonArchiveDirectory = 'output/lessons';
 const recentLessonLimit = 3;
 
-async function loadRecentLessons(): Promise<string[]> {
+async function loadRecentScenarios(): Promise<string[]> {
   try {
     const entries = await readdir(lessonArchiveDirectory, {
       withFileTypes: true,
@@ -22,20 +22,23 @@ async function loadRecentLessons(): Promise<string[]> {
       .reverse()
       .slice(0, recentLessonLimit);
 
-    const recentLessons: string[] = [];
+    const recentScenarios: string[] = [];
 
     for (const directory of lessonDirectories) {
-      const lessonTextPath = `${lessonArchiveDirectory}/${directory}/lesson.txt`;
+      const scenarioPath = `${lessonArchiveDirectory}/${directory}/scenario.txt`;
 
       try {
-        const content = await readFile(lessonTextPath, 'utf8');
-        recentLessons.push(content.trim());
+        const scenario = (await readFile(scenarioPath, 'utf8')).trim();
+
+        if (scenario.length > 0) {
+          recentScenarios.push(scenario);
+        }
       } catch {
-        // Skip archive directories without a readable lesson.txt.
+        // Skip archive directories without a readable scenario.txt.
       }
     }
 
-    return recentLessons;
+    return recentScenarios;
   } catch {
     return [];
   }
@@ -43,35 +46,34 @@ async function loadRecentLessons(): Promise<string[]> {
 
 async function main(): Promise<void> {
   const client = new OpenAI();
-  const recentLessons = await loadRecentLessons();
+  const recentScenarios = await loadRecentScenarios();
 
   console.log(
-    `Generating English practice phrases with ${recentLessons.length} recent lesson(s) of context...`,
+    `Generating English practice phrases with ${recentScenarios.length} recent scenario(s) of context...`,
   );
 
-  const recentLessonContext =
-    recentLessons.length > 0
+  const recentScenarioContext =
+    recentScenarios.length > 0
       ? [
-          'Recent lessons:',
-          '',
-          ...recentLessons.map(
-            (lesson, index) => `Lesson ${index + 1}:\n${lesson}`,
+          'Recent scenarios:',
+          ...recentScenarios.map(
+            (scenario, index) => `${index + 1}. ${scenario}`,
           ),
           '',
-          'Choose a meaningfully different delivery situation from these recent lessons.',
+          'Choose a meaningfully different delivery situation from all of these recent scenarios.',
         ].join('\n')
-      : 'There are no recent lessons yet.';
+      : 'There are no recent scenarios yet.';
 
   const prompt = [
     'Generate exactly 5 English sentences for today.',
     'Focus on one realistic Uber Eats delivery situation.',
-    'Avoid repeating the same main situation or closely similar phrases from recent lessons.',
+    'Avoid repeating the same main situation or closely similar phrases from recent scenarios.',
     'Return exactly 6 lines.',
     'Line 1 must be a short English scenario label.',
     'Lines 2 through 6 must be exactly 5 English practice sentences.',
     'Do not number them. Do not add explanations, translations, headings, or bullet points.',
     '',
-    recentLessonContext,
+    recentScenarioContext,
   ].join('\n');
 
   const response = await client.responses.create({
