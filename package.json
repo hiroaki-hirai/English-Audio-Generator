@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate:phrases": "tsx src/generate-phrases.ts",
+    "generate:speech": "tsx src/generate-speech.ts",
+    "build:lesson": "tsx src/build-lesson.ts",
+    "lesson": "npm run generate:phrases && npm run generate:speech && npm run build:lesson"
   },
   "keywords": [],
   "author": "",
