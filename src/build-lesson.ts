@@ -1,4 +1,11 @@
-﻿import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+﻿import {
+  access,
+  copyFile,
+  mkdir,
+  readFile,
+  readdir,
+  writeFile,
+} from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 
 const silenceSeconds = 5;
@@ -39,6 +46,26 @@ async function loadPhrases(): Promise<string[]> {
     .filter((phrase) => phrase.length > 0);
 }
 
+async function getNextLessonDirectory(
+  datedLessonDirectory: string,
+): Promise<string> {
+  const entries = await readdir(datedLessonDirectory, {
+    withFileTypes: true,
+  });
+
+  const existingNumbers = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => Number(entry.name))
+    .filter((number) => Number.isInteger(number) && number > 0);
+
+  const nextNumber =
+    existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+
+  const sequence = String(nextNumber).padStart(2, '0');
+
+  return `${datedLessonDirectory}/${sequence}`;
+}
+
 async function main(): Promise<void> {
   const phrases = await loadPhrases();
   const scenario = (await readFile(scenarioPath, 'utf8')).trim();
@@ -63,6 +90,10 @@ async function main(): Promise<void> {
 
   await mkdir(outputDirectory, { recursive: true });
   await mkdir(datedLessonDirectory, { recursive: true });
+
+  const lessonArchivePath = await getNextLessonDirectory(datedLessonDirectory);
+
+  await mkdir(lessonArchivePath, { recursive: true });
 
   const lessonText = [
     'English Audio Lesson',
@@ -136,15 +167,15 @@ async function main(): Promise<void> {
 
   console.log(`Created ${lessonPath}`);
 
-  const archivedLessonPath = `${datedLessonDirectory}/lesson.mp3`;
-  const archivedLessonTextPath = `${datedLessonDirectory}/lesson.txt`;
-  const archivedScenarioPath = `${datedLessonDirectory}/scenario.txt`;
+  const archivedLessonPath = `${lessonArchivePath}/lesson.mp3`;
+  const archivedLessonTextPath = `${lessonArchivePath}/lesson.txt`;
+  const archivedScenarioPath = `${lessonArchivePath}/scenario.txt`;
 
   await copyFile(lessonPath, archivedLessonPath);
   await copyFile(lessonTextPath, archivedLessonTextPath);
   await copyFile(scenarioPath, archivedScenarioPath);
 
-  console.log(`Archived lesson to ${datedLessonDirectory}`);
+  console.log(`Archived lesson to ${lessonArchivePath}`);
 }
 
 main().catch((error: unknown) => {
