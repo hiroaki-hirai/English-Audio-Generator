@@ -17,6 +17,8 @@ const lessonTextPath = `${outputDirectory}/lesson.txt`;
 const lessonArchiveDirectory = `${outputDirectory}/lessons`;
 const concatListPath = `${outputDirectory}/concat-list.txt`;
 const scenarioPath = 'input/scenario.txt';
+const translationPath = 'input/translations.txt';
+const lessonJapaneseTextPath = `${outputDirectory}/lesson-ja.txt`;
 
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -69,6 +71,37 @@ async function getNextLessonDirectory(
 async function main(): Promise<void> {
   const phrases = await loadPhrases();
   const scenario = (await readFile(scenarioPath, 'utf8')).trim();
+  const translations = (await readFile(translationPath, 'utf8'))
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (translations.length !== 6) {
+    throw new Error(
+      `Expected exactly 6 translations in ${translationPath}, but received ${translations.length}.`,
+    );
+  }
+
+  const [scenarioTranslation, ...phraseTranslations] = translations;
+
+  if (!scenarioTranslation) {
+    throw new Error(`No scenario translation found in ${translationPath}`);
+  }
+
+  const lessonJapaneseText = [
+    `Scenario: ${scenario}`,
+    `シチュエーション: ${scenarioTranslation}`,
+    '',
+    ...phrases.flatMap((phrase, index) => [
+      `${String(index + 1).padStart(2, '0')}. ${phrase}`,
+      `    ${phraseTranslations[index]}`,
+      '',
+    ]),
+  ].join('\n');
+
+  await writeFile(lessonJapaneseTextPath, lessonJapaneseText, 'utf8');
+
+  console.log(`Created ${lessonJapaneseTextPath}`);
 
   if (!scenario) {
     throw new Error(`No scenario found in ${scenarioPath}`);
@@ -169,10 +202,12 @@ async function main(): Promise<void> {
 
   const archivedLessonPath = `${lessonArchivePath}/lesson.mp3`;
   const archivedLessonTextPath = `${lessonArchivePath}/lesson.txt`;
+  const archivedLessonJapaneseTextPath = `${lessonArchivePath}/lesson-ja.txt`;
   const archivedScenarioPath = `${lessonArchivePath}/scenario.txt`;
 
   await copyFile(lessonPath, archivedLessonPath);
   await copyFile(lessonTextPath, archivedLessonTextPath);
+  await copyFile(lessonJapaneseTextPath, archivedLessonJapaneseTextPath);
   await copyFile(scenarioPath, archivedScenarioPath);
 
   console.log(`Archived lesson to ${lessonArchivePath}`);

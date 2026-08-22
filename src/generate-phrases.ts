@@ -7,6 +7,7 @@ loadEnvFile('.env');
 const outputPath = 'input/phrases.txt';
 const scenarioOutputPath = 'input/scenario.txt';
 const lessonArchiveDirectory = 'output/lessons';
+const translationOutputPath = 'input/translations.txt';
 const recentScenarioLimit = 3;
 
 async function loadRecentScenarios(): Promise<string[]> {
@@ -105,10 +106,12 @@ async function main(): Promise<void> {
     'Generate exactly 5 English sentences for today.',
     'Focus on one realistic Uber Eats delivery situation.',
     'Avoid repeating the same main situation or closely similar phrases from recent scenarios.',
-    'Return exactly 6 lines.',
+    'Return exactly 12 lines.',
     'Line 1 must be a short English scenario label.',
     'Lines 2 through 6 must be exactly 5 English practice sentences.',
-    'Do not number them. Do not add explanations, translations, headings, or bullet points.',
+    'Line 7 must be a natural Japanese translation of the scenario label.',
+    'Lines 8 through 12 must be Japanese translations of English lines 2 through 6, in the same order.',
+    'Do not number them. Do not add explanations, headings, or bullet points.',
     '',
     recentScenarioContext,
   ].join('\n');
@@ -133,14 +136,21 @@ async function main(): Promise<void> {
     )
     .filter((line) => line.length > 0);
 
-  if (lines.length !== 6) {
-    throw new Error(`Expected exactly 6 lines, but received ${lines.length}.`);
+  if (lines.length !== 12) {
+    throw new Error(`Expected exactly 12 lines, but received ${lines.length}.`);
   }
 
-  const [scenario, ...phrases] = lines;
+  const scenario = lines[0];
+  const phrases = lines.slice(1, 6);
+  const scenarioTranslation = lines[6];
+  const phraseTranslations = lines.slice(7, 12);
 
   if (!scenario) {
     throw new Error('Scenario label was empty.');
+  }
+
+  if (!scenarioTranslation) {
+    throw new Error('Scenario translation was empty.');
   }
 
   if (phrases.length !== 5) {
@@ -149,12 +159,23 @@ async function main(): Promise<void> {
     );
   }
 
+  if (phraseTranslations.length !== 5) {
+    throw new Error(
+      `Expected exactly 5 phrase translations, but received ${phraseTranslations.length}.`,
+    );
+  }
+
   await writeFile(scenarioOutputPath, `${scenario}\n`, 'utf8');
   await writeFile(outputPath, `${phrases.join('\n')}\n`, 'utf8');
+
+  const translations = [scenarioTranslation, ...phraseTranslations].join('\n');
+
+  await writeFile(translationOutputPath, `${translations}\n`, 'utf8');
 
   console.log(`Created ${scenarioOutputPath}`);
   console.log(`Created ${outputPath}`);
   console.log(`Scenario: ${scenario}`);
+  console.log(`Created ${translationOutputPath}`);
 
   phrases.forEach((phrase, index) => {
     console.log(`${index + 1}: ${phrase}`);
