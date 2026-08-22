@@ -6,6 +6,7 @@ const inputPath = 'input/phrases.txt';
 const outputDirectory = 'output';
 const silencePath = `${outputDirectory}/silence-${silenceSeconds}s.mp3`;
 const lessonPath = `${outputDirectory}/lesson.mp3`;
+const lessonTextPath = `${outputDirectory}/lesson.txt`;
 const concatListPath = `${outputDirectory}/concat-list.txt`;
 
 function runFfmpeg(args: string[]): Promise<void> {
@@ -44,6 +45,19 @@ async function main(): Promise<void> {
   }
 
   await mkdir(outputDirectory, { recursive: true });
+
+  const lessonText = [
+    'English Audio Lesson',
+    '',
+    ...phrases.map(
+      (phrase, index) => `${String(index + 1).padStart(2, '0')}. ${phrase}`,
+    ),
+    '',
+  ].join('\n');
+
+  await writeFile(lessonTextPath, lessonText, 'utf8');
+
+  console.log(`Created ${lessonTextPath}`);
 
   const phrasePaths = phrases.map(
     (_, index) =>
