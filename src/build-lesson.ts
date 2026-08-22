@@ -126,8 +126,6 @@ async function main(): Promise<void> {
 
   const lessonArchivePath = await getNextLessonDirectory(datedLessonDirectory);
 
-  await mkdir(lessonArchivePath, { recursive: true });
-
   const lessonText = [
     'English Audio Lesson',
     '',
@@ -199,6 +197,8 @@ async function main(): Promise<void> {
   ]);
 
   console.log(`Created ${lessonPath}`);
+
+  await mkdir(lessonArchivePath, { recursive: true });
 
   const archivedLessonPath = `${lessonArchivePath}/lesson.mp3`;
   const archivedLessonTextPath = `${lessonArchivePath}/lesson.txt`;
