@@ -1,11 +1,11 @@
-﻿import { loadEnvFile } from "node:process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import OpenAI from "openai";
+﻿import { loadEnvFile } from 'node:process';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import OpenAI from 'openai';
 
-loadEnvFile(".env");
+loadEnvFile('.env');
 
 async function main(): Promise<void> {
-  const content = await readFile("input/phrases.txt", "utf8");
+  const content = await readFile('input/phrases.txt', 'utf8');
 
   const phrases = content
     .split(/\r?\n/)
@@ -13,26 +13,24 @@ async function main(): Promise<void> {
     .filter((phrase) => phrase.length > 0);
 
   if (phrases.length === 0) {
-    throw new Error("No phrases found in input/phrases.txt");
+    throw new Error('No phrases found in input/phrases.txt');
   }
 
   const client = new OpenAI();
 
-  await mkdir("output", { recursive: true });
+  await mkdir('output', { recursive: true });
 
   for (const [index, phrase] of phrases.entries()) {
-    const fileNumber = String(index + 1).padStart(3, "0");
+    const fileNumber = String(index + 1).padStart(3, '0');
     const outputPath = `output/phrase-${fileNumber}.mp3`;
 
-    console.log(
-      `Generating ${index + 1}/${phrases.length}: ${phrase}`,
-    );
+    console.log(`Generating ${index + 1}/${phrases.length}: ${phrase}`);
 
     const response = await client.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "coral",
+      model: 'gpt-4o-mini-tts',
+      voice: 'cedar',
       input: phrase,
-      instructions: "Speak clearly and naturally for an English learner.",
+      instructions: 'Speak clearly and naturally for an English learner.',
     });
 
     const audioBuffer = Buffer.from(await response.arrayBuffer());
@@ -46,6 +44,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error("Failed to generate speech:", error);
+  console.error('Failed to generate speech:', error);
   process.exitCode = 1;
 });
