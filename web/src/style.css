@@ -34,6 +34,48 @@ h1 {
   font-size: 28px;
 }
 
+.lesson-selector {
+  margin-bottom: 24px;
+}
+
+.lesson-buttons {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lesson-button {
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #111827;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-button strong,
+.lesson-button span {
+  display: block;
+}
+
+.lesson-button strong {
+  font-size: 17px;
+}
+
+.lesson-button span {
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.lesson-button[aria-pressed='true'] {
+  border-color: #111827;
+  background: #e5e7eb;
+}
+
 .lesson-card {
   padding: 20px;
   background: #ffffff;
