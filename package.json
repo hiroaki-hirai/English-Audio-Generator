@@ -10,7 +10,9 @@
     "generate:speech": "tsx src/generate-speech.ts",
     "build:lesson": "tsx src/build-lesson.ts",
     "lesson": "npm run generate:phrases && npm run generate:speech && npm run build:lesson",
-    "lesson:script": "tsx src/run-script-lesson.ts"
+    "lesson:script": "tsx src/run-script-lesson.ts",
+    "web:dev": "vite web",
+    "web:build": "vite build web"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +21,8 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "tsx": "^4.23.12",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
   },
   "dependencies": {
     "openai": "^7.5.0"

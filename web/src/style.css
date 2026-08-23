@@ -1,0 +1,87 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  color: #111827;
+  background: #f3f4f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.lesson-card {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+}
+
+.lesson-label {
+  margin: 0 0 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.scenario-ja {
+  margin: 4px 0 20px;
+  color: #6b7280;
+}
+
+.player audio {
+  width: 100%;
+}
+
+.phrases {
+  margin: 24px 0 0;
+  padding-left: 24px;
+}
+
+.phrases li {
+  margin-bottom: 20px;
+}
+
+.phrases strong,
+.phrases span {
+  display: block;
+}
+
+.phrases strong {
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.phrases span {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.5;
+}
