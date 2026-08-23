@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eag-training-v1';
+const CACHE_NAME = 'eag-training-v2';
 
 const BASE_PATH = '/English-Audio-Generator/';
 
@@ -17,7 +17,10 @@ const APP_ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS)),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_ASSETS))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -31,11 +34,58 @@ self.addEventListener('activate', (event) => {
             .filter((cacheName) => cacheName !== CACHE_NAME)
             .map((cacheName) => caches.delete(cacheName)),
         ),
-      ),
+      )
+      .then(() => self.clients.claim()),
   );
-
-  self.clients.claim();
 });
+
+async function createRangeResponse(request, cachedResponse) {
+  const rangeHeader = request.headers.get('range');
+
+  if (!rangeHeader) {
+    return cachedResponse;
+  }
+
+  const match = /^bytes=(\d+)-(\d*)$/.exec(rangeHeader);
+
+  if (!match) {
+    return new Response(null, {
+      status: 416,
+      statusText: 'Range Not Satisfiable',
+    });
+  }
+
+  const buffer = await cachedResponse.arrayBuffer();
+  const fileSize = buffer.byteLength;
+
+  const start = Number(match[1]);
+  const requestedEnd = match[2] ? Number(match[2]) : fileSize - 1;
+  const end = Math.min(requestedEnd, fileSize - 1);
+
+  if (start >= fileSize || start > end) {
+    return new Response(null, {
+      status: 416,
+      statusText: 'Range Not Satisfiable',
+      headers: {
+        'Content-Range': `bytes */${fileSize}`,
+      },
+    });
+  }
+
+  const slicedBuffer = buffer.slice(start, end + 1);
+
+  return new Response(slicedBuffer, {
+    status: 206,
+    statusText: 'Partial Content',
+    headers: {
+      'Content-Type':
+        cachedResponse.headers.get('Content-Type') ?? 'audio/mpeg',
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Content-Length': String(slicedBuffer.byteLength),
+      'Accept-Ranges': 'bytes',
+    },
+  });
+}
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
@@ -43,24 +93,27 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    (async () => {
+      const cachedResponse = await caches.match(event.request);
+
       if (cachedResponse) {
+        if (event.request.headers.has('range')) {
+          return createRangeResponse(event.request, cachedResponse);
+        }
+
         return cachedResponse;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
-        }
+      const networkResponse = await fetch(event.request);
 
+      if (networkResponse && networkResponse.status === 200) {
         const responseToCache = networkResponse.clone();
+        const cache = await caches.open(CACHE_NAME);
 
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        await cache.put(event.request, responseToCache);
+      }
 
-        return networkResponse;
-      });
-    }),
+      return networkResponse;
+    })(),
   );
 });
