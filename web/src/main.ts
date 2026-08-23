@@ -66,7 +66,7 @@ function renderLesson(selectedLesson: TrainingScript): void {
         controls
         loop
         preload="metadata"
-        src="/lessons/${selectedLesson.id}/lesson.mp3"
+        src="${import.meta.env.BASE_URL}lessons/${selectedLesson.id}/lesson.mp3"
       ></audio>
     </div>
   `;
