@@ -1,0 +1,27 @@
+{
+  "id": "pin-verification",
+  "scenario": "PIN Verification",
+  "scenarioJa": "PINコード確認",
+  "phrases": [
+    {
+      "en": "I need the PIN before I can complete the delivery.",
+      "ja": "配達を完了する前にPINが必要です。"
+    },
+    {
+      "en": "Could you tell me the PIN, please?",
+      "ja": "PINを教えていただけますか？"
+    },
+    {
+      "en": "It's a four-digit number.",
+      "ja": "4桁の番号です。"
+    },
+    {
+      "en": "You can find it in the app.",
+      "ja": "アプリで確認できます。"
+    },
+    {
+      "en": "Got it. Thank you.",
+      "ja": "確認できました。ありがとうございます。"
+    }
+  ]
+}

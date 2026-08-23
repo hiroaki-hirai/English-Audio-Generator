@@ -1,0 +1,27 @@
+{
+  "id": "cash-payment",
+  "scenario": "Cash Payment",
+  "scenarioJa": "現金払い",
+  "phrases": [
+    {
+      "en": "Here's your order first.",
+      "ja": "まずはご注文の品をどうぞ。"
+    },
+    {
+      "en": "The total is 2,350 yen.",
+      "ja": "合計2,350円になります。"
+    },
+    {
+      "en": "I'll take the cash now.",
+      "ja": "それでは現金をお預かりします。"
+    },
+    {
+      "en": "Here's your change.",
+      "ja": "こちらがお釣りです。"
+    },
+    {
+      "en": "Is everything okay?",
+      "ja": "問題ありませんか？"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "order-verification",
+  "scenario": "Order Verification",
+  "scenarioJa": "注文者確認",
+  "phrases": [
+    {
+      "en": "I need to check the order.",
+      "ja": "注文を確認する必要があります。"
+    },
+    {
+      "en": "Could you show me your Uber Eats app?",
+      "ja": "Uber Eatsのアプリを見せていただけますか？"
+    },
+    {
+      "en": "Could you show me the order screen?",
+      "ja": "注文画面を見せていただけますか？"
+    },
+    {
+      "en": "Let me check the order number.",
+      "ja": "注文番号を確認させてください。"
+    },
+    {
+      "en": "Okay, thank you.",
+      "ja": "確認できました。ありがとうございます。"
+    }
+  ]
+}

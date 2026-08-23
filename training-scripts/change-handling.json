@@ -1,0 +1,27 @@
+{
+  "id": "change-handling",
+  "scenario": "Giving Change",
+  "scenarioJa": "お釣りの受け渡し",
+  "phrases": [
+    {
+      "en": "I'll give you the bills first.",
+      "ja": "まずはお札からお返しします。"
+    },
+    {
+      "en": "And here are the coins.",
+      "ja": "続いて小銭です。"
+    },
+    {
+      "en": "Here's your change.",
+      "ja": "こちらがお釣りです。"
+    },
+    {
+      "en": "Please check your change.",
+      "ja": "お釣りをご確認ください。"
+    },
+    {
+      "en": "Is everything okay?",
+      "ja": "問題ありませんか？"
+    }
+  ]
+}
