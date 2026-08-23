@@ -114,3 +114,15 @@ function renderLesson(selectedLesson: TrainingScript): void {
 }
 
 renderLesson(cashPayment);
+
+renderLesson(cashPayment);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .catch((error: unknown) => {
+        console.error('Failed to register service worker:', error);
+      });
+  });
+}
