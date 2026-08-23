@@ -51,7 +51,7 @@ function renderLesson(selectedLesson: TrainingScript): void {
 
   const phrases = selectedLesson.phrases
     .map(
-      (phrase, index) => `
+      (phrase) => `
         <li>
           <strong>${phrase.en}</strong>
           <span>${phrase.ja}</span>
