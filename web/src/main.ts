@@ -60,19 +60,16 @@ function renderLesson(selectedLesson: TrainingScript): void {
     )
     .join('');
 
-  const player =
-    selectedLesson.id === 'cash-payment'
-      ? `
-        <div class="player">
-          <audio
-            controls
-            loop
-            preload="metadata"
-            src="/lessons/cash-payment/lesson.mp3"
-          ></audio>
-        </div>
-      `
-      : '';
+  const player = `
+    <div class="player">
+      <audio
+        controls
+        loop
+        preload="metadata"
+        src="/lessons/${selectedLesson.id}/lesson.mp3"
+      ></audio>
+    </div>
+  `;
 
   app.innerHTML = `
     <section class="app-shell">

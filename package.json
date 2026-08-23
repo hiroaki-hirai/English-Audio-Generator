@@ -11,6 +11,7 @@
     "build:lesson": "tsx src/build-lesson.ts",
     "lesson": "npm run generate:phrases && npm run generate:speech && npm run build:lesson",
     "lesson:script": "tsx src/run-script-lesson.ts",
+    "build:training-audio": "tsx src/build-training-audio.ts",
     "web:dev": "vite web",
     "web:build": "vite build web"
   },
