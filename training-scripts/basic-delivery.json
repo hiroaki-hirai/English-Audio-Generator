@@ -1,0 +1,27 @@
+{
+  "id": "basic-delivery",
+  "scenario": "Basic Delivery",
+  "scenarioJa": "基本の受け渡し",
+  "phrases": [
+    {
+      "en": "Hello. Uber Eats.",
+      "ja": "お世話になっております。Uber Eatsです。"
+    },
+    {
+      "en": "Sorry to keep you waiting.",
+      "ja": "お待たせしました。"
+    },
+    {
+      "en": "Here's your order first.",
+      "ja": "まずはご注文の品をどうぞ。"
+    },
+    {
+      "en": "Could you check everything, please?",
+      "ja": "内容をご確認いただけますか？"
+    },
+    {
+      "en": "Thank you. Have a good one.",
+      "ja": "ありがとうございました。またご利用ください。"
+    }
+  ]
+}
