@@ -1164,3 +1164,698 @@ select the next small improvement
 ```
 
 That loop is the foundation for development beyond v0.1.0.
+
+## 15. Post-v0.1.0 Development --- Web Training Player
+
+After the v0.1.0 lesson-generation MVP was completed, regular use of the
+generated material exposed the next practical requirement:
+
+> make completed training lessons easy to select, play, repeat, and
+> practice from an iPhone without manually managing individual audio
+> files.
+
+Development therefore moved from lesson generation alone toward a small
+web-based training player.
+
+The existing generation pipeline remained the source of lesson content.
+The new web layer was designed around the generated training material
+rather than replacing it.
+
+---
+
+## Phase 8 --- Reusable training lessons and Web UI
+
+A set of reusable training scripts was introduced for common delivery
+situations.
+
+The initial training library contains six lessons:
+
+```text
+basic-delivery
+cash-payment
+change-handling
+order-verification
+pin-verification
+restaurant-delay
+```
+
+Each training lesson contains:
+
+- a stable lesson ID,
+- an English scenario,
+- a Japanese scenario translation,
+- five English practice phrases,
+- five Japanese phrase translations.
+
+A generated lesson index allows the Web UI to discover these lessons
+without manually maintaining the same lesson information separately in
+the frontend.
+
+The browser interface provides:
+
+- lesson selection,
+- scenario display,
+- English/Japanese phrase references,
+- audio playback,
+- repeated playback,
+- phrase-level navigation.
+
+This created a second major EAG workflow:
+
+```text
+training script
+        ↓
+generate training audio
+        ↓
+generate Web lesson index
+        ↓
+publish training assets
+        ↓
+select lesson on iPhone
+        ↓
+listen / repeat / tap individual phrases
+```
+
+---
+
+## Phase 9 --- Training asset synchronization
+
+### Automated training lesson synchronization
+
+**Commit:** `e82b3d4 feat: automate training lesson synchronization`
+
+The training-script definitions and Web application assets were
+connected through an automated synchronization step.
+
+Instead of manually updating the frontend whenever a training lesson was
+added, the project generates the lesson index consumed by the Web UI.
+
+This reduced duplicated lesson-registration work and established the
+training scripts as the canonical lesson definitions.
+
+---
+
+### Incremental training audio builds
+
+**Commit:** `234ac67 feat: add incremental training audio builds`
+
+Generating all training speech repeatedly would unnecessarily call the
+TTS API even when a lesson had not changed.
+
+Incremental audio generation was therefore introduced.
+
+Each lesson records a source hash. When the training build runs, the
+current lesson source is compared with the stored hash.
+
+The resulting behavior is:
+
+```text
+lesson unchanged
+        ↓
+skip TTS/audio rebuild
+
+lesson changed
+        ↓
+regenerate lesson audio
+        ↓
+update generated assets
+        ↓
+update source hash
+```
+
+A validated run with all six lessons unchanged produced:
+
+```text
+Training audio build complete: 0 built, 6 skipped.
+```
+
+This reduces unnecessary API usage, build time, and accidental
+regeneration of otherwise stable audio.
+
+---
+
+## Phase 10 --- Phrase-level audio navigation
+
+### Phrase seek metadata
+
+**Commit:** `1d08a71 feat: add phrase audio seeking metadata`
+
+The Web player initially supported complete lesson playback.
+
+Actual use showed that individual phrases also needed to be selectable
+directly from the English reference list.
+
+To support this, lesson construction began producing phrase timing
+metadata:
+
+```json
+{
+  "phrases": [
+    {
+      "index": 0,
+      "start": 0
+    },
+    {
+      "index": 1,
+      "start": 15.52
+    }
+  ]
+}
+```
+
+Each training lesson therefore has two related generated artifacts:
+
+```text
+lesson.mp3
+metadata.json
+```
+
+The Web application loads `metadata.json` and uses the selected phrase's
+start value to seek within `lesson.mp3`.
+
+This transformed the phrase list from a passive text reference into an
+interactive training control.
+
+---
+
+## Phase 11 --- iPhone / PWA audio-seeking investigation
+
+Phrase seeking worked correctly in the desktop browser, but real iPhone
+testing exposed a platform-specific problem.
+
+Tapping an English phrase on the installed iPhone application sometimes
+started playback after the beginning of the sentence.
+
+Several hypotheses were tested incrementally.
+
+### Seek lead experiments
+
+Commits:
+
+```text
+5a64fc2 test: add seek lead for iPhone audio
+6d66f9f fix: tune phrase seek lead time
+ecf7c81 fix: tune phrase seek lead time
+7675b25 fix: tune phrase seek lead time
+05bb001 fix: tune phrase seek lead time
+```
+
+Different amounts of pre-roll were tested before the metadata start
+position.
+
+Small changes alone did not initially resolve the behavior consistently,
+which showed that the problem was not simply an incorrect constant.
+
+---
+
+### PWA cache investigation
+
+**Commit:** `2bf088e fix: refresh PWA assets from network`
+
+The investigation then moved to Service Worker behavior.
+
+Because the iPhone application was installed as a PWA and also needed to
+work offline, lesson audio could be served from Cache Storage rather than
+directly from the network.
+
+The Service Worker was refined so application resources could refresh
+appropriately while preserving offline support.
+
+---
+
+### Audio Range Request investigation
+
+**Commit:** `effdc40 test: bypass cached audio range requests online`
+
+HTML audio seeking can use HTTP byte-range requests.
+
+This became particularly important on iPhone/Safari, where media seeking
+behavior differed from the desktop environment.
+
+The Service Worker already contained support for constructing `206
+Partial Content` responses from cached MP3 data for offline use.
+
+As part of the investigation, online audio range requests were allowed
+to use the network while cached range handling remained available as an
+offline fallback.
+
+This separated two cases:
+
+```text
+online
+    → native network Range Request
+
+offline
+    → cached MP3
+    → Service Worker creates 206 Partial Content response
+```
+
+---
+
+### iPhone seek diagnostics
+
+**Commit:** `d76af63 test: add iPhone audio seek diagnostics`
+
+Temporary runtime diagnostics were added to observe:
+
+- metadata phrase start,
+- requested seek position,
+- actual playback position.
+
+An example observed during debugging was:
+
+```text
+Phrase 3 | start=32.528 | requested=29.528 | playing=29.911
+```
+
+These diagnostics were important because they showed that the browser
+was broadly honoring the requested seek position.
+
+The investigation therefore shifted from JavaScript seeking itself to
+the correctness and freshness of the timing metadata.
+
+---
+
+## Phase 12 --- Synchronizing lesson audio and metadata
+
+### Root cause discovered
+
+Testing the `Giving Change` lesson revealed that the displayed metadata
+did not correspond to the actual phrase boundaries in the MP3.
+
+For example, phrase 3 was reported around:
+
+```text
+32.528 seconds
+```
+
+while inspection of the audio showed the phrase beginning much earlier.
+
+FFprobe and waveform inspection were used to compare:
+
+- individual phrase durations,
+- final lesson duration,
+- generated metadata,
+- actual waveform structure.
+
+This revealed an important build invariant:
+
+> `lesson.mp3` and `metadata.json` must come from the same lesson build.
+
+Regenerating or restoring only one side of this pair can produce a
+technically valid MP3 and a technically valid metadata file that are
+nevertheless semantically incompatible.
+
+---
+
+### Synchronize lesson audio and seek metadata
+
+**Commit:** `7eb09d9 fix: synchronize lesson audio and seek metadata`
+
+The training lessons were rebuilt so each `lesson.mp3` was paired with
+the timing metadata generated from the same source audio.
+
+For `change-handling`, for example, stale timing values changed from:
+
+```text
+16.624
+32.528
+45.264
+59.680
+```
+
+to timing values corresponding to the rebuilt lesson:
+
+```text
+15.520
+30.128
+43.056
+57.280
+```
+
+After deployment, desktop phrase selection matched the actual audio
+again.
+
+This established a new EAG artifact rule:
+
+```text
+lesson.mp3 + metadata.json = one generated artifact pair
+```
+
+They should not be independently restored, copied, or published when the
+other member of the pair was generated from different phrase audio.
+
+---
+
+## Phase 13 --- PWA metadata freshness
+
+### Refresh lesson metadata from network
+
+**Commit:** `1a878ee fix: refresh lesson metadata from network`
+
+Even after corrected metadata was deployed, the installed application
+could continue reading an older cached `metadata.json`.
+
+The Service Worker was therefore changed so lesson metadata uses a
+network-first strategy:
+
+```text
+metadata request
+        ↓
+network available?
+    yes → use fresh metadata and update cache
+    no  → use cached metadata
+```
+
+Lesson audio retains behavior appropriate for media playback and offline
+Range Requests.
+
+The Service Worker cache version was also advanced so previously cached
+assets could be retired during activation.
+
+This resolved the stale metadata behavior after the new Service Worker
+became active on the iPhone.
+
+---
+
+## Phase 14 --- Final iPhone phrase-seeking calibration
+
+After audio and metadata synchronization was corrected, direct seeking
+to the exact metadata boundary was tested again.
+
+A very small amount of lead-in remained useful on iPhone because seeking
+exactly to the first audio sample could make the beginning of some
+sentences sound slightly clipped.
+
+The final calibration became:
+
+```typescript
+const seekLeadSeconds = 0.5;
+```
+
+and the requested position is calculated as:
+
+```typescript
+Math.max(0, phraseMetadata.start - seekLeadSeconds);
+```
+
+This is intentionally different from the earlier multi-second diagnostic
+workaround.
+
+The final `0.5` second lead is a small playback margin rather than a
+correction for incorrect metadata.
+
+The final implementation was committed as:
+
+```text
+9ef253e fix: seek directly to phrase start
+```
+
+Temporary seek diagnostics were then removed:
+
+```text
+cad1da9 chore: remove audio seek diagnostics
+```
+
+---
+
+## 16. Web / PWA Acceptance Validation
+
+The completed training player was validated on both desktop and iPhone.
+
+### Desktop
+
+Confirmed:
+
+- all six training lessons are selectable,
+- lesson audio plays correctly,
+- English and Japanese references correspond to the selected lesson,
+- tapping an English phrase seeks to the intended phrase,
+- phrase playback begins naturally from the sentence start.
+
+### iPhone online
+
+Confirmed:
+
+- the application runs as an installed PWA,
+- lesson selection works,
+- lesson playback works,
+- phrase tapping works,
+- refreshed metadata is used,
+- phrase playback begins naturally.
+
+### iPhone offline
+
+The final acceptance test was performed in airplane mode.
+
+Confirmed:
+
+```text
+airplane mode
+    ↓
+open installed EAG application
+    ↓
+select training lesson
+    ↓
+tap English phrase
+    ↓
+audio seeks using cached lesson assets
+    ↓
+sentence plays naturally from the beginning
+```
+
+All tested phrases played naturally.
+
+This validates not only the phrase-seeking feature but the complete
+interaction between:
+
+- generated lesson audio,
+- generated seek metadata,
+- Web UI,
+- Service Worker caching,
+- cached HTTP Range responses,
+- iPhone/Safari media playback.
+
+---
+
+## 17. Web Training Architecture
+
+The EAG architecture now contains two connected layers.
+
+### Content generation
+
+```text
+training-scripts/*.json
+        ↓
+prepare training input
+        ↓
+OpenAI TTS
+        ↓
+build lesson
+        ↓
+lesson.mp3
+metadata.json
+source-hash.txt
+```
+
+### Web delivery
+
+```text
+training lesson definitions
+        ↓
+generate training index
+        ↓
+Web lesson selector
+        ↓
+load lesson.mp3 + metadata.json
+        ↓
+complete lesson playback
+or
+phrase-level seek
+```
+
+### Offline delivery
+
+```text
+GitHub Pages deployment
+        ↓
+Service Worker installation
+        ↓
+cache training assets
+        ↓
+PWA installed on iPhone
+        ↓
+offline lesson playback
+        ↓
+cached Range Request handling
+        ↓
+phrase-level seeking
+```
+
+The browser application is therefore not a separate source of lesson
+truth.
+
+Training scripts define the content, and generated Web assets expose that
+content to the player.
+
+---
+
+## 18. Additional Technical Decisions
+
+### Training scripts are canonical
+
+Reusable lesson content should be changed in the training-script
+definitions rather than manually editing generated Web indexes.
+
+Generated files are outputs of that source.
+
+### Audio and timing metadata are an atomic pair
+
+`lesson.mp3` and `metadata.json` describe the same generated timeline.
+
+They must be generated and deployed together.
+
+This is particularly important because TTS output duration can vary
+between generations even when the English text itself is unchanged.
+
+### Incremental TTS builds use source hashes
+
+Stable training lessons should not consume TTS requests merely because
+the build command was executed again.
+
+Source hashing provides a deterministic decision about whether a lesson
+requires regeneration.
+
+### Metadata uses network-first behavior
+
+Timing metadata is small but correctness-sensitive.
+
+When online, freshness is more important than avoiding a small network
+request.
+
+When offline, the cached version remains available.
+
+### Offline audio must support byte ranges
+
+Caching an MP3 alone is insufficient for reliable media seeking.
+
+The Service Worker must understand Range requests and be able to return
+a correct `206 Partial Content` response from the cached MP3.
+
+### iPhone playback uses a small pre-roll
+
+The final `0.5` second seek lead is intentional playback tolerance.
+
+It should not be increased to compensate for inaccurate metadata.
+
+If a future phrase requires a large lead value, audio/metadata
+synchronization should be investigated first.
+
+---
+
+## 19. Problems Encountered During Web/PWA Development
+
+### Desktop success did not guarantee iPhone success
+
+Phrase seeking initially behaved correctly on the desktop but not in the
+installed iPhone application.
+
+**Lesson:** media behavior and Service Worker behavior must be validated
+on the actual target device.
+
+### Reloading Safari affected observed behavior
+
+During debugging, refreshing the iPhone Safari page caused newer
+behavior to become visible.
+
+This demonstrated that deployment success alone does not prove that an
+installed PWA is currently executing the newest application and Service
+Worker state.
+
+**Lesson:** distinguish source-code correctness, GitHub Pages deployment,
+Service Worker activation, and client cache state during PWA debugging.
+
+### Increasing seek lead could hide the real problem
+
+Several lead values were tested while stale or mismatched timing metadata
+was still present.
+
+**Lesson:** a timing workaround should not be tuned until the underlying
+timeline data is known to be correct.
+
+### MP3 and metadata could silently diverge
+
+Both files remained individually valid even when generated from different
+audio builds.
+
+**Lesson:** related generated artifacts need explicit synchronization
+invariants.
+
+### Offline seeking is more demanding than offline playback
+
+Playing a cached MP3 from the beginning is simpler than seeking into it.
+
+**Lesson:** offline media applications must account for byte-range
+semantics, not merely Cache Storage availability.
+
+---
+
+## 20. Current State After Web/PWA Training Slice
+
+As of **2026-08-25**, the validated EAG state is:
+
+```text
+Branch:             main
+Remote branch:      origin/main
+HEAD:               cad1da9
+Working tree:       clean
+
+Training lessons:   6
+Web player:         operational
+Phrase selection:   operational
+Desktop playback:   validated
+iPhone playback:    validated
+PWA installation:   validated
+Offline playback:   validated
+Offline phrase seek: validated
+```
+
+The latest relevant commits are:
+
+```text
+cad1da9 chore: remove audio seek diagnostics
+9ef253e fix: seek directly to phrase start
+f6b8dd9 fix: seek directly to phrase start
+1a878ee fix: refresh lesson metadata from network
+7eb09d9 fix: synchronize lesson audio and seek metadata
+05bb001 fix: tune phrase seek lead time
+7675b25 fix: tune phrase seek lead time
+ecf7c81 fix: tune phrase seek lead time
+6d66f9f fix: tune phrase seek lead time
+d76af63 test: add iPhone audio seek diagnostics
+effdc40 test: bypass cached audio range requests online
+2bf088e fix: refresh PWA assets from network
+5a64fc2 test: add seek lead for iPhone audio
+1d08a71 feat: add phrase audio seeking metadata
+234ac67 feat: add incremental training audio builds
+```
+
+The Web/PWA training slice can now be regarded as complete.
+
+The most important validated user-facing capability is:
+
+```text
+select a training lesson on iPhone
+        ↓
+listen to the complete lesson
+        ↓
+tap any English sentence
+        ↓
+hear that sentence naturally from its beginning
+        ↓
+repeat the exercise even while offline
+```
+
+This provides a stable foundation for selecting the next EAG Vertical
+Slice from actual learning needs rather than continuing to debug the
+training playback infrastructure.
