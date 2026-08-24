@@ -1,0 +1,27 @@
+{
+  "id": "restaurant-delay",
+  "scenario": "Restaurant Delay",
+  "scenarioJa": "店舗での受け取り遅延",
+  "phrases": [
+    {
+      "en": "Sorry for the delay.",
+      "ja": "遅くなって申し訳ありません。"
+    },
+    {
+      "en": "The restaurant was very busy.",
+      "ja": "お店がとても混んでいました。"
+    },
+    {
+      "en": "I had to wait for your order.",
+      "ja": "ご注文の商品ができるまで待つ必要がありました。"
+    },
+    {
+      "en": "Here's your order.",
+      "ja": "こちらがご注文の品です。"
+    },
+    {
+      "en": "Thank you for waiting.",
+      "ja": "お待ちいただきありがとうございました。"
+    }
+  ]
+}

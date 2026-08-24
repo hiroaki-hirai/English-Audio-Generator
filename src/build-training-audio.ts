@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   copyFile,
@@ -17,6 +18,21 @@ async function loadLessonIds(): Promise<string[]> {
   }
 
   return fileNames.map((fileName) => fileName.replace(/\.json$/, ''));
+}
+
+async function calculateSourceHash(lessonId: string): Promise<string> {
+  const sourcePath = `training-scripts/${lessonId}.json`;
+  const content = await readFile(sourcePath);
+
+  return createHash('sha256').update(content).digest('hex');
+}
+
+async function readStoredHash(hashPath: string): Promise<string | null> {
+  try {
+    return (await readFile(hashPath, 'utf8')).trim();
+  } catch {
+    return null;
+  }
 }
 
 const inputPaths = [
@@ -59,25 +75,46 @@ async function main(): Promise<void> {
   }
 
   try {
+    let builtCount = 0;
+    let skippedCount = 0;
+
     for (const [index, lessonId] of lessonIds.entries()) {
+      const destinationDirectory = `web/public/lessons/${lessonId}`;
+      const destinationPath = `${destinationDirectory}/lesson.mp3`;
+      const hashPath = `${destinationDirectory}/source-hash.txt`;
+
+      const sourceHash = await calculateSourceHash(lessonId);
+      const storedHash = await readStoredHash(hashPath);
+
+      if (storedHash === sourceHash) {
+        skippedCount += 1;
+
+        console.log(
+          `\nSkipping training lesson ${index + 1}/${lessonIds.length}: ${lessonId} (unchanged)`,
+        );
+
+        continue;
+      }
+
       console.log(
         `\nBuilding training lesson ${index + 1}/${lessonIds.length}: ${lessonId}`,
       );
 
       runNpm(['run', 'lesson:script', '--', lessonId]);
 
-      const destinationDirectory = `web/public/lessons/${lessonId}`;
-      const destinationPath = `${destinationDirectory}/lesson.mp3`;
-
       await mkdir(destinationDirectory, { recursive: true });
 
       await copyFile('output/lesson.mp3', destinationPath);
+      await writeFile(hashPath, `${sourceHash}\n`, 'utf8');
+
+      builtCount += 1;
 
       console.log(`Copied lesson audio to ${destinationPath}`);
+      console.log(`Updated source hash at ${hashPath}`);
     }
 
     console.log(
-      `\nFinished building ${lessonIds.length} training lesson audio files.`,
+      `\nTraining audio build complete: ${builtCount} built, ${skippedCount} skipped.`,
     );
   } finally {
     for (const [inputPath, content] of originalInputs) {
