@@ -6,7 +6,7 @@
   readdir,
   writeFile,
 } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 
 const silenceSeconds = 5;
 const inputPath = 'input/phrases.txt';
@@ -19,6 +19,7 @@ const concatListPath = `${outputDirectory}/concat-list.txt`;
 const scenarioPath = 'input/scenario.txt';
 const translationPath = 'input/translations.txt';
 const lessonJapaneseTextPath = `${outputDirectory}/lesson-ja.txt`;
+const lessonMetadataPath = `${outputDirectory}/lesson-metadata.json`;
 
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -37,6 +38,42 @@ function runFfmpeg(args: string[]): Promise<void> {
       reject(new Error(`ffmpeg exited with code ${code}`));
     });
   });
+}
+
+function getAudioDuration(filePath: string): number {
+  const result = spawnSync(
+    'ffprobe',
+    [
+      '-v',
+      'error',
+      '-show_entries',
+      'format=duration',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
+      filePath,
+    ],
+    {
+      encoding: 'utf8',
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(
+      `ffprobe failed for ${filePath} with exit code ${result.status ?? 'unknown'}.`,
+    );
+  }
+
+  const duration = Number(result.stdout.trim());
+
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error(`Invalid duration for ${filePath}: ${result.stdout}`);
+  }
+
+  return duration;
 }
 
 async function loadPhrases(): Promise<string[]> {
@@ -148,6 +185,37 @@ async function main(): Promise<void> {
     await access(phrasePath);
   }
 
+  const phraseDurations = phrasePaths.map((phrasePath) =>
+    getAudioDuration(phrasePath),
+  );
+
+  let currentTime = 0;
+
+  const phraseMetadata = phraseDurations.map((duration, index) => {
+    const start = currentTime;
+
+    // phrase + silence + phrase
+    currentTime += duration + silenceSeconds + duration;
+
+    // Add inter-phrase silence except after the final phrase.
+    if (index < phraseDurations.length - 1) {
+      currentTime += silenceSeconds;
+    }
+
+    return {
+      index,
+      start: Number(start.toFixed(3)),
+    };
+  });
+
+  await writeFile(
+    lessonMetadataPath,
+    `${JSON.stringify({ phrases: phraseMetadata }, null, 2)}\n`,
+    'utf8',
+  );
+
+  console.log(`Created ${lessonMetadataPath}`);
+
   console.log(`Found ${phrases.length} phrases.`);
   console.log(`Creating ${silenceSeconds} seconds of silence...`);
 
@@ -208,11 +276,13 @@ async function main(): Promise<void> {
   const archivedLessonTextPath = `${lessonArchivePath}/lesson.txt`;
   const archivedLessonJapaneseTextPath = `${lessonArchivePath}/lesson-ja.txt`;
   const archivedScenarioPath = `${lessonArchivePath}/scenario.txt`;
+  const archivedLessonMetadataPath = `${lessonArchivePath}/lesson-metadata.json`;
 
   await copyFile(lessonPath, archivedLessonPath);
   await copyFile(lessonTextPath, archivedLessonTextPath);
   await copyFile(lessonJapaneseTextPath, archivedLessonJapaneseTextPath);
   await copyFile(scenarioPath, archivedScenarioPath);
+  await copyFile(lessonMetadataPath, archivedLessonMetadataPath);
 
   console.log(`Archived lesson to ${lessonArchivePath}`);
 }

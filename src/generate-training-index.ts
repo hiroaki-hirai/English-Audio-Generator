@@ -48,13 +48,14 @@ async function main(): Promise<void> {
 
   await writeFile('web/src/training-lessons.json', output, 'utf8');
 
-  const offlineAudioPaths = lessons.map(
-    (lesson) => `lessons/${lesson.id}/lesson.mp3`,
-  );
+  const trainingAssets = lessons.flatMap((lesson) => [
+    `lessons/${lesson.id}/lesson.mp3`,
+    `lessons/${lesson.id}/metadata.json`,
+  ]);
 
   const offlineAssetsOutput = [
     'self.EAG_TRAINING_AUDIO_ASSETS = [',
-    ...offlineAudioPaths.map((path) => `  ${JSON.stringify(path)},`),
+    ...trainingAssets.map((path) => `  ${JSON.stringify(path)},`),
     '];',
     '',
   ].join('\n');
@@ -70,7 +71,7 @@ async function main(): Promise<void> {
   );
 
   console.log(
-    `Generated web/public/training-audio-assets.js with ${lessons.length} audio paths.`,
+    `Generated web/public/training-audio-assets.js with ${trainingAssets.length} asset paths.`,
   );
 
   lessons.forEach((lesson, index) => {

@@ -1,8 +1,14 @@
 self.EAG_TRAINING_AUDIO_ASSETS = [
   "lessons/basic-delivery/lesson.mp3",
+  "lessons/basic-delivery/metadata.json",
   "lessons/cash-payment/lesson.mp3",
+  "lessons/cash-payment/metadata.json",
   "lessons/change-handling/lesson.mp3",
+  "lessons/change-handling/metadata.json",
   "lessons/order-verification/lesson.mp3",
+  "lessons/order-verification/metadata.json",
   "lessons/pin-verification/lesson.mp3",
+  "lessons/pin-verification/metadata.json",
   "lessons/restaurant-delay/lesson.mp3",
+  "lessons/restaurant-delay/metadata.json",
 ];

@@ -14,6 +14,15 @@ type TrainingScript = {
   phrases: TrainingPhrase[];
 };
 
+type PhraseMetadata = {
+  index: number;
+  start: number;
+};
+
+type LessonMetadata = {
+  phrases: PhraseMetadata[];
+};
+
 const lessons = lessonsData as TrainingScript[];
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -22,7 +31,17 @@ if (!app) {
   throw new Error('App root was not found.');
 }
 
-function renderLesson(selectedLesson: TrainingScript): void {
+async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
+  const metadataResponse = await fetch(
+    `${import.meta.env.BASE_URL}lessons/${selectedLesson.id}/metadata.json`,
+  );
+
+  if (!metadataResponse.ok) {
+    throw new Error(`Failed to load metadata for ${selectedLesson.id}.`);
+  }
+
+  const metadata = (await metadataResponse.json()) as LessonMetadata;
+
   const lessonButtons = lessons
     .map(
       (lesson) => `
@@ -41,9 +60,15 @@ function renderLesson(selectedLesson: TrainingScript): void {
 
   const phrases = selectedLesson.phrases
     .map(
-      (phrase) => `
+      (phrase, index) => `
         <li>
-          <strong>${phrase.en}</strong>
+          <button
+            class="phrase-button"
+            type="button"
+            data-phrase-index="${index}"
+          >
+            <strong>${phrase.en}</strong>
+          </button>
           <span>${phrase.ja}</span>
         </li>
       `,
@@ -97,7 +122,37 @@ function renderLesson(selectedLesson: TrainingScript): void {
       );
 
       if (lesson) {
-        renderLesson(lesson);
+        void renderLesson(lesson);
+      }
+    });
+  });
+
+  const audio = app.querySelector<HTMLAudioElement>('audio');
+
+  if (!audio) {
+    throw new Error('Audio player was not found.');
+  }
+
+  const phraseButtons =
+    app.querySelectorAll<HTMLButtonElement>('.phrase-button');
+
+  phraseButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const phraseIndex = Number(button.dataset.phraseIndex);
+      const phraseMetadata = metadata.phrases.find(
+        (candidate) => candidate.index === phraseIndex,
+      );
+
+      if (!phraseMetadata) {
+        return;
+      }
+
+      audio.currentTime = phraseMetadata.start;
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error('Failed to play lesson audio:', error);
       }
     });
   });
@@ -110,7 +165,7 @@ if (!initialLesson) {
   throw new Error('No training lessons were found.');
 }
 
-renderLesson(initialLesson);
+void renderLesson(initialLesson);
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

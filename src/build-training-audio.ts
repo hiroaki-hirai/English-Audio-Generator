@@ -8,6 +8,8 @@ import {
   writeFile,
 } from 'node:fs/promises';
 
+const audioBuildVersion = '2';
+
 async function loadLessonIds(): Promise<string[]> {
   const fileNames = (await readdir('training-scripts'))
     .filter((fileName) => fileName.endsWith('.json'))
@@ -24,7 +26,11 @@ async function calculateSourceHash(lessonId: string): Promise<string> {
   const sourcePath = `training-scripts/${lessonId}.json`;
   const content = await readFile(sourcePath);
 
-  return createHash('sha256').update(content).digest('hex');
+  return createHash('sha256')
+    .update(audioBuildVersion)
+    .update('\n')
+    .update(content)
+    .digest('hex');
 }
 
 async function readStoredHash(hashPath: string): Promise<string | null> {
@@ -104,12 +110,16 @@ async function main(): Promise<void> {
 
       await mkdir(destinationDirectory, { recursive: true });
 
+      const metadataDestinationPath = `${destinationDirectory}/metadata.json`;
+
       await copyFile('output/lesson.mp3', destinationPath);
+      await copyFile('output/lesson-metadata.json', metadataDestinationPath);
       await writeFile(hashPath, `${sourceHash}\n`, 'utf8');
 
       builtCount += 1;
 
       console.log(`Copied lesson audio to ${destinationPath}`);
+      console.log(`Copied lesson metadata to ${metadataDestinationPath}`);
       console.log(`Updated source hash at ${hashPath}`);
     }
 

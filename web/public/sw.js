@@ -1,6 +1,6 @@
 importScripts('./training-audio-assets.js');
 
-const CACHE_NAME = 'eag-training-v3';
+const CACHE_NAME = 'eag-training-v4';
 
 const scopeUrl = self.registration.scope;
 
