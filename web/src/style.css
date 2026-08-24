@@ -147,3 +147,13 @@ h2 {
   outline-offset: 4px;
   border-radius: 4px;
 }
+
+.seek-debug {
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid #6b7280;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
