@@ -1,13 +1,23 @@
 import { spawnSync } from 'node:child_process';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  readdir,
+  readFile,
+  writeFile,
+} from 'node:fs/promises';
 
-const lessonIds = [
-  'basic-delivery',
-  'cash-payment',
-  'change-handling',
-  'order-verification',
-  'pin-verification',
-];
+async function loadLessonIds(): Promise<string[]> {
+  const fileNames = (await readdir('training-scripts'))
+    .filter((fileName) => fileName.endsWith('.json'))
+    .sort();
+
+  if (fileNames.length === 0) {
+    throw new Error('No training scripts were found.');
+  }
+
+  return fileNames.map((fileName) => fileName.replace(/\.json$/, ''));
+}
 
 const inputPaths = [
   'input/scenario.txt',
@@ -41,6 +51,7 @@ function runNpm(args: string[]): void {
 }
 
 async function main(): Promise<void> {
+  const lessonIds = await loadLessonIds();
   const originalInputs = new Map<string, string>();
 
   for (const inputPath of inputPaths) {

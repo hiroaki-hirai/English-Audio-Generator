@@ -11,9 +11,11 @@
     "build:lesson": "tsx src/build-lesson.ts",
     "lesson": "npm run generate:phrases && npm run generate:speech && npm run build:lesson",
     "lesson:script": "tsx src/run-script-lesson.ts",
+    "generate:training-index": "tsx src/generate-training-index.ts",
     "build:training-audio": "tsx src/build-training-audio.ts",
+    "build:training": "npm run build:training-audio && npm run web:build",
     "web:dev": "vite",
-    "web:build": "vite build"
+    "web:build": "npm run generate:training-index && vite build"
   },
   "keywords": [],
   "author": "",

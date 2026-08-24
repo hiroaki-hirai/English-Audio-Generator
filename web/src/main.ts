@@ -1,10 +1,6 @@
 import './style.css';
 
-import basicDelivery from '../../training-scripts/basic-delivery.json';
-import cashPayment from '../../training-scripts/cash-payment.json';
-import changeHandling from '../../training-scripts/change-handling.json';
-import orderVerification from '../../training-scripts/order-verification.json';
-import pinVerification from '../../training-scripts/pin-verification.json';
+import lessonsData from './training-lessons.json';
 
 type TrainingPhrase = {
   en: string;
@@ -18,13 +14,7 @@ type TrainingScript = {
   phrases: TrainingPhrase[];
 };
 
-const lessons: TrainingScript[] = [
-  basicDelivery,
-  cashPayment,
-  changeHandling,
-  orderVerification,
-  pinVerification,
-];
+const lessons = lessonsData as TrainingScript[];
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -113,11 +103,16 @@ function renderLesson(selectedLesson: TrainingScript): void {
   });
 }
 
-renderLesson(cashPayment);
+const initialLesson =
+  lessons.find((lesson) => lesson.id === 'cash-payment') ?? lessons[0];
 
-renderLesson(cashPayment);
+if (!initialLesson) {
+  throw new Error('No training lessons were found.');
+}
 
-if ('serviceWorker' in navigator) {
+renderLesson(initialLesson);
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)

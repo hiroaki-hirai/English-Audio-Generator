@@ -1,19 +1,22 @@
-const CACHE_NAME = 'eag-training-v2';
+importScripts('./training-audio-assets.js');
 
-const BASE_PATH = '/English-Audio-Generator/';
+const CACHE_NAME = 'eag-training-v3';
 
-const APP_ASSETS = [
-  BASE_PATH,
-  `${BASE_PATH}manifest.webmanifest`,
-  `${BASE_PATH}icons/apple-touch-icon.png`,
-  `${BASE_PATH}icons/icon-192.png`,
-  `${BASE_PATH}icons/icon-512.png`,
-  `${BASE_PATH}lessons/basic-delivery/lesson.mp3`,
-  `${BASE_PATH}lessons/cash-payment/lesson.mp3`,
-  `${BASE_PATH}lessons/change-handling/lesson.mp3`,
-  `${BASE_PATH}lessons/order-verification/lesson.mp3`,
-  `${BASE_PATH}lessons/pin-verification/lesson.mp3`,
+const scopeUrl = self.registration.scope;
+
+const staticAssets = [
+  '',
+  'manifest.webmanifest',
+  'icons/apple-touch-icon.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
 ];
+
+const trainingAudioAssets = self.EAG_TRAINING_AUDIO_ASSETS ?? [];
+
+const APP_ASSETS = [...staticAssets, ...trainingAudioAssets].map(
+  (path) => new URL(path, scopeUrl).href,
+);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

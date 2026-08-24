@@ -1,0 +1,137 @@
+[
+  {
+    "id": "basic-delivery",
+    "scenario": "Basic Delivery",
+    "scenarioJa": "基本の受け渡し",
+    "phrases": [
+      {
+        "en": "Hello. Uber Eats.",
+        "ja": "お世話になっております。Uber Eatsです。"
+      },
+      {
+        "en": "Sorry to keep you waiting.",
+        "ja": "お待たせしました。"
+      },
+      {
+        "en": "Here's your order first.",
+        "ja": "まずはご注文の品をどうぞ。"
+      },
+      {
+        "en": "Could you check everything, please?",
+        "ja": "内容をご確認いただけますか？"
+      },
+      {
+        "en": "Thank you. Have a good one.",
+        "ja": "ありがとうございました。またご利用ください。"
+      }
+    ]
+  },
+  {
+    "id": "cash-payment",
+    "scenario": "Cash Payment",
+    "scenarioJa": "現金払い",
+    "phrases": [
+      {
+        "en": "Here's your order first.",
+        "ja": "まずはご注文の品をどうぞ。"
+      },
+      {
+        "en": "The total is 2,350 yen.",
+        "ja": "合計2,350円になります。"
+      },
+      {
+        "en": "I'll take the cash now.",
+        "ja": "それでは現金をお預かりします。"
+      },
+      {
+        "en": "Here's your change.",
+        "ja": "こちらがお釣りです。"
+      },
+      {
+        "en": "Is everything okay?",
+        "ja": "問題ありませんか？"
+      }
+    ]
+  },
+  {
+    "id": "change-handling",
+    "scenario": "Giving Change",
+    "scenarioJa": "お釣りの受け渡し",
+    "phrases": [
+      {
+        "en": "I'll give you the bills first.",
+        "ja": "まずはお札からお返しします。"
+      },
+      {
+        "en": "And here are the coins.",
+        "ja": "続いて小銭です。"
+      },
+      {
+        "en": "Here's your change.",
+        "ja": "こちらがお釣りです。"
+      },
+      {
+        "en": "Please check your change.",
+        "ja": "お釣りをご確認ください。"
+      },
+      {
+        "en": "Is everything okay?",
+        "ja": "問題ありませんか？"
+      }
+    ]
+  },
+  {
+    "id": "order-verification",
+    "scenario": "Order Verification",
+    "scenarioJa": "注文者確認",
+    "phrases": [
+      {
+        "en": "I need to check the order.",
+        "ja": "注文を確認する必要があります。"
+      },
+      {
+        "en": "Could you show me your Uber Eats app?",
+        "ja": "Uber Eatsのアプリを見せていただけますか？"
+      },
+      {
+        "en": "Could you show me the order screen?",
+        "ja": "注文画面を見せていただけますか？"
+      },
+      {
+        "en": "Let me check the order number.",
+        "ja": "注文番号を確認させてください。"
+      },
+      {
+        "en": "Okay, thank you.",
+        "ja": "確認できました。ありがとうございます。"
+      }
+    ]
+  },
+  {
+    "id": "pin-verification",
+    "scenario": "PIN Verification",
+    "scenarioJa": "PINコード確認",
+    "phrases": [
+      {
+        "en": "I need the PIN before I can complete the delivery.",
+        "ja": "配達を完了する前にPINが必要です。"
+      },
+      {
+        "en": "Could you tell me the PIN, please?",
+        "ja": "PINを教えていただけますか？"
+      },
+      {
+        "en": "It's a four-digit number.",
+        "ja": "4桁の番号です。"
+      },
+      {
+        "en": "You can find it in the app.",
+        "ja": "アプリで確認できます。"
+      },
+      {
+        "en": "Got it. Thank you.",
+        "ja": "確認できました。ありがとうございます。"
+      }
+    ]
+  }
+]
