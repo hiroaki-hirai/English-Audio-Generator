@@ -147,7 +147,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         return;
       }
 
-      audio.currentTime = phraseMetadata.start;
+      const seekLeadSeconds = 4;
+
+      audio.currentTime = Math.max(0, phraseMetadata.start - seekLeadSeconds);
 
       try {
         await audio.play();
