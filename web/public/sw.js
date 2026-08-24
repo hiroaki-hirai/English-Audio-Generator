@@ -1,6 +1,6 @@
 importScripts('./training-audio-assets.js');
 
-const CACHE_NAME = 'eag-training-v6';
+const CACHE_NAME = 'eag-training-v7';
 
 const scopeUrl = self.registration.scope;
 
@@ -98,15 +98,45 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const requestUrl = new URL(event.request.url);
-      const isTrainingAsset =
-        requestUrl.pathname.includes('/lessons/') ||
-        requestUrl.pathname.endsWith('/training-audio-assets.js');
 
-      if (isTrainingAsset) {
+      const isLessonAudio =
+        requestUrl.pathname.includes('/lessons/') &&
+        requestUrl.pathname.endsWith('/lesson.mp3');
+
+      const isLessonMetadata =
+        requestUrl.pathname.includes('/lessons/') &&
+        requestUrl.pathname.endsWith('/metadata.json');
+
+      const isTrainingAssetList = requestUrl.pathname.endsWith(
+        '/training-audio-assets.js',
+      );
+
+      if (isLessonMetadata) {
+        try {
+          const networkResponse = await fetch(event.request);
+
+          if (networkResponse && networkResponse.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(event.request, networkResponse.clone());
+          }
+
+          return networkResponse;
+        } catch {
+          const cachedResponse = await caches.match(event.request);
+
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          throw new Error(`No cached metadata for ${event.request.url}`);
+        }
+      }
+
+      if (isLessonAudio || isTrainingAssetList) {
         const cachedResponse = await caches.match(event.request);
 
         if (cachedResponse) {
-          if (event.request.headers.has('range')) {
+          if (isLessonAudio && event.request.headers.has('range')) {
             try {
               return await fetch(event.request);
             } catch {
