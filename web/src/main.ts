@@ -106,10 +106,6 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
         ${player}
 
-        <p class="seek-debug" aria-live="polite">
-          Seek debug: waiting
-        </p>
-
         <ol class="phrases">
           ${phrases}
         </ol>
@@ -137,12 +133,6 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     throw new Error('Audio player was not found.');
   }
 
-  const seekDebug = app.querySelector<HTMLParagraphElement>('.seek-debug');
-
-  if (!seekDebug) {
-    throw new Error('Seek debug element was not found.');
-  }
-
   const phraseButtons =
     app.querySelectorAll<HTMLButtonElement>('.phrase-button');
 
@@ -162,26 +152,10 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
       audio.currentTime = requestedTime;
 
-      seekDebug.textContent =
-        `Phrase ${phraseIndex + 1} | ` +
-        `start=${phraseMetadata.start.toFixed(3)} | ` +
-        `requested=${requestedTime.toFixed(3)} | ` +
-        `after-set=${audio.currentTime.toFixed(3)}`;
-
       try {
         await audio.play();
-
-        window.setTimeout(() => {
-          seekDebug.textContent =
-            `Phrase ${phraseIndex + 1} | ` +
-            `start=${phraseMetadata.start.toFixed(3)} | ` +
-            `requested=${requestedTime.toFixed(3)} | ` +
-            `playing=${audio.currentTime.toFixed(3)}`;
-        }, 500);
       } catch (error) {
         console.error('Failed to play lesson audio:', error);
-
-        seekDebug.textContent = `Playback failed: ${String(error)}`;
       }
     });
   });
