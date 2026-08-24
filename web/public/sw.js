@@ -1,6 +1,6 @@
 importScripts('./training-audio-assets.js');
 
-const CACHE_NAME = 'eag-training-v5';
+const CACHE_NAME = 'eag-training-v6';
 
 const scopeUrl = self.registration.scope;
 
@@ -107,7 +107,11 @@ self.addEventListener('fetch', (event) => {
 
         if (cachedResponse) {
           if (event.request.headers.has('range')) {
-            return createRangeResponse(event.request, cachedResponse);
+            try {
+              return await fetch(event.request);
+            } catch {
+              return createRangeResponse(event.request, cachedResponse);
+            }
           }
 
           return cachedResponse;
