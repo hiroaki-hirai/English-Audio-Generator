@@ -1,6 +1,6 @@
 importScripts('./training-audio-assets.js');
 
-const CACHE_NAME = 'eag-training-v4';
+const CACHE_NAME = 'eag-training-v5';
 
 const scopeUrl = self.registration.scope;
 
@@ -97,26 +97,50 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(event.request);
+      const requestUrl = new URL(event.request.url);
+      const isTrainingAsset =
+        requestUrl.pathname.includes('/lessons/') ||
+        requestUrl.pathname.endsWith('/training-audio-assets.js');
 
-      if (cachedResponse) {
-        if (event.request.headers.has('range')) {
-          return createRangeResponse(event.request, cachedResponse);
+      if (isTrainingAsset) {
+        const cachedResponse = await caches.match(event.request);
+
+        if (cachedResponse) {
+          if (event.request.headers.has('range')) {
+            return createRangeResponse(event.request, cachedResponse);
+          }
+
+          return cachedResponse;
         }
 
-        return cachedResponse;
+        const networkResponse = await fetch(event.request);
+
+        if (networkResponse && networkResponse.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, networkResponse.clone());
+        }
+
+        return networkResponse;
       }
 
-      const networkResponse = await fetch(event.request);
+      try {
+        const networkResponse = await fetch(event.request);
 
-      if (networkResponse && networkResponse.status === 200) {
-        const responseToCache = networkResponse.clone();
-        const cache = await caches.open(CACHE_NAME);
+        if (networkResponse && networkResponse.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, networkResponse.clone());
+        }
 
-        await cache.put(event.request, responseToCache);
+        return networkResponse;
+      } catch {
+        const cachedResponse = await caches.match(event.request);
+
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        throw new Error(`No cached response for ${event.request.url}`);
       }
-
-      return networkResponse;
     })(),
   );
 });
