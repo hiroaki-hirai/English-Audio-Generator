@@ -1859,3 +1859,349 @@ repeat the exercise even while offline
 This provides a stable foundation for selecting the next EAG Vertical
 Slice from actual learning needs rather than continuing to debug the
 training playback infrastructure.
+
+
+## 21. Continuous Phrase Training Mode
+
+After completing the Web/PWA training player, the next Vertical Slice
+was selected from the perspective of English acquisition rather than
+adding more playback infrastructure.
+
+The learning goal was changed from repeatedly drilling a small number of
+sentences until they were immediately perfect to moving through a larger
+number of sentences at a relatively fast pace and improving them over
+repeated rounds.
+
+The resulting baseline training pattern is:
+
+``` text
+English phrase
+        ↓
+1 second
+        ↓
+same English phrase
+        ↓
+5-second recall period
+        ↓
+next phrase
+```
+
+The learner is expected to begin shadowing from the first playback
+rather than treating the first playback as passive listening only.
+
+The five-second silent period is intentional recall time rather than an
+ordinary playback pause.
+
+For short phrases, the recall period allows the phrase to be spoken
+multiple times.
+
+For longer phrases, it provides enough time to reproduce the phrase at
+least once without audio support.
+
+### Why two playbacks were selected
+
+Three consecutive playbacks were initially considered.
+
+Practical listening tests showed that two playbacks are sufficient for
+the normal case because shadowing already begins during the first
+playback.
+
+A third playback remains useful for phrases that are difficult or long.
+
+This led to the following future training model:
+
+``` text
+Normal phrase
+        ↓
+2 playbacks
+        ↓
+5-second recall
+
+Weak phrase
+        ↓
+3 playbacks
+        ↓
+5-second recall
+```
+
+Weak Phrase behavior was intentionally excluded from this Vertical
+Slice.
+
+The first implementation validates the simpler Normal Phrase training
+cycle before adding phrase difficulty state.
+
+### Timing validation
+
+The initial timing was tested as:
+
+``` text
+Playback 1
+        ↓
+1 second
+        ↓
+Playback 2
+        ↓
+5 seconds recall
+```
+
+The one-second interval can feel slightly slow for very short phrases,
+but it is appropriate for longer phrases.
+
+A fixed one-second interval was therefore retained rather than
+introducing phrase-length-dependent timing at this stage.
+
+The five-second recall period was also retained.
+
+It is long enough for longer phrases while allowing short phrases to be
+repeated two or three times during the silent interval.
+
+------------------------------------------------------------------------
+
+## 22. Training Mode v1 Implementation
+
+The Web player gained a dedicated `Start Training` control.
+
+Training Mode automatically processes every phrase in the selected
+lesson without requiring phrase-by-phrase interaction.
+
+For each phrase, the player:
+
+1.  plays the English phrase once;
+2.  waits approximately one second;
+3.  plays the same phrase again;
+4.  provides approximately five seconds of silent recall time;
+5.  advances automatically to the next phrase.
+
+After the final phrase, Training Mode stops.
+
+The existing normal lesson player remains available independently of
+Training Mode.
+
+### Reusing existing generated audio
+
+The existing `lesson.mp3` files were not regenerated.
+
+Those files already contain a structure equivalent to:
+
+``` text
+English phrase
+        ↓
+5-second silence
+        ↓
+same English phrase
+```
+
+Training Mode instead derives the spoken portion of each phrase block
+and uses browser seeking to replay only that spoken segment.
+
+Phrase boundaries are derived from the existing `metadata.json` start
+times together with the known generated lesson structure.
+
+This allowed the new learning behavior to be implemented entirely in the
+Web player without changing:
+
+-   training scripts;
+-   OpenAI TTS generation;
+-   incremental source hashing;
+-   generated `lesson.mp3`;
+-   generated `metadata.json`.
+
+This preserved the already validated audio-generation pipeline and
+avoided unnecessary TTS regeneration.
+
+### Training playback control
+
+Training playback temporarily disables normal whole-audio looping while
+the controlled phrase sequence is running.
+
+The player tracks the active training run so that stale asynchronous
+playback work cannot continue as part of the current training session.
+
+The active phrase segment can also be explicitly cancelled.
+
+This became important when switching from controlled Training Mode back
+to ordinary playback.
+
+### Phrase selection during Training Mode
+
+An early implementation exposed a playback race when an English sentence
+was tapped while Training Mode was active.
+
+The first tap stopped at the selected phrase position, and a second tap
+was required before ordinary playback continued.
+
+The cause was the active Training Mode segment listener remaining
+capable of pausing the audio after normal playback had started.
+
+The segment playback logic was updated so that the active segment can be
+cancelled and its listener removed immediately.
+
+The validated behavior is now:
+
+``` text
+Training Mode active
+        ↓
+tap an English sentence
+        ↓
+cancel active training segment
+        ↓
+stop Training Mode
+        ↓
+seek to selected phrase
+        ↓
+start normal playback
+```
+
+Only one tap is required.
+
+### Lesson switching during Training Mode
+
+Training state originally lived inside each `renderLesson()` execution.
+
+Because changing lessons replaces the rendered player, the previous
+Training Mode also needed explicit cleanup.
+
+The current player exposes the active training stop operation to the
+lesson-switching path.
+
+The validated behavior is:
+
+``` text
+Lesson A Training Mode
+        ↓
+select Lesson B
+        ↓
+stop Lesson A training
+        ↓
+render Lesson B
+```
+
+The previous lesson does not resume playback after the new lesson has
+been selected.
+
+------------------------------------------------------------------------
+
+## 23. Continuous Training Validation
+
+Training Mode v1 was validated on the desktop development environment
+and on the target iPhone environment.
+
+### Desktop validation
+
+The production Web build completed successfully with:
+
+``` text
+npm run web:build
+```
+
+The build regenerated the six-lesson training index and completed the
+Vite production build successfully.
+
+The following behaviors were manually validated:
+
+-   Training Mode starts from the Web player;
+-   each phrase is played twice;
+-   approximately one second separates the two playbacks;
+-   approximately five seconds of recall follows the second playback;
+-   playback automatically advances to the next phrase;
+-   Training Mode can be stopped manually;
+-   tapping a phrase during training exits Training Mode and starts
+    normal playback from that phrase with one tap;
+-   switching lessons during training stops the previous lesson
+    correctly.
+
+### iPhone validation
+
+The same Training Mode was then deployed through the existing GitHub
+Pages/PWA delivery path and tested on iPhone.
+
+The iPhone implementation behaved normally with the controlled phrase
+playback and automatic progression.
+
+This was an important validation because previous EAG development showed
+that desktop media behavior alone is not sufficient evidence for iPhone
+PWA correctness.
+
+The validated Training Mode timing is therefore currently:
+
+``` text
+Normal phrase:
+2 playbacks
+1-second repeat gap
+5-second recall
+automatic advance
+```
+
+------------------------------------------------------------------------
+
+## 24. Current State After Continuous Phrase Training Slice
+
+As of **2026-08-26**, the validated EAG state is:
+
+``` text
+Branch:              main
+Remote branch:       origin/main
+HEAD:                e478f41
+Working tree:        clean
+
+Training lessons:    6
+Web player:          operational
+Phrase selection:    operational
+Training Mode v1:    operational
+Normal repetitions:  2
+Repeat gap:          1 second
+Recall period:       5 seconds
+Automatic advance:   operational
+Desktop playback:    validated
+iPhone playback:     validated
+PWA installation:    validated
+Offline foundation:  validated
+```
+
+The implementation commit is:
+
+``` text
+e478f41 feat: add continuous phrase training mode
+```
+
+The current learning model is:
+
+``` text
+preview English + Japanese
+        ↓
+start Training Mode
+        ↓
+shadow a large number of phrases continuously
+        ↓
+2 audio repetitions per Normal phrase
+        ↓
+5-second active recall
+        ↓
+continue through the lesson
+        ↓
+improve through repeated exposure over time
+```
+
+The next likely learning-oriented Vertical Slice is Weak Phrase
+Training.
+
+The current candidate behavior is:
+
+``` text
+Normal
+→ 2 playbacks + 5-second recall
+
+Weak
+→ 3 playbacks + 5-second recall
+```
+
+The third playback would serve two purposes:
+
+1.  provide additional practice for a difficult phrase;
+2.  act as an audible indication that the phrase was previously marked
+    as difficult.
+
+This behavior has not yet been implemented.
+
+It remains a candidate for the next Vertical Slice Selection Review
+rather than being treated as part of Training Mode v1.
