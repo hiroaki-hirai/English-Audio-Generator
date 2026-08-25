@@ -102,6 +102,35 @@ h2 {
   width: 100%;
 }
 
+.player {
+  display: grid;
+  gap: 12px;
+}
+
+.training-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid #111827;
+  border-radius: 10px;
+  background: #111827;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.training-button:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 3px;
+}
+
+.training-status {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
 .phrases {
   margin: 24px 0 0;
   padding-left: 24px;
