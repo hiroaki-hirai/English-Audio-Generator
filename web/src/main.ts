@@ -209,7 +209,8 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     throw new Error('Training controls were not found.');
   }
 
-  const repeatGapMilliseconds = 500;
+  const repeatGapMilliseconds = 0;
+  const trainingSeekLeadSeconds = 0.5;
   const recallMilliseconds = 5000;
   const originalSilenceSeconds = 5;
 
@@ -296,7 +297,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
       cancelActiveSegment = cancel;
 
-      audio.currentTime = segment.start;
+      audio.currentTime = Math.max(0, segment.start - trainingSeekLeadSeconds);
       audio.addEventListener('timeupdate', handleTimeUpdate);
 
       void audio.play().catch((error: unknown) => {
