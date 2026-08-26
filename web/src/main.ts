@@ -209,7 +209,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     throw new Error('Training controls were not found.');
   }
 
-  const repeatGapMilliseconds = 1000;
+  const repeatGapMilliseconds = 500;
   const recallMilliseconds = 5000;
   const originalSilenceSeconds = 5;
 
