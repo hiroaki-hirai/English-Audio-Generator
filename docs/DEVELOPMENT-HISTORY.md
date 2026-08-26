@@ -2205,3 +2205,386 @@ This behavior has not yet been implemented.
 
 It remains a candidate for the next Vertical Slice Selection Review
 rather than being treated as part of Training Mode v1.
+
+
+## 25. Weak Phrase Training v1
+
+After validating Continuous Phrase Training Mode v1, the next
+learning-oriented Vertical Slice focused on adapting repetition density
+to phrases that the learner finds difficult.
+
+Practical use of Training Mode showed that two repetitions are
+sufficient for the normal case because shadowing already begins during
+the first playback.
+
+However, difficult or longer phrases benefit from one additional
+repetition.
+
+The selected model is:
+
+``` text
+Normal phrase
+        ↓
+2 playbacks
+        ↓
+5-second recall
+
+Weak phrase
+        ↓
+3 playbacks
+        ↓
+5-second recall
+```
+
+The third playback also provides an audible indication that the current
+phrase has previously been marked as difficult.
+
+This avoids requiring the learner to look at the screen while
+concentrating on continuous listening and shadowing.
+
+### Scope
+
+Weak Phrase Training v1 intentionally remains simple.
+
+The slice includes:
+
+-   manual Weak ON/OFF selection for individual phrases;
+-   persistent Weak state in the browser;
+-   two repetitions for Normal phrases;
+-   three repetitions for Weak phrases;
+-   the existing five-second recall period;
+-   automatic progression through the lesson;
+-   compatibility with existing phrase tapping, Stop Training, lesson
+    switching, PWA playback, and offline playback.
+
+The slice does not include:
+
+-   automatic difficulty detection;
+-   correctness scoring;
+-   spaced-repetition scheduling;
+-   automatic promotion from Weak back to Normal;
+-   multiple difficulty levels;
+-   learning-history analytics;
+-   Weak selection during hands-free training.
+
+------------------------------------------------------------------------
+
+## 26. Weak Phrase State and UI
+
+Weak state is stored client-side using `localStorage`.
+
+The storage key is:
+
+``` text
+eag.weakPhrases.v1
+```
+
+Individual phrases are identified using the combination of lesson ID and
+phrase index.
+
+Conceptually:
+
+``` text
+cash-payment:2
+pin-verification:0
+```
+
+This keeps Weak state independent between lessons without requiring
+changes to the canonical training scripts, generated audio, or timing
+metadata.
+
+The stored JSON is loaded defensively.
+
+If the stored value is missing, malformed, or is not an array, the
+application falls back to an empty Weak set rather than preventing the
+player from loading.
+
+### Weak control
+
+Each phrase gained a separate Weak control.
+
+The English sentence itself retains its existing phrase-playback
+behavior.
+
+Weak selection is therefore not overloaded onto the phrase playback
+button.
+
+The states are presented as:
+
+``` text
+☆ Weak
+```
+
+and:
+
+``` text
+★ Weak
+```
+
+The control also uses `aria-pressed` so that the selected state is
+exposed semantically.
+
+Manual validation confirmed that:
+
+-   a Normal phrase can be changed to Weak;
+-   a Weak phrase can be changed back to Normal;
+-   Weak state survives lesson switching;
+-   Weak state survives page reload;
+-   phrase tapping continues to perform normal phrase playback
+    independently.
+
+------------------------------------------------------------------------
+
+## 27. Variable Training Repetition
+
+The original Training Mode contained a fixed two-playback sequence.
+
+That sequence was generalized so that the repetition count is selected
+for each phrase.
+
+The behavior is:
+
+``` text
+Normal
+→ playback 1
+→ playback 2
+→ Recall
+
+Weak
+→ playback 1
+→ playback 2
+→ playback 3
+→ Recall
+```
+
+The player checks the current Weak state when it reaches each phrase.
+
+This keeps the repetition decision close to playback and avoids
+introducing a second copied difficulty-state model.
+
+The status text distinguishes the third playback as a Weak repetition.
+
+Manual desktop validation confirmed:
+
+-   Normal phrases remain at two repetitions;
+-   Weak phrases use three repetitions;
+-   Recall follows the third Weak playback;
+-   removing Weak status returns the phrase to two repetitions;
+-   Stop Training continues to work;
+-   tapping an English phrase during Training Mode continues to exit
+    controlled training and start normal phrase playback;
+-   switching lessons during Training Mode continues to stop the
+    previous lesson.
+
+The implementation was committed as:
+
+``` text
+0282021 feat: add weak phrase training
+```
+
+------------------------------------------------------------------------
+
+## 28. Training Repeat Gap Evaluation
+
+The original Continuous Phrase Training Mode used a one-second explicit
+delay between repeated playbacks.
+
+Practical listening showed that one second was acceptable for longer
+phrases but slightly reduced the desired high-throughput rhythm for
+shorter phrases.
+
+A 0.5-second explicit repeat gap was therefore tested.
+
+The shorter interval felt more natural and was initially adopted.
+
+That adjustment was committed as:
+
+``` text
+c3a78f8 tune: shorten training repeat gap
+```
+
+The intended learning rhythm at that point was:
+
+``` text
+Normal
+English
+→ 0.5 seconds
+→ English
+→ 5-second Recall
+
+Weak
+English
+→ 0.5 seconds
+→ English
+→ 0.5 seconds
+→ English
+→ 5-second Recall
+```
+
+Desktop playback felt natural with this timing.
+
+------------------------------------------------------------------------
+
+## 29. iPhone Training Seek Pre-roll
+
+After the 0.5-second repeat-gap adjustment, iPhone testing exposed a
+media playback issue.
+
+Some repeated phrases began slightly after the true start of the English
+audio, causing the beginning of the sentence to sound clipped.
+
+This was consistent with an earlier iPhone phrase-seeking issue in the
+normal player.
+
+The existing normal phrase-tap behavior already used a small seek lead
+to make iPhone playback begin naturally.
+
+Training Mode, however, was still seeking directly to the exact phrase
+segment start.
+
+### Final timing strategy
+
+Rather than keeping both:
+
+``` text
+0.5-second explicit wait
++
+0.5-second seek pre-roll
+```
+
+which would make the training rhythm slower than intended, Training Mode
+was changed to use:
+
+``` text
+explicit repeat gap: 0 ms
+training seek pre-roll: 0.5 seconds
+```
+
+The player seeks to approximately:
+
+``` text
+segment.start - 0.5 seconds
+```
+
+before each controlled phrase playback.
+
+The pre-roll therefore serves two purposes:
+
+1.  it gives iPhone media playback enough lead-in to avoid clipping the
+    first sound of the sentence;
+2.  it naturally provides approximately the desired half-second interval
+    before the repeated English phrase begins.
+
+The implementation uses:
+
+``` text
+repeatGapMilliseconds = 0
+trainingSeekLeadSeconds = 0.5
+```
+
+with the playback start clamped so that it cannot seek before zero.
+
+This adjustment was committed as:
+
+``` text
+936698c fix: add training seek pre-roll for iPhone
+```
+
+### Validation
+
+The final strategy was validated on desktop and iPhone.
+
+Desktop playback retained the desired fast training rhythm.
+
+On iPhone, phrases that had previously sounded clipped at the beginning
+played naturally after the pre-roll adjustment.
+
+Online and airplane-mode PWA playback were both validated successfully.
+
+The final practical training rhythm is therefore approximately:
+
+``` text
+Normal
+0.5-second pre-roll → English
+→ 0 ms explicit wait
+→ 0.5-second pre-roll → English
+→ 5-second Recall
+
+Weak
+0.5-second pre-roll → English
+→ 0 ms explicit wait
+→ 0.5-second pre-roll → English
+→ 0 ms explicit wait
+→ 0.5-second pre-roll → English
+→ 5-second Recall
+```
+
+The pre-roll is implementation tolerance as well as part of the
+effective training rhythm.
+
+It should not be replaced with a larger arbitrary delay unless future
+target device testing demonstrates a need.
+
+------------------------------------------------------------------------
+
+## 30. Current State After Weak Phrase Training Slice
+
+As of **2026-08-26**, the validated EAG state is:
+
+``` text
+Branch:                main
+Remote branch:         origin/main
+HEAD:                  936698c
+Working tree:          clean
+
+Training lessons:      6
+Training Mode:         operational
+Normal repetitions:    2
+Weak repetitions:      3
+Weak persistence:      localStorage
+Recall period:         5 seconds
+Explicit repeat gap:   0 ms
+Training seek pre-roll: 0.5 seconds
+Automatic advance:     operational
+Phrase tap exit:       operational
+Lesson switching:      operational
+Desktop playback:      validated
+iPhone playback:       validated
+Online PWA playback:   validated
+Airplane-mode playback: validated
+```
+
+The latest implementation commits are:
+
+``` text
+936698c fix: add training seek pre-roll for iPhone
+c3a78f8 tune: shorten training repeat gap
+0282021 feat: add weak phrase training
+```
+
+Weak Phrase Training v1 can now be regarded as complete.
+
+The current learning behavior is:
+
+``` text
+preview English + Japanese
+        ↓
+mark known difficult phrases as Weak
+        ↓
+start Training Mode
+        ↓
+Normal phrase: 2 repetitions
+Weak phrase:   3 repetitions
+        ↓
+5-second active recall
+        ↓
+automatic progression
+        ↓
+repeat large amounts of English over multiple rounds
+```
+
+The additional Weak repetition increases practice density only where it
+is needed, while Normal phrases retain the faster two-repetition rhythm.
+
+The next EAG Vertical Slice should again be selected from observed
+learning needs rather than extending Weak Phrase Training automatically.
