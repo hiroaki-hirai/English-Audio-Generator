@@ -30,6 +30,40 @@ type PhraseSegment = {
 
 const lessons = lessonsData as TrainingScript[];
 
+const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
+
+function getWeakPhraseKey(lessonId: string, phraseIndex: number): string {
+  return `${lessonId}:${phraseIndex}`;
+}
+
+function loadWeakPhrases(): Set<string> {
+  const storedValue = localStorage.getItem(weakPhrasesStorageKey);
+
+  if (!storedValue) {
+    return new Set();
+  }
+
+  try {
+    const parsedValue = JSON.parse(storedValue);
+
+    if (!Array.isArray(parsedValue)) {
+      return new Set();
+    }
+
+    return new Set(
+      parsedValue.filter((value): value is string => typeof value === 'string'),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWeakPhrases(weakPhrases: Set<string>): void {
+  localStorage.setItem(weakPhrasesStorageKey, JSON.stringify([...weakPhrases]));
+}
+
+const weakPhrases = loadWeakPhrases();
+
 const app = document.querySelector<HTMLDivElement>('#app');
 
 let stopCurrentTraining: (() => void) | null = null;
@@ -66,8 +100,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     .join('');
 
   const phrases = selectedLesson.phrases
-    .map(
-      (phrase, index) => `
+    .map((phrase, index) => {
+      const weakPhraseKey = getWeakPhraseKey(selectedLesson.id, index);
+      const isWeak = weakPhrases.has(weakPhraseKey);
+
+      return `
         <li>
           <button
             class="phrase-button"
@@ -76,10 +113,20 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           >
             <strong>${phrase.en}</strong>
           </button>
+
           <span>${phrase.ja}</span>
+
+          <button
+            class="weak-button"
+            type="button"
+            data-phrase-index="${index}"
+            aria-pressed="${isWeak}"
+          >
+            ${isWeak ? '★ Weak' : '☆ Weak'}
+          </button>
         </li>
-      `,
-    )
+      `;
+    })
     .join('');
 
   const player = `
@@ -283,23 +330,34 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           break;
         }
 
-        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Listen`;
+        const weakPhraseKey = getWeakPhraseKey(selectedLesson.id, index);
 
-        await playSegment(segment, runId);
+        const repetitions = weakPhrases.has(weakPhraseKey) ? 3 : 2;
 
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
+        for (let repetition = 0; repetition < repetitions; repetition += 1) {
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
+
+          const phase =
+            repetition === 0
+              ? 'Listen'
+              : repetition === 1
+                ? 'Repeat'
+                : 'Weak Repeat';
+
+          trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — ${phase}`;
+
+          await playSegment(segment, runId);
+
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
+
+          if (repetition < repetitions - 1) {
+            await wait(repeatGapMilliseconds);
+          }
         }
-
-        await wait(repeatGapMilliseconds);
-
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
-        }
-
-        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Repeat`;
-
-        await playSegment(segment, runId);
 
         if (!trainingActive || trainingRunId !== runId) {
           break;
@@ -374,6 +432,35 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       } catch (error) {
         console.error('Failed to play lesson audio:', error);
       }
+    });
+  });
+
+  const weakButtons = app.querySelectorAll<HTMLButtonElement>('.weak-button');
+
+  weakButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const phraseIndex = Number(button.dataset.phraseIndex);
+
+      if (!Number.isInteger(phraseIndex)) {
+        return;
+      }
+
+      const weakPhraseKey = getWeakPhraseKey(selectedLesson.id, phraseIndex);
+
+      const isCurrentlyWeak = weakPhrases.has(weakPhraseKey);
+
+      if (isCurrentlyWeak) {
+        weakPhrases.delete(weakPhraseKey);
+      } else {
+        weakPhrases.add(weakPhraseKey);
+      }
+
+      saveWeakPhrases(weakPhrases);
+
+      const isWeak = weakPhrases.has(weakPhraseKey);
+
+      button.textContent = isWeak ? '★ Weak' : '☆ Weak';
+      button.setAttribute('aria-pressed', String(isWeak));
     });
   });
 }
