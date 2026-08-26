@@ -113,9 +113,11 @@ async function main(): Promise<void> {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  if (translations.length !== 6) {
+  const expectedTranslationCount = phrases.length + 1;
+
+  if (translations.length !== expectedTranslationCount) {
     throw new Error(
-      `Expected exactly 6 translations in ${translationPath}, but received ${translations.length}.`,
+      `Expected exactly ${expectedTranslationCount} translations in ${translationPath}, but received ${translations.length}.`,
     );
   }
 
