@@ -2588,3 +2588,486 @@ is needed, while Normal phrases retain the faster two-repetition rhythm.
 
 The next EAG Vertical Slice should again be selected from observed
 learning needs rather than extending Weak Phrase Training automatically.
+
+---
+
+## 2026-08-26: Meaning → English Active Recall v1
+
+### Background
+
+After completing Continuous Phrase Training Mode and Weak Phrase Training v1, the next development step was selected through a Vertical Slice Selection Review.
+
+The selection criterion was intentionally changed from:
+
+- "What feature can be added to the app?"
+
+to:
+
+- "What is currently missing from EAG from the perspective of actual English acquisition?"
+
+The existing Continuous Phrase Training flow was already effective for:
+
+- listening to the English phrase
+- shadowing from the first playback
+- repeating the phrase
+- recalling the phrase after hearing the correct English
+- increasing repetition for weak phrases
+
+However, the existing Recall phase still occurred after the learner had just heard the correct English phrase.
+
+This meant that the training primarily exercised:
+
+```text
+English
+→ English reproduction
+```
+
+rather than the retrieval path required in an actual delivery conversation:
+
+```text
+meaning / communicative intent
+→ English
+```
+
+In a real delivery situation, the learner first has an intention such as:
+
+```text
+"Ask the customer to show the order screen."
+```
+
+and must then retrieve:
+
+```text
+"Could you show me your order screen, please?"
+```
+
+without hearing the correct English first.
+
+For this reason, the next Vertical Slice was selected as:
+
+```text
+Meaning → English Active Recall v1
+```
+
+### Learning Design
+
+The goal of Active Recall is not to replace Continuous Phrase Training.
+
+The two modes have different roles.
+
+Continuous Phrase Training:
+
+```text
+English
+→ shadowing
+→ repetition
+→ immediate recall
+```
+
+Primary purpose:
+
+- acquire the sound
+- acquire the rhythm
+- reinforce the phrase
+- reproduce recently heard English
+
+Active Recall:
+
+```text
+Japanese meaning cue
+→ silent recall
+→ English answer
+```
+
+Primary purpose:
+
+- retrieve English from meaning or communicative intent
+- create a deliberate "thinking" state before hearing the answer
+- practice the direction required during actual conversation
+
+The final v1 sequence for each phrase is:
+
+```text
+Japanese meaning cue
+→ 5-second Recall
+→ English answer
+→ English repeat
+```
+
+For a Weak phrase:
+
+```text
+Japanese meaning cue
+→ 5-second Recall
+→ English answer
+→ English repeat
+→ English Weak Repeat
+```
+
+Therefore:
+
+- Normal phrase: English × 2
+- Weak phrase: English × 3
+- Recall: 5 seconds for both Normal and Weak phrases
+
+The 5-second Recall interval was retained after actual use because it provided enough time to actively search for and attempt the English phrase without making the training feel excessively slow.
+
+### Japanese Meaning Cue Strategy
+
+An initial design option was to generate dedicated Japanese cue audio through the existing OpenAI TTS build pipeline.
+
+Before introducing additional generated audio artifacts, a smaller Vertical Slice was tested using the browser's built-in Web Speech API.
+
+The existing canonical training script already contains:
+
+```json
+{
+  "en": "...",
+  "ja": "..."
+}
+```
+
+Therefore the Japanese `ja` value can be passed directly to:
+
+```text
+SpeechSynthesisUtterance
+```
+
+with:
+
+```text
+lang = ja-JP
+```
+
+This provides the Japanese meaning cue without changing:
+
+- `training-scripts/*.json`
+- existing `lesson.mp3`
+- existing `metadata.json`
+- source-hash behavior
+- the OpenAI TTS build pipeline
+
+The English answer continues to use the existing generated OpenAI TTS `lesson.mp3`.
+
+Conceptually:
+
+```text
+training script
+├─ ja → browser speechSynthesis → Japanese meaning cue
+└─ en → existing lesson.mp3     → English answer
+```
+
+This kept the Active Recall implementation small and preserved the existing validated English audio pipeline.
+
+### Initial Web Speech Validation
+
+Before integrating Active Recall into the player, browser speech synthesis was tested independently.
+
+The test confirmed:
+
+```text
+SpeechSynthesisUtterance
+→ Japanese speech
+→ end event
+```
+
+The `end` event was important because Active Recall must wait until the Japanese cue has completely finished before starting the 5-second Recall period.
+
+After successful validation, a cancellable `speakJapaneseCue()` helper was added.
+
+The helper:
+
+- creates a `SpeechSynthesisUtterance`
+- sets `lang` to `ja-JP`
+- resolves after the `end` event
+- rejects on speech synthesis error
+- exposes cancellation behavior through the existing training stop flow
+
+### Active Recall Implementation
+
+Added a separate:
+
+```text
+Start Active Recall
+```
+
+control alongside the existing:
+
+```text
+Start Training
+```
+
+The existing Continuous Phrase Training behavior was preserved rather than replaced.
+
+Active Recall automatically progresses through all phrases in the selected lesson.
+
+For each phrase:
+
+1. Read the Japanese meaning cue.
+2. Wait 5 seconds for silent Active Recall.
+3. Play the existing English phrase segment.
+4. Repeat the English phrase.
+5. Add a third English playback when the phrase is marked Weak.
+6. Continue automatically to the next phrase.
+
+The existing phrase segmentation logic is reused.
+
+The existing iPhone training playback behavior is also reused:
+
+```text
+repeatGapMilliseconds = 0
+trainingSeekLeadSeconds = 0.5
+```
+
+Therefore the English answer playback retains the same pre-roll behavior previously validated for Continuous Phrase Training.
+
+### Weak Phrase Integration
+
+Active Recall reuses the existing Weak Phrase state.
+
+Weak status continues to be stored by:
+
+```text
+lesson ID + phrase index
+```
+
+using the existing localStorage-backed Weak Phrase implementation.
+
+No new learning-state format was introduced.
+
+The playback behavior is:
+
+```text
+Normal:
+Japanese cue
+→ 5-second Recall
+→ English × 2
+```
+
+```text
+Weak:
+Japanese cue
+→ 5-second Recall
+→ English × 3
+```
+
+Removing Weak status immediately returns the phrase to two English playbacks.
+
+### Training Mode Coordination
+
+Continuous Training and Active Recall are intentionally separate modes.
+
+While Continuous Training is active:
+
+- the Active Recall button is disabled
+
+While Active Recall is active:
+
+- the normal Training button is disabled
+
+The existing shared training lifecycle is reused so that Active Recall can be stopped by the same user actions already supported by Continuous Training.
+
+Active Recall stops correctly when:
+
+- Stop Active Recall is pressed
+- another lesson is selected
+- an English phrase is tapped for normal phrase playback
+
+Stopping Active Recall cancels:
+
+- an active Japanese speech synthesis cue
+- an active English phrase segment
+- the current training run
+
+The player then returns to its normal non-training state.
+
+### Learning Evaluation
+
+The first implementation deliberately tested the smallest useful flow before expanding to all phrases:
+
+```text
+Japanese meaning cue
+→ 5-second Recall
+→ English answer
+```
+
+Actual use confirmed that hearing the meaning before the answer naturally creates the desired mental state:
+
+```text
+"What was the English for this?"
+```
+
+This was judged to be a useful training load because the learner must actively search for the English phrase before receiving the answer.
+
+The 5-second Recall interval also felt appropriate in actual use.
+
+It was long enough to attempt retrieval while still preserving the high-throughput training philosophy of EAG.
+
+The feature was then expanded to continuous progression across the full lesson.
+
+Overall, Active Recall was judged highly useful in actual training.
+
+### PC Validation
+
+Verified on PC:
+
+- Japanese meaning cue playback works
+- speech synthesis completion can be detected
+- 5-second Recall occurs after the Japanese cue
+- English answer follows Recall
+- all phrases progress automatically
+- Normal phrases play English twice
+- Weak phrases play English three times
+- Active Recall can be stopped
+- existing Continuous Training remains available
+
+### iPhone PWA Validation
+
+Verified on the installed iPhone PWA.
+
+Online:
+
+- Japanese meaning cue plays correctly
+- Active Recall progresses correctly
+- 5-second Recall works correctly
+- English answer playback works correctly
+- Continuous phrase progression works correctly
+
+Airplane mode / offline:
+
+- Japanese meaning cue still plays correctly
+- English answer audio plays correctly
+- Active Recall progresses correctly
+
+This confirmed that, on the tested iPhone environment, browser speech synthesis can provide the Japanese meaning cue without requiring an online TTS request.
+
+Therefore dedicated generated Japanese cue MP3 files are not currently required.
+
+### Implementation Commit
+
+Feature implementation:
+
+```text
+3dd0d4a feat: add meaning to English active recall
+```
+
+Files changed:
+
+```text
+web/src/main.ts
+```
+
+The implementation added:
+
+- `Start Active Recall`
+- Japanese Web Speech cue playback
+- cancellable Japanese cue handling
+- 5-second pre-answer Recall
+- full-lesson automatic Active Recall progression
+- Normal ×2 / Weak ×3 English answer playback
+- coordination with existing Continuous Training
+- shared stop behavior
+
+### Current Training Architecture
+
+EAG now provides two complementary continuous training modes.
+
+#### Continuous Phrase Training
+
+```text
+English
+→ English
+→ 5-second Recall
+```
+
+Weak:
+
+```text
+English
+→ English
+→ English
+→ 5-second Recall
+```
+
+Purpose:
+
+```text
+sound / rhythm / shadowing / immediate reproduction
+```
+
+#### Meaning → English Active Recall
+
+```text
+Japanese meaning
+→ 5-second Recall
+→ English
+→ English
+```
+
+Weak:
+
+```text
+Japanese meaning
+→ 5-second Recall
+→ English
+→ English
+→ English
+```
+
+Purpose:
+
+```text
+meaning / communicative intent
+→ English retrieval
+```
+
+Together, these modes train two different directions:
+
+```text
+English input
+→ reproduction
+```
+
+and:
+
+```text
+meaning / intent
+→ English production
+```
+
+### Development Decision
+
+No additional Active Recall features are being added immediately.
+
+Deferred possibilities include:
+
+- generated Japanese cue audio
+- speech recognition
+- automatic answer evaluation
+- spaced retrieval scheduling
+- automatic Weak detection
+- recall-time adjustment
+- randomized phrase order
+- context / phrase variation
+
+The current priority remains:
+
+```text
+use the training system in real practice
+→ observe actual learning friction
+→ select the next Vertical Slice from evidence
+```
+
+rather than expanding Active Recall before sufficient real-world use.
+
+### Result
+
+Meaning → English Active Recall v1 is complete.
+
+Validated environments now include:
+
+- PC
+- iPhone PWA online
+- iPhone PWA airplane mode / offline
+
+The feature adds a new retrieval pathway to EAG while preserving the existing Continuous Phrase Training and Weak Phrase Training behavior.
