@@ -3071,3 +3071,327 @@ Validated environments now include:
 - iPhone PWA airplane mode / offline
 
 The feature adds a new retrieval pathway to EAG while preserving the existing Continuous Phrase Training and Weak Phrase Training behavior.
+
+------------------------------------------------------------------------
+
+## 2026-08-26: Basic Delivery 20-Phrase Learning Validation
+
+### Background
+
+After completing Meaning → English Active Recall v1, EAG still used five
+phrases per training lesson.
+
+The next experiment was intentionally focused on training volume rather
+than adding another player feature.
+
+The learning hypothesis was:
+
+``` text
+5 phrases
+→ easy to become familiar with the sequence
+
+20 phrases
+→ less sequence-based anticipation
+→ more actual phrase retrieval
+```
+
+The larger lesson was also intended to test the current EAG learning
+philosophy:
+
+``` text
+do not perfect a very small set before moving on
+→ expose the learner to more phrases
+→ repeat them across multiple rounds
+→ mark difficult phrases as Weak
+→ gradually improve retrieval
+```
+
+Rather than expanding all six lessons immediately, only `basic-delivery`
+was expanded first.
+
+This preserved a small experimental scope while providing a realistic
+test of longer Continuous Training and Active Recall sessions.
+
+### Phrase Expansion
+
+`basic-delivery` was expanded from:
+
+``` text
+5 phrases
+```
+
+to:
+
+``` text
+20 phrases
+```
+
+The original first five phrases were preserved in their existing order.
+
+This was intentional because Weak Phrase state is currently stored
+using:
+
+``` text
+lesson ID + phrase index
+```
+
+Changing the position of existing phrases could therefore cause
+previously stored Weak state to refer to a different phrase.
+
+Fifteen new phrases were appended instead.
+
+The added phrases focus on general delivery communication such as:
+
+-   announcing arrival
+-   meeting at an entrance
+-   confirming the location
+-   identifying the customer
+-   explaining the number of bags
+-   identifying drinks or hot/cold items
+-   handling items carefully
+-   confirming that all items have been delivered
+-   closing the interaction
+
+Specialized phrases already covered by other lessons were intentionally
+avoided.
+
+These include:
+
+-   cash payment
+-   change handling
+-   order verification
+-   PIN verification
+-   restaurant delay
+
+### Variable Phrase Count Fix
+
+The first 20-phrase build exposed a remaining fixed assumption in
+`src/build-lesson.ts`.
+
+The previous translation validation expected exactly:
+
+``` text
+6 translations
+```
+
+because the original MVP structure assumed:
+
+``` text
+1 scenario translation
++
+5 phrase translations
+=
+6 translations
+```
+
+With 20 phrases, the prepared input correctly contained:
+
+``` text
+1 scenario translation
++
+20 phrase translations
+=
+21 translations
+```
+
+The build therefore initially failed with:
+
+``` text
+Expected exactly 6 translations in input/translations.txt, but received 21.
+```
+
+The validation was changed from a fixed constant to:
+
+``` text
+phrases.length + 1
+```
+
+This allows lesson construction to support variable phrase counts while
+preserving the same validation rule.
+
+Examples:
+
+``` text
+5 phrases  → 6 translations
+20 phrases → 21 translations
+50 phrases → 51 translations
+```
+
+Implementation commit:
+
+``` text
+c04c875 fix: support variable training phrase counts
+```
+
+### Incremental Audio Build Validation
+
+After the phrase-count fix, the training audio pipeline successfully
+rebuilt the expanded lesson.
+
+The build result was:
+
+``` text
+basic-delivery     → built
+cash-payment       → skipped
+change-handling    → skipped
+order-verification → skipped
+pin-verification   → skipped
+restaurant-delay   → skipped
+```
+
+Final result:
+
+``` text
+1 built
+5 skipped
+```
+
+This confirmed that the existing per-lesson source hash behavior
+continues to work with larger lessons.
+
+Only the changed `basic-delivery` lesson required TTS/audio
+regeneration.
+
+The generated metadata contained:
+
+``` text
+20 phrases
+```
+
+and the production Web build completed successfully.
+
+### Learning Validation
+
+The 20-phrase lesson was tested with:
+
+1.  Continuous Training through all 20 phrases
+2.  Active Recall through all 20 phrases
+3.  Active Recall with several new phrases marked Weak
+
+All three behaviors worked correctly.
+
+### Sequence Memory
+
+Compared with the original five-phrase lesson, sequence-based memory was
+noticeably weaker.
+
+With only five phrases, it was easier to predict the next phrase from
+the fixed lesson order.
+
+With 20 phrases, the Japanese meaning cue played a larger role in
+triggering retrieval.
+
+This better supports the intended Active Recall process:
+
+``` text
+meaning
+→ search memory
+→ attempt English
+→ hear answer
+```
+
+Randomized phrase order may eventually provide further benefit by
+reducing sequence prediction.
+
+However, Random Order is not being implemented yet.
+
+It is now recorded as a future Vertical Slice candidate based on actual
+learning use rather than as a speculative feature.
+
+### Five-Second Recall Evaluation
+
+The existing:
+
+``` text
+5-second Recall
+```
+
+remained appropriate with the 20-phrase lesson.
+
+No timing adjustment was required.
+
+### Lesson Length Evaluation
+
+A full 20-phrase round did not feel excessively long.
+
+The Japanese meaning cues helped maintain interest and provided a clear
+retrieval challenge for each phrase.
+
+The lesson length therefore did not cause a noticeable loss of learning
+motivation.
+
+This suggests that lessons longer than 20 phrases may also be practical
+in the future.
+
+No larger lesson is being introduced yet.
+
+### Weak Phrase Evaluation
+
+Weak selection remained natural with the larger lesson.
+
+The larger phrase set made differences between:
+
+``` text
+phrases that are retrieved easily
+```
+
+and:
+
+``` text
+phrases that require more practice
+```
+
+more apparent.
+
+The existing behavior remained useful:
+
+``` text
+Normal → English × 2
+Weak   → English × 3
+```
+
+No additional difficulty level was required.
+
+### Implementation Commit
+
+The 20-phrase training lesson was committed as:
+
+``` text
+1563aae feat: expand basic delivery training to 20 phrases
+```
+
+### Result
+
+The first larger-scale EAG training experiment was successful.
+
+The validated progression is now:
+
+``` text
+5-phrase functional validation
+→ 20-phrase learning validation
+```
+
+The experiment supports the current EAG learning direction:
+
+``` text
+larger phrase exposure
+→ repeated rounds
+→ Active Recall
+→ Weak marking
+→ gradual acquisition
+```
+
+The immediate next step is not to expand every lesson automatically.
+
+The 20-phrase `basic-delivery` lesson should first be used in regular
+learning so that future changes can be selected from actual training
+friction.
+
+A future candidate identified during this validation is:
+
+``` text
+Random Order Training
+```
+
+because reducing fixed sequence prediction may further strengthen
+meaning-to-English retrieval.
