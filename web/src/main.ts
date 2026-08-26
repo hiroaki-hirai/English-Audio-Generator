@@ -145,6 +145,13 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Start Training
       </button>
 
+      <button
+        class="active-recall-button"
+        type="button"
+      >
+        Start Active Recall
+      </button>
+
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
@@ -202,10 +209,14 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   const trainingButton =
     app.querySelector<HTMLButtonElement>('.training-button');
 
+  const activeRecallButton = app.querySelector<HTMLButtonElement>(
+    '.active-recall-button',
+  );
+
   const trainingStatus =
     app.querySelector<HTMLParagraphElement>('.training-status');
 
-  if (!trainingButton || !trainingStatus) {
+  if (!trainingButton || !activeRecallButton || !trainingStatus) {
     throw new Error('Training controls were not found.');
   }
 
@@ -222,6 +233,63 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   function wait(milliseconds: number): Promise<void> {
     return new Promise((resolve) => {
       window.setTimeout(resolve, milliseconds);
+    });
+  }
+
+  let cancelJapaneseCue: (() => void) | null = null;
+
+  function speakJapaneseCue(text: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      utterance.lang = 'ja-JP';
+
+      const cleanup = (): void => {
+        utterance.removeEventListener('end', handleEnd);
+        utterance.removeEventListener('error', handleError);
+
+        if (cancelJapaneseCue === cancel) {
+          cancelJapaneseCue = null;
+        }
+      };
+
+      const finish = (): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        resolve();
+      };
+
+      const cancel = (): void => {
+        window.speechSynthesis.cancel();
+        finish();
+      };
+
+      const handleEnd = (): void => {
+        finish();
+      };
+
+      const handleError = (event: SpeechSynthesisErrorEvent): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        reject(new Error(`Japanese cue playback failed: ${event.error}`));
+      };
+
+      cancelJapaneseCue = cancel;
+
+      utterance.addEventListener('end', handleEnd);
+      utterance.addEventListener('error', handleError);
+
+      window.speechSynthesis.speak(utterance);
     });
   }
 
@@ -312,6 +380,97 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     });
   }
 
+  async function runActiveRecall(): Promise<void> {
+    await waitForAudioMetadata();
+
+    trainingActive = true;
+    trainingRunId += 1;
+
+    const runId = trainingRunId;
+    const segments = getPhraseSegments();
+
+    loopBeforeTraining = audio.loop;
+    audio.loop = false;
+
+    trainingButton.disabled = true;
+    activeRecallButton.textContent = 'Stop Active Recall';
+
+    try {
+      for (const [index, segment] of segments.entries()) {
+        if (!trainingActive || trainingRunId !== runId) {
+          break;
+        }
+
+        const phrase = selectedLesson.phrases[index];
+
+        if (!phrase) {
+          continue;
+        }
+
+        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Meaning`;
+
+        await speakJapaneseCue(phrase.ja);
+
+        if (!trainingActive || trainingRunId !== runId) {
+          break;
+        }
+
+        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Recall`;
+
+        await wait(recallMilliseconds);
+
+        if (!trainingActive || trainingRunId !== runId) {
+          break;
+        }
+
+        const weakPhraseKey = getWeakPhraseKey(selectedLesson.id, index);
+
+        const repetitions = weakPhrases.has(weakPhraseKey) ? 3 : 2;
+
+        for (let repetition = 0; repetition < repetitions; repetition += 1) {
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
+
+          const phase =
+            repetition === 0
+              ? 'Answer'
+              : repetition === 1
+                ? 'Repeat'
+                : 'Weak Repeat';
+
+          trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — ${phase}`;
+
+          await playSegment(segment, runId);
+
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
+
+          if (repetition < repetitions - 1) {
+            await wait(repeatGapMilliseconds);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Active Recall playback failed:', error);
+    } finally {
+      if (trainingRunId === runId) {
+        trainingActive = false;
+
+        cancelJapaneseCue?.();
+        cancelJapaneseCue = null;
+
+        audio.pause();
+        audio.loop = loopBeforeTraining;
+
+        trainingButton.disabled = false;
+        activeRecallButton.textContent = 'Start Active Recall';
+        trainingStatus.textContent = 'Training stopped';
+      }
+    }
+  }
+
   async function runTraining(): Promise<void> {
     await waitForAudioMetadata();
 
@@ -324,6 +483,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     loopBeforeTraining = audio.loop;
     audio.loop = false;
     trainingButton.textContent = 'Stop Training';
+    activeRecallButton.disabled = true;
 
     try {
       for (const [index, segment] of segments.entries()) {
@@ -376,6 +536,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         audio.pause();
         audio.loop = loopBeforeTraining;
         trainingButton.textContent = 'Start Training';
+        activeRecallButton.disabled = false;
         trainingStatus.textContent = 'Training stopped';
       }
     }
@@ -388,13 +549,31 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     cancelActiveSegment?.();
     cancelActiveSegment = null;
 
+    cancelJapaneseCue?.();
+    cancelJapaneseCue = null;
+
     audio.pause();
     audio.loop = loopBeforeTraining;
+
+    trainingButton.disabled = false;
     trainingButton.textContent = 'Start Training';
+
+    activeRecallButton.disabled = false;
+    activeRecallButton.textContent = 'Start Active Recall';
+
     trainingStatus.textContent = 'Training stopped';
   }
 
   stopCurrentTraining = stopTraining;
+
+  activeRecallButton.addEventListener('click', () => {
+    if (trainingActive) {
+      stopTraining();
+      return;
+    }
+
+    void runActiveRecall();
+  });
 
   trainingButton.addEventListener('click', () => {
     if (trainingActive) {
