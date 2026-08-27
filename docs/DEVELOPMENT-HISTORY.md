@@ -3395,3 +3395,362 @@ Random Order Training
 
 because reducing fixed sequence prediction may further strengthen
 meaning-to-English retrieval.
+
+## 2026-08-28: iOS Background Continuous Training Investigation
+
+### Background
+
+Continuous Training worked correctly while the installed iPhone PWA
+remained in the foreground.
+
+However, when the user switched from EAG to the Uber Eats delivery
+application, playback stopped.
+
+This prevented the intended operational flow:
+
+``` text
+start Continuous Training
+→ switch to the delivery application
+→ continue training while riding or delivering
+```
+
+Although Continuous Training used a single `lesson.mp3`, its playback
+was not actually uninterrupted.
+
+For every phrase, JavaScript performed operations equivalent to:
+
+``` text
+seek to phrase start
+→ audio.play()
+→ monitor timeupdate
+→ audio.pause()
+→ wait using a Promise/timer
+→ seek to the next playback position
+→ audio.play()
+```
+
+Phrase progression therefore depended on foreground JavaScript
+execution.
+
+The initial hypothesis was:
+
+``` text
+iOS suspends or throttles the standalone PWA JavaScript
+→ the next play() call is not executed
+→ playback stops at a phrase boundary
+```
+
+### Single-Resource Continuous Training
+
+The smallest architecture change was to generate a dedicated
+Continuous Training audio resource for each lesson.
+
+For Normal phrases, the generated resource contains:
+
+``` text
+phrase 1
+1-second silence
+phrase 1
+5-second silence
+
+phrase 2
+1-second silence
+phrase 2
+5-second silence
+
+...
+```
+
+Once playback begins, phrase progression no longer requires JavaScript
+to stop, seek, wait, or restart the media element at every phrase
+boundary.
+
+The implementation added one `continuous-training.mp3` for each of the
+six lessons:
+
+``` text
+basic-delivery
+cash-payment
+change-handling
+order-verification
+pin-verification
+restaurant-delay
+```
+
+FFmpeg constructs each track using a filter graph and generated silence
+sources.
+
+No permanent standalone one-second or five-second silence assets are
+required for the Continuous Training tracks.
+
+The centralized audio settings are:
+
+``` text
+Normal repetitions    → 2
+repetition interval   → 1 second
+Recall interval       → 5 seconds
+sample rate           → 24 kHz
+codec                 → libmp3lame
+loudness I            → -16
+loudness LRA          → 7
+true peak              → -1.5
+```
+
+The Continuous Training source hash includes the ordered training
+script and the audio build settings that affect the resulting track.
+
+This provides deterministic incremental generation.
+
+After the initial build, a subsequent training-audio build reported:
+
+``` text
+0 built
+6 skipped
+```
+
+All six lessons were correctly recognized as unchanged.
+
+### PWA Cache and Range Requests
+
+The generated Continuous Training assets were added to the generated
+offline asset list.
+
+The Service Worker cache was advanced to:
+
+``` text
+eag-training-v8
+```
+
+The new MP3 resources use the same cached Range Request handling as the
+existing lesson audio.
+
+This preserves offline and airplane-mode availability while allowing a
+changed Continuous Training resource to replace an older cached version.
+
+### Media Session Integration
+
+Minimal feature-detected Media Session support was added for:
+
+-   lesson title and scenario metadata
+-   play handling
+-   pause handling
+-   playing and paused state
+
+Media Session was treated as an operating-system integration mechanism,
+not as a guarantee of background playback.
+
+### Existing Behavior Preservation
+
+Normal Continuous Training uses the uninterrupted audio resource when
+the selected lesson contains no phrases marked Weak.
+
+Weak Phrase Training intentionally retains the existing segment-driven
+playback path so its dynamic three-repetition behavior is unchanged.
+
+Meaning → English Active Recall also retains its existing JavaScript and
+speech-synthesis sequence.
+
+Normal phrase-tap playback continues to use `lesson.mp3` with:
+
+``` text
+seekLeadSeconds = 0.5
+```
+
+This kept the vertical slice limited to Normal Continuous Training.
+
+### Automated Validation
+
+The implementation passed:
+
+``` text
+npm test
+npx tsc --noEmit
+npm run build:training-audio
+npm run web:build
+git diff --check
+```
+
+The automated test result was:
+
+``` text
+3 tests passed
+```
+
+All six stored Continuous Training source hashes matched their
+recalculated SHA-256 values.
+
+Generated track durations included:
+
+``` text
+basic-delivery           → approximately 205.92 seconds
+five-phrase lesson tracks → approximately 49.15–54.00 seconds
+```
+
+The implementation was committed as:
+
+``` text
+a3067c2 feat: support iOS background continuous training
+```
+
+### Installed Standalone PWA Validation
+
+The deployed implementation was tested on the physical iPhone using the
+installed standalone EAG PWA.
+
+The test was:
+
+``` text
+start Normal Continuous Training
+→ confirm continuous-training.mp3 is playing
+→ switch to the delivery application
+→ leave EAG in the background
+```
+
+The result was:
+
+``` text
+audio stops
+```
+
+This occurred even though playback was now one uninterrupted media
+resource and no JavaScript phrase transition was required.
+
+The original scheduling hypothesis was therefore disproved as the
+primary explanation for the standalone PWA behavior.
+
+### Safari Comparison Validation
+
+The exact same deployed EAG was then tested directly in Safari.
+
+The comparison test was:
+
+``` text
+Safari
+→ start Continuous Training
+→ switch to the delivery application
+→ leave Safari in the background
+```
+
+The result was:
+
+``` text
+audio continues playing
+```
+
+The observed environment matrix was:
+
+``` text
+Safari background playback         → continues
+standalone PWA background playback  → stops
+Media Session metadata and controls → visible
+```
+
+Media Session controls being visible did not cause the standalone PWA
+audio to continue.
+
+This confirms that Media Session API presence does not guarantee
+background media playback.
+
+### Revised Diagnosis
+
+The investigation changed the diagnosis from:
+
+``` text
+foreground JavaScript scheduling is the primary cause
+```
+
+to:
+
+``` text
+the tested iOS standalone PWA environment stops background media
+even when EAG plays one uninterrupted HTML media resource
+```
+
+The strongest conclusion supported by the real-device comparison is
+that the remaining limitation is associated with the tested iOS
+standalone PWA / WebKit background-media behavior rather than EAG phrase
+transition JavaScript.
+
+This is an observed platform limitation under the tested configuration.
+It is not a claim that every iOS version or standalone PWA can never
+support background audio.
+
+### Operational Decision
+
+The accepted operational workaround is:
+
+``` text
+lesson preparation / phrase selection / Weak settings
+→ PWA or Safari
+
+delivery / riding Continuous Training
+→ Safari
+
+switch to Uber Eats / delivery application
+→ Safari audio continues in the background
+```
+
+When background Continuous Training is required during delivery or
+riding, EAG will be used directly in Safari.
+
+The installed PWA remains available for the other EAG workflows.
+
+No further standalone PWA background-audio work will be pursued in this
+vertical slice.
+
+### Why the Implementation Is Retained
+
+Commit `a3067c2` is intentionally retained.
+
+The implementation remains useful because it:
+
+-   removes phrase-boundary JavaScript playback dependencies
+-   works with Safari background playback
+-   is better suited to background-friendly playback environments
+-   reduces runtime scheduling complexity for Normal training
+-   provides a useful base for possible Random Continuous Training
+-   documents and preserves a validated architectural improvement
+
+The implementation should therefore not be interpreted as abandoned or
+failed code merely because it did not bypass the tested standalone PWA
+limitation.
+
+### Deferred Work
+
+The following remain possible future vertical slices:
+
+-   Weak Phrase continuous-track/background architecture
+-   Active Recall background architecture
+-   Random Continuous Training
+-   dynamic Weak/Normal session composition
+-   playback speed controls
+-   richer lock-screen controls
+-   native-wrapper or native-application investigation if standalone
+    PWA background playback later becomes sufficiently important
+
+None of these are being implemented as part of the current slice.
+
+### Result
+
+The investigation was successful even though the standalone PWA did not
+continue playing in the background.
+
+The completed progression was:
+
+``` text
+problem observed
+→ JavaScript scheduling hypothesis
+→ single-resource Continuous Training implementation
+→ automated validation
+→ standalone PWA test still stops
+→ Safari comparison continues
+→ Media Session presence does not change the result
+→ platform-specific behavior isolated
+→ Safari adopted for delivery and riding
+→ implementation retained
+→ vertical slice closed
+```
+
+The project now has a verified environment that supports the real
+delivery use case and a clearer boundary between EAG architecture and
+the tested standalone PWA platform behavior.
