@@ -1,6 +1,6 @@
 importScripts('./training-audio-assets.js');
 
-const CACHE_NAME = 'eag-training-v7';
+const CACHE_NAME = 'eag-training-v8';
 
 const scopeUrl = self.registration.scope;
 
@@ -101,7 +101,8 @@ self.addEventListener('fetch', (event) => {
 
       const isLessonAudio =
         requestUrl.pathname.includes('/lessons/') &&
-        requestUrl.pathname.endsWith('/lesson.mp3');
+        (requestUrl.pathname.endsWith('/lesson.mp3') ||
+          requestUrl.pathname.endsWith('/continuous-training.mp3'));
 
       const isLessonMetadata =
         requestUrl.pathname.includes('/lessons/') &&

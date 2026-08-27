@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --import tsx --test src/*.test.ts",
     "generate:phrases": "tsx src/generate-phrases.ts",
     "prepare:script": "tsx src/prepare-script.ts",
     "generate:speech": "tsx src/generate-speech.ts",

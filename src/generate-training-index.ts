@@ -50,6 +50,7 @@ async function main(): Promise<void> {
 
   const trainingAssets = lessons.flatMap((lesson) => [
     `lessons/${lesson.id}/lesson.mp3`,
+    `lessons/${lesson.id}/continuous-training.mp3`,
     `lessons/${lesson.id}/metadata.json`,
   ]);
 

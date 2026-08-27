@@ -224,11 +224,57 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   const trainingSeekLeadSeconds = 0.5;
   const recallMilliseconds = 5000;
   const originalSilenceSeconds = 5;
+  const lessonAudioUrl =
+    `${import.meta.env.BASE_URL}lessons/${selectedLesson.id}/lesson.mp3`;
+  const continuousTrainingAudioUrl =
+    `${import.meta.env.BASE_URL}lessons/${selectedLesson.id}/continuous-training.mp3`;
 
   let trainingActive = false;
   let trainingRunId = 0;
   let cancelActiveSegment: (() => void) | null = null;
   let loopBeforeTraining = audio.loop;
+
+  function setMediaSessionPlaybackState(
+    state: MediaSessionPlaybackState,
+  ): void {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = state;
+    }
+  }
+
+  function restoreLessonAudio(): void {
+    if (!audio.src.endsWith('/continuous-training.mp3')) {
+      return;
+    }
+
+    audio.src = lessonAudioUrl;
+    audio.load();
+  }
+
+  if ('mediaSession' in navigator) {
+    if ('MediaMetadata' in window) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Continuous Training',
+        artist: 'English Audio Generator',
+        album: selectedLesson.scenario,
+      });
+    }
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      void audio.play();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      audio.pause();
+    });
+  }
+
+  audio.addEventListener('play', () => setMediaSessionPlaybackState('playing'));
+  audio.addEventListener('pause', () => setMediaSessionPlaybackState('paused'));
+  audio.addEventListener('ended', () => {
+    if (trainingActive && audio.src.endsWith('/continuous-training.mp3')) {
+      stopTraining();
+    }
+  });
 
   function wait(milliseconds: number): Promise<void> {
     return new Promise((resolve) => {
@@ -472,6 +518,30 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   }
 
   async function runTraining(): Promise<void> {
+    const hasWeakPhrases = selectedLesson.phrases.some((_, index) =>
+      weakPhrases.has(getWeakPhraseKey(selectedLesson.id, index)),
+    );
+
+    if (!hasWeakPhrases) {
+      trainingActive = true;
+      trainingRunId += 1;
+      loopBeforeTraining = audio.loop;
+      audio.loop = false;
+      audio.src = continuousTrainingAudioUrl;
+      trainingButton.textContent = 'Stop Training';
+      activeRecallButton.disabled = true;
+      trainingStatus.textContent = 'Continuous Training playing';
+
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error('Continuous Training playback failed:', error);
+        stopTraining();
+      }
+
+      return;
+    }
+
     await waitForAudioMetadata();
 
     trainingActive = true;
@@ -554,6 +624,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
     audio.pause();
     audio.loop = loopBeforeTraining;
+    restoreLessonAudio();
 
     trainingButton.disabled = false;
     trainingButton.textContent = 'Start Training';
@@ -592,6 +663,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       if (trainingActive) {
         stopTraining();
       }
+
+      restoreLessonAudio();
+      await waitForAudioMetadata();
 
       const phraseIndex = Number(button.dataset.phraseIndex);
       const phraseMetadata = metadata.phrases.find(

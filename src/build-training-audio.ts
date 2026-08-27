@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   copyFile,
@@ -7,8 +6,7 @@ import {
   readFile,
   writeFile,
 } from 'node:fs/promises';
-
-const audioBuildVersion = '2';
+import { calculateTrainingAudioSourceHash } from './continuous-training.js';
 
 async function loadLessonIds(): Promise<string[]> {
   const fileNames = (await readdir('training-scripts'))
@@ -26,11 +24,7 @@ async function calculateSourceHash(lessonId: string): Promise<string> {
   const sourcePath = `training-scripts/${lessonId}.json`;
   const content = await readFile(sourcePath);
 
-  return createHash('sha256')
-    .update(audioBuildVersion)
-    .update('\n')
-    .update(content)
-    .digest('hex');
+  return calculateTrainingAudioSourceHash(content);
 }
 
 async function readStoredHash(hashPath: string): Promise<string | null> {
@@ -87,6 +81,8 @@ async function main(): Promise<void> {
     for (const [index, lessonId] of lessonIds.entries()) {
       const destinationDirectory = `web/public/lessons/${lessonId}`;
       const destinationPath = `${destinationDirectory}/lesson.mp3`;
+      const continuousTrainingDestinationPath =
+        `${destinationDirectory}/continuous-training.mp3`;
       const hashPath = `${destinationDirectory}/source-hash.txt`;
 
       const sourceHash = await calculateSourceHash(lessonId);
@@ -113,12 +109,19 @@ async function main(): Promise<void> {
       const metadataDestinationPath = `${destinationDirectory}/metadata.json`;
 
       await copyFile('output/lesson.mp3', destinationPath);
+      await copyFile(
+        'output/continuous-training.mp3',
+        continuousTrainingDestinationPath,
+      );
       await copyFile('output/lesson-metadata.json', metadataDestinationPath);
       await writeFile(hashPath, `${sourceHash}\n`, 'utf8');
 
       builtCount += 1;
 
       console.log(`Copied lesson audio to ${destinationPath}`);
+      console.log(
+        `Copied Continuous Training audio to ${continuousTrainingDestinationPath}`,
+      );
       console.log(`Copied lesson metadata to ${metadataDestinationPath}`);
       console.log(`Updated source hash at ${hashPath}`);
     }

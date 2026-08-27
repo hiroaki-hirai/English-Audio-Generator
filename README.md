@@ -229,6 +229,29 @@ output/
 
 `.env.example` is explicitly allowed so that a safe configuration example can be committed.
 
+## iPhone Background Continuous Training
+
+The web app generates a separate `continuous-training.mp3` for each lesson.
+For lessons without phrases marked Weak, the Start Training button plays this
+single uninterrupted media resource with the following sequence:
+
+```text
+phrase
+1-second pause
+same phrase
+5-second recall pause
+```
+
+This minimizes foreground JavaScript scheduling so iOS can keep the media
+session playing when the installed PWA is in the background. Weak Phrase
+Training and Meaning → English Active Recall retain their existing scheduled
+playback paths and are not covered by background playback yet.
+
+Run `npm run build:training` after changing a training script or an audio build
+parameter. The source hash includes the ordered script content and all
+Continuous Training timing, sample-rate, codec, and normalization settings.
+The generated track is included in the PWA's offline precache.
+
 ## Development Status
 
 Current status:

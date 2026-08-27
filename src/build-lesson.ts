@@ -7,6 +7,7 @@
   writeFile,
 } from 'node:fs/promises';
 import { spawn, spawnSync } from 'node:child_process';
+import { continuousTrainingConfig } from './continuous-training.js';
 
 const silenceSeconds = 5;
 const inputPath = 'input/phrases.txt';
@@ -20,6 +21,7 @@ const scenarioPath = 'input/scenario.txt';
 const translationPath = 'input/translations.txt';
 const lessonJapaneseTextPath = `${outputDirectory}/lesson-ja.txt`;
 const lessonMetadataPath = `${outputDirectory}/lesson-metadata.json`;
+const continuousTrainingPath = `${outputDirectory}/continuous-training.mp3`;
 
 function runFfmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -271,6 +273,69 @@ async function main(): Promise<void> {
   ]);
 
   console.log(`Created ${lessonPath}`);
+
+  console.log('Building uninterrupted Continuous Training audio...');
+
+  const continuousInputs = phrasePaths.flatMap((phrasePath) => [
+    '-i',
+    phrasePath,
+  ]);
+  const filterSegments: string[] = [];
+  const concatLabels: string[] = [];
+
+  phrasePaths.forEach((_, phraseIndex) => {
+    const repeatLabels = Array.from(
+      { length: continuousTrainingConfig.repeatCount },
+      (_, repetition) => `[phrase${phraseIndex}repeat${repetition}]`,
+    );
+
+    filterSegments.push(
+      `[${phraseIndex}:a]asplit=${continuousTrainingConfig.repeatCount}` +
+        repeatLabels.join(''),
+    );
+
+    for (
+      let repetition = 0;
+      repetition < continuousTrainingConfig.repeatCount;
+      repetition += 1
+    ) {
+      const audioLabel = `phrase${phraseIndex}repeat${repetition}`;
+      concatLabels.push(`[${audioLabel}]`);
+
+      const silenceDuration =
+        repetition < continuousTrainingConfig.repeatCount - 1
+          ? continuousTrainingConfig.repetitionIntervalSeconds
+          : continuousTrainingConfig.recallIntervalSeconds;
+      const silenceLabel = `silence${phraseIndex}repeat${repetition}`;
+      filterSegments.push(
+        `anullsrc=r=${continuousTrainingConfig.sampleRate}:cl=mono:d=${silenceDuration}[${silenceLabel}]`,
+      );
+      concatLabels.push(`[${silenceLabel}]`);
+    }
+  });
+
+  filterSegments.push(
+    `${concatLabels.join('')}concat=n=${concatLabels.length}:v=0:a=1,` +
+      `loudnorm=I=${continuousTrainingConfig.loudnessNormalization.integratedLoudness}:` +
+      `LRA=${continuousTrainingConfig.loudnessNormalization.loudnessRange}:` +
+      `TP=${continuousTrainingConfig.loudnessNormalization.truePeak}[training]`,
+  );
+
+  await runFfmpeg([
+    '-y',
+    ...continuousInputs,
+    '-filter_complex',
+    filterSegments.join(';'),
+    '-map',
+    '[training]',
+    '-ar',
+    String(continuousTrainingConfig.sampleRate),
+    '-c:a',
+    continuousTrainingConfig.codec,
+    continuousTrainingPath,
+  ]);
+
+  console.log(`Created ${continuousTrainingPath}`);
 
   await mkdir(lessonArchivePath, { recursive: true });
 
