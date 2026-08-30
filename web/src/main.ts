@@ -1,5 +1,6 @@
 import './style.css';
 
+import { createActiveRecallQueue } from './active-recall.js';
 import lessonsData from './training-lessons.json';
 
 type TrainingPhrase = {
@@ -31,6 +32,13 @@ type PhraseSegment = {
 const lessons = lessonsData as TrainingScript[];
 
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
+const selectedLessonStorageKey = 'eag.selectedLesson.v1';
+
+function loadSelectedLesson(): TrainingScript | undefined {
+  const selectedLessonId = localStorage.getItem(selectedLessonStorageKey);
+
+  return lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
+}
 
 function getWeakPhraseKey(lessonId: string, phraseIndex: number): string {
   return `${lessonId}:${phraseIndex}`;
@@ -195,6 +203,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
       if (lesson) {
         stopCurrentTraining?.();
+        localStorage.setItem(selectedLessonStorageKey, lesson.id);
         void renderLesson(lesson);
       }
     });
@@ -232,6 +241,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   let trainingActive = false;
   let trainingRunId = 0;
   let cancelActiveSegment: (() => void) | null = null;
+  let cancelPendingWait: (() => void) | null = null;
   let loopBeforeTraining = audio.loop;
 
   function setMediaSessionPlaybackState(
@@ -243,7 +253,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   }
 
   function restoreLessonAudio(): void {
-    if (!audio.src.endsWith('/continuous-training.mp3')) {
+    if (audio.src === new URL(lessonAudioUrl, window.location.href).href) {
       return;
     }
 
@@ -278,7 +288,25 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
   function wait(milliseconds: number): Promise<void> {
     return new Promise((resolve) => {
-      window.setTimeout(resolve, milliseconds);
+      let settled = false;
+
+      const finish = (): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        window.clearTimeout(timeoutId);
+
+        if (cancelPendingWait === finish) {
+          cancelPendingWait = null;
+        }
+
+        resolve();
+      };
+
+      const timeoutId = window.setTimeout(finish, milliseconds);
+      cancelPendingWait = finish;
     });
   }
 
@@ -351,9 +379,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     });
   }
 
-  function getPhraseSegments(): PhraseSegment[] {
-    return metadata.phrases.map((phrase, index) => {
-      const nextPhrase = metadata.phrases[index + 1];
+  function getPhraseSegments(lessonMetadata: LessonMetadata): PhraseSegment[] {
+    return lessonMetadata.phrases.map((phrase, index) => {
+      const nextPhrase = lessonMetadata.phrases[index + 1];
 
       const blockEnd = nextPhrase?.start ?? audio.duration;
 
@@ -369,6 +397,32 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         end: phrase.start + phraseDuration,
       };
     });
+  }
+
+  async function loadLessonMetadata(
+    lessonId: string,
+  ): Promise<LessonMetadata> {
+    const response = await fetch(
+      `${import.meta.env.BASE_URL}lessons/${lessonId}/metadata.json`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to load metadata for ${lessonId}.`);
+    }
+
+    return (await response.json()) as LessonMetadata;
+  }
+
+  async function useLessonAudio(lessonId: string): Promise<void> {
+    const audioUrl = `${import.meta.env.BASE_URL}lessons/${lessonId}/lesson.mp3`;
+    const absoluteAudioUrl = new URL(audioUrl, window.location.href).href;
+
+    if (audio.src !== absoluteAudioUrl) {
+      audio.src = audioUrl;
+      audio.load();
+    }
+
+    await waitForAudioMetadata();
   }
 
   function playSegment(segment: PhraseSegment, runId: number): Promise<void> {
@@ -427,13 +481,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   }
 
   async function runActiveRecall(): Promise<void> {
-    await waitForAudioMetadata();
-
     trainingActive = true;
     trainingRunId += 1;
 
     const runId = trainingRunId;
-    const segments = getPhraseSegments();
+    const queue = createActiveRecallQueue(lessons);
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -442,26 +494,48 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     activeRecallButton.textContent = 'Stop Active Recall';
 
     try {
-      for (const [index, segment] of segments.entries()) {
+      const metadataEntries = await Promise.all(
+        lessons.map(async (lesson) => [
+          lesson.id,
+          await loadLessonMetadata(lesson.id),
+        ] as const),
+      );
+      const metadataByLessonId = new Map(metadataEntries);
+
+      for (const [queueIndex, entry] of queue.entries()) {
         if (!trainingActive || trainingRunId !== runId) {
           break;
         }
 
-        const phrase = selectedLesson.phrases[index];
+        const entryMetadata = metadataByLessonId.get(entry.lessonId);
 
-        if (!phrase) {
-          continue;
+        if (!entryMetadata) {
+          throw new Error(`Metadata was not loaded for ${entry.lessonId}.`);
         }
 
-        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Meaning`;
-
-        await speakJapaneseCue(phrase.ja);
+        await useLessonAudio(entry.lessonId);
 
         if (!trainingActive || trainingRunId !== runId) {
           break;
         }
 
-        trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — Recall`;
+        const segment = getPhraseSegments(entryMetadata)[entry.phraseIndex];
+
+        if (!segment) {
+          throw new Error(
+            `Phrase segment was not found for ${entry.lessonId}:${entry.phraseIndex}.`,
+          );
+        }
+
+        trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
+
+        await speakJapaneseCue(entry.ja);
+
+        if (!trainingActive || trainingRunId !== runId) {
+          break;
+        }
+
+        trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
 
         await wait(recallMilliseconds);
 
@@ -469,7 +543,10 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           break;
         }
 
-        const weakPhraseKey = getWeakPhraseKey(selectedLesson.id, index);
+        const weakPhraseKey = getWeakPhraseKey(
+          entry.lessonId,
+          entry.phraseIndex,
+        );
 
         const repetitions = weakPhrases.has(weakPhraseKey) ? 3 : 2;
 
@@ -485,7 +562,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
                 ? 'Repeat'
                 : 'Weak Repeat';
 
-          trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — ${phase}`;
+          trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
 
           await playSegment(segment, runId);
 
@@ -509,6 +586,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
         audio.pause();
         audio.loop = loopBeforeTraining;
+        restoreLessonAudio();
 
         trainingButton.disabled = false;
         activeRecallButton.textContent = 'Start Active Recall';
@@ -548,7 +626,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     trainingRunId += 1;
 
     const runId = trainingRunId;
-    const segments = getPhraseSegments();
+    const segments = getPhraseSegments(metadata);
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -621,6 +699,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
     cancelJapaneseCue?.();
     cancelJapaneseCue = null;
+
+    cancelPendingWait?.();
+    cancelPendingWait = null;
 
     audio.pause();
     audio.loop = loopBeforeTraining;
@@ -719,8 +800,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   });
 }
 
-const initialLesson =
-  lessons.find((lesson) => lesson.id === 'cash-payment') ?? lessons[0];
+const initialLesson = loadSelectedLesson();
 
 if (!initialLesson) {
   throw new Error('No training lessons were found.');
