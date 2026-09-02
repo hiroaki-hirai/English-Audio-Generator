@@ -4108,3 +4108,410 @@ single-lesson Active Recall
 → Safari background operation during delivery
 → one start action is sufficient for the full current training set
 ```
+
+------------------------------------------------------------------------
+
+## 2026-09-02: Active Recall Session Resume and iPhone Safari Validation
+
+### Background
+
+Ride Active Recall Shuffle made it possible to start one randomized
+45-phrase session before riding and continue across all six lessons.
+
+However, an interrupted session still lost its position. Starting Active
+Recall again created a new shuffle and returned the learner to the start of
+a different session.
+
+The next vertical slice focused on one recovery behavior:
+
+``` text
+Active Recall stops partway through
+→ preserve the shuffled session and current phrase
+→ start Active Recall again
+→ restart the same phrase from its Japanese cue
+```
+
+The feature does not attempt automatic OS-level playback recovery or exact
+audio-position restoration. Its purpose is to preserve the learning session
+when playback is interrupted.
+
+### Persistent Active Recall Session
+
+An unfinished session is stored using the versioned key:
+
+``` text
+eag.activeRecallSession.v1
+```
+
+The persisted state contains only:
+
+-   schema version
+-   shuffled queue identities
+    -   lesson ID
+    -   phrase index
+-   current queue index
+-   training-library signature
+
+English and Japanese text are resolved from the current library rather than
+being duplicated in storage.
+
+Micro playback state is intentionally not persisted. This includes:
+
+-   Japanese cue position
+-   remaining Recall time
+-   current English repetition
+-   audio current time
+-   current media URL
+
+The session therefore remains small and has a clear recovery boundary at the
+phrase level.
+
+### Current-Phrase Restart Semantics
+
+Before each Japanese cue begins, Active Recall saves that phrase's queue
+index as `currentIndex`.
+
+If playback stops during any of the following stages:
+
+-   Japanese cue
+-   five-second Recall
+-   first English playback
+-   second English playback
+-   Weak third English playback
+
+the next Active Recall start restores the same queue and restarts the same
+phrase from its Japanese cue.
+
+This deliberately favors repeating one phrase over accidentally skipping
+one. Playback phase and partial progress within the phrase are not restored.
+
+Resume does not reshuffle the saved queue. The original session order and
+its one-pass properties are retained:
+
+``` text
+no missing phrase
+no duplicate queue entry
+every phrase exactly once in the saved queue
+```
+
+Stop, normal phrase tap, and lesson switching still cancel the current
+runtime completely, including stale asynchronous continuation. They retain
+the unfinished persisted session so that the next Active Recall start can
+resume it.
+
+Only normal completion of the final queued phrase removes the saved session.
+The following start then creates a fresh Fisher-Yates shuffle beginning at
+index zero.
+
+### Training-Library Compatibility
+
+Persisted sessions must not be restored against a different training
+library.
+
+A deterministic signature is derived from the canonical ordered list of:
+
+-   lesson ID
+-   phrase index
+-   English text
+
+The source is shortened using FNV-1a 32-bit and the phrase count is included
+in the resulting signature.
+
+A saved session is rejected when validation detects:
+
+-   malformed JSON
+-   unsupported version or schema
+-   signature mismatch
+-   invalid current index
+-   unknown lesson ID
+-   invalid phrase index
+-   duplicate queue identity
+-   missing queue identity
+
+Invalid or stale state does not prevent training. Active Recall discards it
+and creates a fresh in-memory shuffled session.
+
+This provides a compatibility boundary for future training-library changes,
+including the planned expansion beyond the current 45 phrases.
+
+### Storage Failure Isolation
+
+During iPhone investigation, persistent session storage was isolated behind
+a safe session store.
+
+The store protects access to:
+
+-   the browser storage object itself
+-   `getItem`
+-   `setItem`
+-   `removeItem`
+
+If any operation throws, persistence is disabled for the remainder of that
+page lifetime. Active Recall continues with a fresh in-memory queue.
+
+The resulting failure boundary is:
+
+``` text
+storage unavailable
+→ session resume unavailable for this page
+→ Active Recall playback remains available
+```
+
+A storage failure is therefore not treated as an Active Recall playback
+failure.
+
+### Automated Validation
+
+The final implementation passed:
+
+``` text
+npm test              → 19 / 19 passed
+npx tsc --noEmit      → passed
+npm run web:build     → passed
+git diff --check      → passed
+```
+
+The focused test coverage includes:
+
+-   fresh sessions start at index zero
+-   all phrases are present exactly once
+-   resume preserves the saved queue order
+-   the current phrase is restarted rather than skipped
+-   malformed JSON falls back safely
+-   incorrect schema or version falls back safely
+-   library-signature mismatch rejects stale state
+-   unknown lessons and invalid phrase indexes are rejected
+-   duplicate and missing identities are rejected
+-   shuffle does not mutate its input
+-   the real six-lesson, 45-phrase library resumes correctly
+-   browser storage object access failures are isolated
+-   `getItem`, `setItem`, and `removeItem` failures are isolated
+
+### iPhone Safari Regression
+
+After Session Resume was introduced, Active Recall continued to work in the
+PC browser but stopped starting on the tested iPhone Safari environment.
+
+Pressing Start produced no Japanese cue, English audio, or visible playback
+progress.
+
+Because the same iPhone had successfully run Ride Active Recall Shuffle
+before the Resume change, the new persistence path was investigated first.
+Storage failure handling was strengthened, but the real-device symptom
+remained.
+
+Temporary on-screen diagnostics were then added so the iPhone could report
+the actual start-path stage without depending on a remote console.
+
+The first diagnostic build confirmed:
+
+``` text
+latest diagnostic build loaded
+→ saved session restored
+→ storage read and write succeeded
+→ lesson metadata became ready
+→ lesson audio source switched
+→ loadedmetadata fired
+→ SpeechSynthesisUtterance was created
+→ speechSynthesis.speak() was called and returned
+```
+
+However, after `speak()` returned:
+
+-   the utterance `start` event did not occur
+-   the utterance `end` event did not occur
+-   the utterance `error` event did not occur
+
+The visible build marker also confirmed that the latest JavaScript bundle
+was executing. The observed failure was therefore not explained by an old
+Service Worker-controlled application shell or stale deployed bundle.
+
+This is recorded as an observation from the tested device and deployment,
+not as a general claim about all Safari or WebKit environments.
+
+### Playback Ordering Investigation
+
+The start path was compared with the previously validated implementation in
+commit `58de11e`.
+
+That implementation used the following order:
+
+``` text
+button click
+→ create shuffled queue
+→ await lesson metadata
+→ switch English audio source
+→ audio.load()
+→ await loadedmetadata
+→ speechSynthesis.speak()
+```
+
+Session Resume added synchronous session loading, validation, and saving.
+It did not add a new `await` boundary before the first Japanese cue.
+
+Nevertheless, the English media did not need to be prepared before the
+Japanese cue. Active Recall semantics already require Japanese speech first
+and English playback only after Recall.
+
+The execution order was therefore changed to:
+
+``` text
+restore session and resolve queue entry
+→ save current phrase index
+→ start Japanese cue
+→ start Recall
+→ prepare lesson metadata and English audio during Recall
+→ wait for both:
+   - minimum five-second Recall
+   - English media preparation completion
+→ play English answer
+```
+
+This places the first Japanese cue before unnecessary English media
+preparation while using the five-second Recall interval to prepare the
+correct cross-lesson audio.
+
+Recall never becomes shorter than five seconds. If media preparation takes
+longer, English playback waits for it and the Recall interval is extended by
+the necessary amount.
+
+No silent-audio unlock, dummy playback, `speechSynthesis.resume()` workaround,
+or automatic interruption workaround was added.
+
+### Second iPhone Diagnostic Validation
+
+The cue-first ordering was deployed with a second temporary diagnostic
+build.
+
+The tested iPhone Safari then reported the complete sequence:
+
+``` text
+speechSynthesis.speak returned
+→ Japanese cue onstart
+→ Japanese cue ended
+→ Recall started
+→ English audio preparation started
+→ audio loadedmetadata ready
+→ Recall ended
+→ English audio.play attempted
+→ English audio.play resolved
+```
+
+Playback continued to the next phrase and crossed lesson boundaries in the
+observed order:
+
+``` text
+pin-verification
+→ order-verification
+→ change-handling
+```
+
+The Japanese cue and English answer remained correct across these
+transitions. Progression also continued while Uber Eats notifications were
+displayed.
+
+The real-device result supports the cue-first ordering as the effective fix
+for this observed regression. It does not establish that every iPhone Safari
+speech-synthesis failure has the same cause.
+
+### Session Resume Real-Device Validation
+
+The final target workflow was validated on iPhone Safari:
+
+``` text
+Start Active Recall
+→ Japanese cue
+→ Recall
+→ English × 2
+→ continue to the next phrase
+→ Stop
+→ Start Active Recall again
+→ resume from the same phrase
+```
+
+The same-phrase restart began from the Japanese cue as designed.
+
+Together with the cross-lesson observation, this confirmed the target usage
+path:
+
+``` text
+unfinished shuffled session
+→ explicit or environmental interruption
+→ restart Active Recall
+→ preserve queue order
+→ restart the saved phrase
+→ continue across lessons
+```
+
+### Implementation and Diagnostic Commits
+
+The relevant commits were:
+
+``` text
+1ebdf8c feat: resume interrupted active recall sessions
+ca3f739 debug: add active recall iOS diagnostics
+06d2a18 debug: start active recall speech before audio prep
+f5bbbd3 fix: start active recall cue before audio preparation
+```
+
+The debug commits record the temporary instrumentation and ordering
+experiment used during real-device investigation.
+
+The final code removes all temporary diagnostic elements:
+
+-   on-screen diagnostic panel
+-   diagnostic build marker
+-   stage logs
+-   global error and unhandled-rejection listeners
+-   speech and audio diagnostic events
+-   diagnostic CSS
+-   diagnostic-only storage availability API
+
+No diagnostic UI remains in the completed implementation.
+
+### Preserved Behavior and Scope
+
+The completed slice preserves:
+
+-   all six current lessons and 45 phrases
+-   phrase-level Fisher-Yates shuffle
+-   one-pass queue identity
+-   correct cross-lesson audio
+-   Normal English ×2
+-   Weak English ×3
+-   Japanese meaning cue
+-   minimum five-second Recall
+-   `trainingSeekLeadSeconds = 0.5`
+-   Weak Phrase persistence
+-   manually selected lesson persistence
+-   Stop, phrase tap, and lesson-switch cancellation
+-   Safari background usage established in prior validation
+-   Active Recall Session Resume
+-   storage failure fallback
+
+No training content, generated audio, Service Worker behavior, or Continuous
+Training architecture was changed in this slice.
+
+The planned 75-phrase expansion remains deferred. The training library is
+still the validated six-lesson, 45-phrase set.
+
+### Result
+
+Active Recall Session Resume and its iPhone Safari regression investigation
+are complete.
+
+The validated progression is:
+
+``` text
+all-lesson shuffled Active Recall
+→ persistent unfinished session
+→ same-phrase restart from Japanese cue
+→ storage and library compatibility protection
+→ iPhone start regression observed
+→ on-screen stage diagnostics
+→ speak() returned without utterance events
+→ Japanese cue moved before English media preparation
+→ complete speech and audio event progression restored
+→ cross-lesson and Uber Eats notification validation
+→ temporary diagnostics removed
+```
