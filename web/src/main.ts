@@ -41,7 +41,7 @@ const activeRecallSessionStore = createActiveRecallSessionStore(
   () => window.localStorage,
   activeRecallSessionStorageKey,
 );
-const diagnosticBuildMarker = '1ebdf8c-diag-1';
+const diagnosticBuildMarker = '1ebdf8c-diag-2';
 const activeRecallDiagnosticEntries: string[] = [];
 
 function getDiagnosticError(error: unknown): string {
@@ -613,15 +613,33 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     activeRecallButton.textContent = 'Stop Active Recall';
 
     try {
-      recordActiveRecallDiagnostic('lesson metadata requested');
-      const metadataEntries = await Promise.all(
-        lessons.map(async (lesson) => [
-          lesson.id,
-          await loadLessonMetadata(lesson.id),
-        ] as const),
-      );
-      const metadataByLessonId = new Map(metadataEntries);
-      recordActiveRecallDiagnostic('lesson metadata ready');
+      const metadataPromisesByLessonId = new Map<
+        string,
+        Promise<LessonMetadata>
+      >();
+
+      const getLessonMetadata = (lessonId: string): Promise<LessonMetadata> => {
+        const existingPromise = metadataPromisesByLessonId.get(lessonId);
+
+        if (existingPromise) {
+          return existingPromise;
+        }
+
+        recordActiveRecallDiagnostic(
+          `lesson metadata requested: lesson=${lessonId}`,
+        );
+        const metadataPromise = loadLessonMetadata(lessonId).then(
+          (lessonMetadata) => {
+            recordActiveRecallDiagnostic(
+              `lesson metadata ready: lesson=${lessonId}`,
+            );
+            return lessonMetadata;
+          },
+        );
+
+        metadataPromisesByLessonId.set(lessonId, metadataPromise);
+        return metadataPromise;
+      };
 
       for (
         let queueIndex = session.currentIndex;
@@ -648,26 +666,6 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           `phrase progress save attempted: ${progressSaved ? 'saved' : 'unavailable'}`,
         );
 
-        const entryMetadata = metadataByLessonId.get(entry.lessonId);
-
-        if (!entryMetadata) {
-          throw new Error(`Metadata was not loaded for ${entry.lessonId}.`);
-        }
-
-        await useLessonAudio(entry.lessonId);
-
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
-        }
-
-        const segment = getPhraseSegments(entryMetadata)[entry.phraseIndex];
-
-        if (!segment) {
-          throw new Error(
-            `Phrase segment was not found for ${entry.lessonId}:${entry.phraseIndex}.`,
-          );
-        }
-
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
         recordActiveRecallDiagnostic('Japanese cue about to start');
@@ -680,11 +678,26 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
 
         recordActiveRecallDiagnostic('Recall started');
-        await wait(recallMilliseconds);
+        const recallDelay = wait(recallMilliseconds);
+
+        recordActiveRecallDiagnostic('English audio preparation started');
+        const [entryMetadata] = await Promise.all([
+          getLessonMetadata(entry.lessonId),
+          useLessonAudio(entry.lessonId),
+          recallDelay,
+        ]);
         recordActiveRecallDiagnostic('Recall ended');
 
         if (!trainingActive || trainingRunId !== runId) {
           break;
+        }
+
+        const segment = getPhraseSegments(entryMetadata)[entry.phraseIndex];
+
+        if (!segment) {
+          throw new Error(
+            `Phrase segment was not found for ${entry.lessonId}:${entry.phraseIndex}.`,
+          );
         }
 
         const weakPhraseKey = getWeakPhraseKey(
