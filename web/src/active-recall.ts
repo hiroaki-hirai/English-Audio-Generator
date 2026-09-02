@@ -31,6 +31,69 @@ export type PreparedActiveRecallSession = {
   resumed: boolean;
 };
 
+export type ActiveRecallSessionStore = {
+  load: () => string | null;
+  save: (session: ActiveRecallSession) => boolean;
+  clear: () => boolean;
+};
+
+type ActiveRecallStorage = Pick<
+  Storage,
+  'getItem' | 'setItem' | 'removeItem'
+>;
+
+export function createActiveRecallSessionStore(
+  getStorage: () => ActiveRecallStorage,
+  storageKey: string,
+): ActiveRecallSessionStore {
+  let storageAvailable = true;
+
+  const disableStorage = (): void => {
+    storageAvailable = false;
+  };
+
+  return {
+    load: () => {
+      if (!storageAvailable) {
+        return null;
+      }
+
+      try {
+        return getStorage().getItem(storageKey);
+      } catch {
+        disableStorage();
+        return null;
+      }
+    },
+    save: (session) => {
+      if (!storageAvailable) {
+        return false;
+      }
+
+      try {
+        getStorage().setItem(storageKey, JSON.stringify(session));
+        return true;
+      } catch {
+        disableStorage();
+        return false;
+      }
+    },
+    clear: () => {
+      if (!storageAvailable) {
+        return false;
+      }
+
+      try {
+        getStorage().removeItem(storageKey);
+        return true;
+      } catch {
+        disableStorage();
+        return false;
+      }
+    },
+  };
+}
+
 export function shuffleActiveRecallEntries(
   entries: readonly ActiveRecallQueueEntry[],
   random: () => number = Math.random,

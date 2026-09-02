@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   createActiveRecallLibrarySignature,
   createActiveRecallQueue,
+  createActiveRecallSessionStore,
   createFreshActiveRecallSession,
   prepareActiveRecallSession,
 } from '../web/src/active-recall.js';
@@ -233,4 +234,76 @@ test('real 45-phrase library session resumes with its saved identity', () => {
   assert.equal(resumed.queue.length, 45);
   assert.equal(resumed.session.currentIndex, 17);
   assert.deepEqual(resumed.session.queue, fresh.session.queue);
+});
+
+test('storage get failure falls back to a fresh in-memory session', () => {
+  const store = createActiveRecallSessionStore(
+    () => ({
+      getItem: () => {
+        throw new Error('storage unavailable');
+      },
+      setItem: () => {
+        throw new Error('must remain disabled');
+      },
+      removeItem: () => {
+        throw new Error('must remain disabled');
+      },
+    }),
+    'session-key',
+  );
+  const prepared = prepareActiveRecallSession(lessons, store.load(), () => 0);
+
+  assert.equal(prepared.resumed, false);
+  assert.equal(prepared.session.currentIndex, 0);
+  assert.equal(prepared.queue.length, 3);
+  assert.equal(store.save(prepared.session), false);
+});
+
+test('storage object access failure also falls back safely', () => {
+  const store = createActiveRecallSessionStore(
+    () => {
+      throw new Error('localStorage getter unavailable');
+    },
+    'session-key',
+  );
+
+  assert.equal(store.load(), null);
+  assert.equal(store.save(createFreshActiveRecallSession(lessons).session), false);
+});
+
+test('storage set failure does not prevent phrase execution', () => {
+  const store = createActiveRecallSessionStore(
+    () => ({
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota exceeded');
+      },
+      removeItem: () => undefined,
+    }),
+    'session-key',
+  );
+  const prepared = createFreshActiveRecallSession(lessons, () => 0);
+  let phraseExecuted = false;
+
+  assert.equal(store.save(prepared.session), false);
+  phraseExecuted = true;
+
+  assert.equal(phraseExecuted, true);
+  assert.ok(prepared.queue[prepared.session.currentIndex]);
+});
+
+test('storage remove failure does not break completion cleanup', () => {
+  const store = createActiveRecallSessionStore(
+    () => ({
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => {
+        throw new Error('remove denied');
+      },
+    }),
+    'session-key',
+  );
+
+  assert.equal(store.clear(), false);
+  assert.equal(store.load(), null);
 });

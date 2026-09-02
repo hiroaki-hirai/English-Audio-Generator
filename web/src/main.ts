@@ -1,8 +1,8 @@
 import './style.css';
 
 import {
+  createActiveRecallSessionStore,
   prepareActiveRecallSession,
-  type ActiveRecallSession,
 } from './active-recall.js';
 import lessonsData from './training-lessons.json';
 
@@ -37,33 +37,10 @@ const lessons = lessonsData as TrainingScript[];
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
 const selectedLessonStorageKey = 'eag.selectedLesson.v1';
 const activeRecallSessionStorageKey = 'eag.activeRecallSession.v1';
-
-function loadActiveRecallSession(): string | null {
-  try {
-    return localStorage.getItem(activeRecallSessionStorageKey);
-  } catch {
-    return null;
-  }
-}
-
-function saveActiveRecallSession(session: ActiveRecallSession): void {
-  try {
-    localStorage.setItem(
-      activeRecallSessionStorageKey,
-      JSON.stringify(session),
-    );
-  } catch {
-    // Active Recall remains usable when browser storage is unavailable.
-  }
-}
-
-function clearActiveRecallSession(): void {
-  try {
-    localStorage.removeItem(activeRecallSessionStorageKey);
-  } catch {
-    // A storage failure must not interrupt completed playback cleanup.
-  }
-}
+const activeRecallSessionStore = createActiveRecallSessionStore(
+  () => window.localStorage,
+  activeRecallSessionStorageKey,
+);
 
 function loadSelectedLesson(): TrainingScript | undefined {
   const selectedLessonId = localStorage.getItem(selectedLessonStorageKey);
@@ -518,11 +495,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     const runId = trainingRunId;
     const preparedSession = prepareActiveRecallSession(
       lessons,
-      loadActiveRecallSession(),
+      activeRecallSessionStore.load(),
     );
     const { queue, session } = preparedSession;
 
-    saveActiveRecallSession(session);
+    activeRecallSessionStore.save(session);
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -555,7 +532,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         }
 
         session.currentIndex = queueIndex;
-        saveActiveRecallSession(session);
+        activeRecallSessionStore.save(session);
 
         const entryMetadata = metadataByLessonId.get(entry.lessonId);
 
@@ -627,7 +604,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       }
 
       if (trainingActive && trainingRunId === runId) {
-        clearActiveRecallSession();
+        activeRecallSessionStore.clear();
       }
     } catch (error) {
       console.error('Active Recall playback failed:', error);
