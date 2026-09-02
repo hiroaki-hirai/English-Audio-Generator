@@ -41,6 +41,49 @@ const activeRecallSessionStore = createActiveRecallSessionStore(
   () => window.localStorage,
   activeRecallSessionStorageKey,
 );
+const diagnosticBuildMarker = '1ebdf8c-diag-1';
+const activeRecallDiagnosticEntries: string[] = [];
+
+function getDiagnosticError(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}`;
+  }
+
+  return String(error);
+}
+
+function recordActiveRecallDiagnostic(message: string): void {
+  try {
+    const sequence = String(activeRecallDiagnosticEntries.length + 1).padStart(
+      2,
+      '0',
+    );
+
+    activeRecallDiagnosticEntries.push(`${sequence} ${message}`);
+
+    const output = document.querySelector<HTMLElement>(
+      '.active-recall-diagnostic-output',
+    );
+
+    if (output) {
+      output.textContent = activeRecallDiagnosticEntries.join('\n');
+    }
+  } catch {
+    // Temporary diagnostics must never affect playback.
+  }
+}
+
+window.addEventListener('error', (event) => {
+  recordActiveRecallDiagnostic(
+    `WINDOW ERROR ${getDiagnosticError(event.error ?? event.message)}`,
+  );
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  recordActiveRecallDiagnostic(
+    `UNHANDLED REJECTION ${getDiagnosticError(event.reason)}`,
+  );
+});
 
 function loadSelectedLesson(): TrainingScript | undefined {
   const selectedLessonId = localStorage.getItem(selectedLessonStorageKey);
@@ -171,6 +214,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
+
+      <details class="active-recall-diagnostics" open>
+        <summary>AR diagnostics — build: ${diagnosticBuildMarker}</summary>
+        <pre class="active-recall-diagnostic-output"></pre>
+      </details>
     </div>
   `;
 
@@ -200,6 +248,15 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       </section>
     </section>
   `;
+
+  const initialDiagnosticOutput = app.querySelector<HTMLElement>(
+    '.active-recall-diagnostic-output',
+  );
+
+  if (initialDiagnosticOutput) {
+    initialDiagnosticOutput.textContent =
+      activeRecallDiagnosticEntries.join('\n');
+  }
 
   const buttons = app.querySelectorAll<HTMLButtonElement>('.lesson-button');
 
@@ -324,11 +381,17 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false;
 
+      recordActiveRecallDiagnostic(
+        `speech state: type=${typeof window.speechSynthesis} speaking=${window.speechSynthesis.speaking} pending=${window.speechSynthesis.pending} paused=${window.speechSynthesis.paused}`,
+      );
+
       const utterance = new SpeechSynthesisUtterance(text);
 
       utterance.lang = 'ja-JP';
+      recordActiveRecallDiagnostic('SpeechSynthesisUtterance created');
 
       const cleanup = (): void => {
+        utterance.removeEventListener('start', handleStart);
         utterance.removeEventListener('end', handleEnd);
         utterance.removeEventListener('error', handleError);
 
@@ -353,7 +416,12 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       };
 
       const handleEnd = (): void => {
+        recordActiveRecallDiagnostic('Japanese cue ended');
         finish();
+      };
+
+      const handleStart = (): void => {
+        recordActiveRecallDiagnostic('Japanese cue onstart');
       };
 
       const handleError = (event: SpeechSynthesisErrorEvent): void => {
@@ -363,15 +431,21 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
         settled = true;
         cleanup();
+        recordActiveRecallDiagnostic(
+          `Japanese cue onerror: ${event.error}`,
+        );
         reject(new Error(`Japanese cue playback failed: ${event.error}`));
       };
 
       cancelJapaneseCue = cancel;
 
+      utterance.addEventListener('start', handleStart);
       utterance.addEventListener('end', handleEnd);
       utterance.addEventListener('error', handleError);
 
+      recordActiveRecallDiagnostic('speechSynthesis.speak about to call');
       window.speechSynthesis.speak(utterance);
+      recordActiveRecallDiagnostic('speechSynthesis.speak returned');
     });
   }
 
@@ -424,13 +498,20 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   async function useLessonAudio(lessonId: string): Promise<void> {
     const audioUrl = `${import.meta.env.BASE_URL}lessons/${lessonId}/lesson.mp3`;
     const absoluteAudioUrl = new URL(audioUrl, window.location.href).href;
+    const sourceSwitchRequired = audio.src !== absoluteAudioUrl;
 
-    if (audio.src !== absoluteAudioUrl) {
+    recordActiveRecallDiagnostic(
+      `audio source: lesson=${lessonId} switch=${sourceSwitchRequired}`,
+    );
+
+    if (sourceSwitchRequired) {
       audio.src = audioUrl;
       audio.load();
+      recordActiveRecallDiagnostic('audio src assigned and load called');
     }
 
     await waitForAudioMetadata();
+    recordActiveRecallDiagnostic('audio loadedmetadata ready');
   }
 
   function playSegment(segment: PhraseSegment, runId: number): Promise<void> {
@@ -476,30 +557,54 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       audio.currentTime = Math.max(0, segment.start - trainingSeekLeadSeconds);
       audio.addEventListener('timeupdate', handleTimeUpdate);
 
-      void audio.play().catch((error: unknown) => {
-        if (settled) {
-          return;
-        }
+      recordActiveRecallDiagnostic('English audio.play attempted');
+      void audio
+        .play()
+        .then(() => {
+          recordActiveRecallDiagnostic('English audio.play resolved');
+        })
+        .catch((error: unknown) => {
+          recordActiveRecallDiagnostic(
+            `English audio.play rejected: ${getDiagnosticError(error)}`,
+          );
 
-        settled = true;
-        cleanup();
-        reject(error);
-      });
+          if (settled) {
+            return;
+          }
+
+          settled = true;
+          cleanup();
+          reject(error);
+        });
     });
   }
 
   async function runActiveRecall(): Promise<void> {
+    recordActiveRecallDiagnostic('Active Recall runtime initialized');
     trainingActive = true;
     trainingRunId += 1;
 
     const runId = trainingRunId;
+    recordActiveRecallDiagnostic(
+      `library available: lessons=${lessons.length} phrases=${lessons.reduce((total, lesson) => total + lesson.phrases.length, 0)}`,
+    );
+    recordActiveRecallDiagnostic(
+      `saved session load attempted; storage=${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+    );
     const preparedSession = prepareActiveRecallSession(
       lessons,
       activeRecallSessionStore.load(),
     );
     const { queue, session } = preparedSession;
 
-    activeRecallSessionStore.save(session);
+    recordActiveRecallDiagnostic(
+      `session ${preparedSession.resumed ? 'resumed' : 'fresh'}: queue=${queue.length} index=${session.currentIndex}; storage=${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+    );
+
+    const initialSessionSaved = activeRecallSessionStore.save(session);
+    recordActiveRecallDiagnostic(
+      `initial session save attempted: ${initialSessionSaved ? 'saved' : 'unavailable'}`,
+    );
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -508,6 +613,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     activeRecallButton.textContent = 'Stop Active Recall';
 
     try {
+      recordActiveRecallDiagnostic('lesson metadata requested');
       const metadataEntries = await Promise.all(
         lessons.map(async (lesson) => [
           lesson.id,
@@ -515,6 +621,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         ] as const),
       );
       const metadataByLessonId = new Map(metadataEntries);
+      recordActiveRecallDiagnostic('lesson metadata ready');
 
       for (
         let queueIndex = session.currentIndex;
@@ -531,8 +638,15 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           throw new Error(`Active Recall queue entry ${queueIndex} is missing.`);
         }
 
+        recordActiveRecallDiagnostic(
+          `queue entry resolved: index=${queueIndex} phrase=${entry.lessonId}:${entry.phraseIndex}`,
+        );
+
         session.currentIndex = queueIndex;
-        activeRecallSessionStore.save(session);
+        const progressSaved = activeRecallSessionStore.save(session);
+        recordActiveRecallDiagnostic(
+          `phrase progress save attempted: ${progressSaved ? 'saved' : 'unavailable'}`,
+        );
 
         const entryMetadata = metadataByLessonId.get(entry.lessonId);
 
@@ -556,6 +670,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
+        recordActiveRecallDiagnostic('Japanese cue about to start');
         await speakJapaneseCue(entry.ja);
 
         if (!trainingActive || trainingRunId !== runId) {
@@ -564,7 +679,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
 
+        recordActiveRecallDiagnostic('Recall started');
         await wait(recallMilliseconds);
+        recordActiveRecallDiagnostic('Recall ended');
 
         if (!trainingActive || trainingRunId !== runId) {
           break;
@@ -607,6 +724,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         activeRecallSessionStore.clear();
       }
     } catch (error) {
+      recordActiveRecallDiagnostic(
+        `ACTIVE RECALL ERROR ${getDiagnosticError(error)}`,
+      );
       console.error('Active Recall playback failed:', error);
     } finally {
       if (trainingRunId === runId) {
@@ -750,6 +870,8 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   stopCurrentTraining = stopTraining;
 
   activeRecallButton.addEventListener('click', () => {
+    recordActiveRecallDiagnostic('Start/Stop Active Recall button clicked');
+
     if (trainingActive) {
       stopTraining();
       return;

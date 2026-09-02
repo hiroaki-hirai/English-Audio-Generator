@@ -35,6 +35,7 @@ export type ActiveRecallSessionStore = {
   load: () => string | null;
   save: (session: ActiveRecallSession) => boolean;
   clear: () => boolean;
+  isAvailable: () => boolean;
 };
 
 type ActiveRecallStorage = Pick<
@@ -53,6 +54,7 @@ export function createActiveRecallSessionStore(
   };
 
   return {
+    isAvailable: () => storageAvailable,
     load: () => {
       if (!storageAvailable) {
         return null;
