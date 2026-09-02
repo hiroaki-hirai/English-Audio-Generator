@@ -136,22 +136,6 @@ h2 {
   font-size: 14px;
 }
 
-.active-recall-diagnostics {
-  padding: 8px;
-  border: 1px dashed #9ca3af;
-  border-radius: 8px;
-  color: #374151;
-  font-size: 12px;
-}
-
-.active-recall-diagnostic-output {
-  max-height: 220px;
-  margin: 8px 0 0;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 .phrases {
   margin: 24px 0 0;
   padding-left: 24px;
