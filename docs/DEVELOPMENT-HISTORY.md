@@ -3754,3 +3754,357 @@ problem observed
 The project now has a verified environment that supports the real
 delivery use case and a clearer boundary between EAG architecture and
 the tested standalone PWA platform behavior.
+
+------------------------------------------------------------------------
+
+## 2026-08-30: Ride Active Recall Shuffle
+
+### Background
+
+Meaning → English Active Recall previously processed only the currently
+selected lesson.
+
+The learner therefore had to return to EAG and select another lesson at
+each lesson boundary. This was unsuitable for the intended riding
+workflow:
+
+``` text
+start Active Recall before riding
+→ switch to the delivery application
+→ continue learning without touching the screen
+```
+
+Fixed lesson order also made the next topic and phrase easier to predict.
+The next slice therefore focused on both riding usability and retrieval
+quality:
+
+``` text
+one start action
+→ all current lessons
+→ phrase-level random order
+→ no lesson switching while riding
+```
+
+The training library at the start and end of this slice was:
+
+``` text
+basic-delivery        20 phrases
+cash-payment           5 phrases
+change-handling        5 phrases
+order-verification     5 phrases
+pin-verification       5 phrases
+restaurant-delay       5 phrases
+```
+
+This represents six lessons and 45 phrases. No new training phrases were
+introduced in this slice.
+
+### All-Lesson Active Recall Queue
+
+Active Recall now flattens every current lesson into one session queue.
+
+Each queue entry retains the identity and content needed for playback:
+
+-   lesson ID
+-   phrase index
+-   English phrase
+-   Japanese phrase
+
+This distinction is important because the visible, manually selected
+lesson can differ from the lesson supplying the current shuffled phrase.
+
+Active Recall no longer stops at a lesson boundary. One session continues
+until all 45 queued phrases have been processed or the learner stops it.
+
+### Phrase-Level Fisher-Yates Shuffle
+
+Lessons are not randomized as six ordered blocks. All 45 phrases are
+flattened first and then shuffled individually across lesson boundaries.
+
+A session can therefore progress in an order such as:
+
+``` text
+basic-delivery
+→ pin-verification
+→ cash-payment
+→ restaurant-delay
+→ basic-delivery
+```
+
+This makes the Japanese meaning cue the primary retrieval signal rather
+than allowing the current lesson topic to reveal the likely answer.
+
+The queue uses Fisher-Yates shuffle rather than repeatedly selecting an
+independent random phrase. As a result, each session provides:
+
+-   no duplicate entries
+-   no missing entries
+-   every current phrase exactly once
+
+The shuffle helper is separated as pure session-preparation logic and
+supports injected random-number generation for deterministic tests.
+
+A fresh queue is created for every new Active Recall start. The shuffled
+order itself is not persisted.
+
+### Cross-Lesson Audio Playback
+
+The implementation retains one stable `HTMLAudioElement` rather than
+creating an audio element for every lesson or phrase.
+
+Before playing each queue entry, Active Recall uses its lesson ID to select
+the correct `lesson.mp3` and metadata. This allows consecutive entries from
+different lessons to play the correct English answer while preserving the
+existing segment-playback architecture.
+
+The validated Active Recall sequence remains:
+
+``` text
+Japanese meaning cue
+→ 5-second Recall
+→ English answer
+→ English repeat
+```
+
+For Weak phrases it remains:
+
+``` text
+Japanese meaning cue
+→ 5-second Recall
+→ English answer
+→ English repeat
+→ English Weak Repeat
+```
+
+The existing behavior was therefore preserved:
+
+``` text
+Normal → English × 2
+Weak   → English × 3
+Recall → 5 seconds
+```
+
+Japanese cues still use browser `speechSynthesis`. English answers still
+use lesson metadata and segment playback with:
+
+``` text
+trainingSeekLeadSeconds = 0.5
+```
+
+### Weak Phrase Compatibility
+
+Weak state continues to use the existing versioned storage:
+
+``` text
+eag.weakPhrases.v1
+```
+
+Active Recall now resolves Weak state from the queue entry's actual:
+
+``` text
+lesson ID + phrase index
+```
+
+It does not use the currently rendered lesson ID. Identical phrase indexes
+in different lessons therefore remain independent, including when shuffled
+phrases cross lesson boundaries on every transition.
+
+### Stop and Cancellation Behavior
+
+Stopping Active Recall now cancels the entire all-lesson session,
+including:
+
+-   Japanese speech synthesis
+-   current English segment playback
+-   pending Recall timer
+-   remaining queued phrases
+
+The existing run identity also prevents stale asynchronous work from
+restarting playback after cancellation.
+
+The same full-session stop occurs when the learner taps a normal English
+phrase or switches lessons. After stop or completion, the audio source is
+restored to the manually selected lesson.
+
+### Selected Lesson Persistence
+
+The last manually selected lesson is now stored using:
+
+``` text
+eag.selectedLesson.v1
+```
+
+The behavior is:
+
+``` text
+manual lesson selection → save lesson ID
+Safari reload           → restore saved lesson
+no saved value          → Basic Delivery
+unknown saved ID        → Basic Delivery
+```
+
+Internal cross-lesson audio switching during Active Recall does not change
+the saved lesson. The architecture therefore explicitly distinguishes:
+
+``` text
+manually selected lesson
+≠
+current shuffled Active Recall source lesson
+```
+
+### Active Recall Tap Target
+
+The Active Recall button felt too short vertically on iPhone. Its actual
+interactive area was increased without redesigning unrelated controls:
+
+``` css
+min-height: 60px;
+padding-block: 14px;
+```
+
+The same element is used for Start and Stop, so the larger target is
+preserved throughout the session.
+
+### Automated Validation
+
+The implementation passed:
+
+``` text
+npm test              → 7 / 7 passed
+npx tsc --noEmit      → passed
+npm run web:build     → passed
+git diff --check      → passed
+```
+
+Focused tests verify that:
+
+-   every input phrase is included exactly once
+-   no queue entry is duplicated or lost
+-   lesson identity remains attached to phrase content
+-   shuffling does not mutate the input
+-   the current real training library produces 45 unique queue entries
+    across all six lessons
+
+Generated lesson audio and lesson data were not changed.
+
+### Implementation Commit
+
+The implementation was committed as:
+
+``` text
+58de11e feat: add shuffled all-lesson active recall
+```
+
+Files changed:
+
+``` text
+web/src/main.ts
+web/src/active-recall.ts
+web/src/style.css
+src/active-recall.test.ts
+```
+
+### iPhone and Safari Real-Device Validation
+
+The deployed implementation was validated on a physical iPhone in Safari.
+All seven validation categories passed.
+
+#### Lesson restoration
+
+-   the previously selected lesson was restored after Safari reload
+-   default fallback behavior worked correctly
+
+#### Active Recall button
+
+-   the 60-pixel vertical target was easier to tap
+-   the larger target remained available in the Stop state
+
+#### All-lesson shuffled session
+
+-   one Active Recall start progressed beyond Basic Delivery
+-   phrases were mixed across lesson boundaries
+-   playback was not ordered as lesson blocks
+
+#### Cross-lesson audio correctness
+
+-   each Japanese cue corresponded to the correct English answer
+-   crossing lesson boundaries did not play stale or incorrect lesson audio
+
+#### Weak behavior
+
+-   Normal phrases played English twice
+-   Weak phrases played English three times
+
+#### Riding and background operation
+
+The operational test was:
+
+``` text
+Safari
+→ start Active Recall once
+→ move Safari to the background
+→ open Uber Eats / delivery application
+```
+
+Active Recall continued across lessons and progressed to subsequent phrases
+after Uber Eats notifications. No lesson-boundary interaction was required.
+
+#### Stop behavior
+
+-   Stop completely terminated the all-lesson session
+-   tapping a phrase exited Active Recall correctly
+-   lesson switching did not allow a stale session to resume
+
+### Development Decision
+
+Ride Active Recall Shuffle is complete and becomes the validated baseline
+for the current training library.
+
+The resulting workflow is:
+
+``` text
+Start Active Recall once
+→ build one all-lesson phrase queue
+→ shuffle all 45 phrases
+→ Japanese cue
+→ 5-second Recall
+→ English answer and repeat
+→ continue across lessons automatically
+→ no riding-time lesson selection
+```
+
+This improves both:
+
+-   riding usability by removing lesson-boundary screen interaction
+-   retrieval quality by reducing sequence and topic prediction
+
+### Deferred Work
+
+The remaining five lessons have not been expanded to 20 phrases.
+
+Future candidates remain:
+
+-   expand the five 5-phrase lessons to 20 phrases each
+-   add 75 phrases in total
+-   reach six lessons × 20 phrases = 120 phrases
+-   continue evaluating Active Recall during real delivery work
+-   select further improvements from riding-use evidence
+
+The planned 75-phrase content expansion is not part of this completed
+slice.
+
+### Result
+
+Ride Active Recall Shuffle is complete.
+
+The validated progression is now:
+
+``` text
+single-lesson Active Recall
+→ all six lessons in one session
+→ phrase-level Fisher-Yates shuffle
+→ 45 phrases exactly once
+→ correct cross-lesson audio and Weak state
+→ Safari background operation during delivery
+→ one start action is sufficient for the full current training set
+```
