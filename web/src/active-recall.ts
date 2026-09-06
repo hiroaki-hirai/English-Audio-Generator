@@ -29,12 +29,33 @@ export type PreparedActiveRecallSession = {
   session: ActiveRecallSession;
   queue: ActiveRecallQueueEntry[];
   resumed: boolean;
+  diagnostic: ActiveRecallResumeDiagnostic;
+};
+
+export type ActiveRecallResumeDiagnostic = {
+  savedSession: 'found' | 'missing';
+  savedCurrentIndex: number | null;
+  signature: 'valid' | 'invalid' | 'not-checked';
+  queueValidation: 'valid' | 'invalid' | 'not-checked';
+  action: 'resumed' | 'fresh';
+  reason:
+    | 'valid-saved-session'
+    | 'no-saved-session'
+    | 'malformed-json'
+    | 'invalid-schema-or-version'
+    | 'library-signature-mismatch'
+    | 'invalid-current-index'
+    | 'queue-length-mismatch'
+    | 'invalid-queue-entry'
+    | 'unknown-queue-identity'
+    | 'duplicate-queue-identity';
 };
 
 export type ActiveRecallSessionStore = {
   load: () => string | null;
   save: (session: ActiveRecallSession) => boolean;
   clear: () => boolean;
+  isAvailable: () => boolean;
 };
 
 type ActiveRecallStorage = Pick<
@@ -53,6 +74,7 @@ export function createActiveRecallSessionStore(
   };
 
   return {
+    isAvailable: () => storageAvailable,
     load: () => {
       if (!storageAvailable) {
         return null;
@@ -166,9 +188,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function resolveSavedQueue(
   queueValue: unknown,
   lessons: readonly ActiveRecallLesson[],
-): ActiveRecallQueueEntry[] | null {
+):
+  | { queue: ActiveRecallQueueEntry[]; reason: null }
+  | {
+      queue: null;
+      reason:
+        | 'queue-length-mismatch'
+        | 'invalid-queue-entry'
+        | 'unknown-queue-identity'
+        | 'duplicate-queue-identity';
+    } {
   if (!Array.isArray(queueValue)) {
-    return null;
+    return { queue: null, reason: 'invalid-queue-entry' };
   }
 
   const availableEntries = createActiveRecallQueue(lessons, () => 0).map(
@@ -177,7 +208,7 @@ function resolveSavedQueue(
   const entryByIdentity = new Map(availableEntries);
 
   if (queueValue.length !== entryByIdentity.size) {
-    return null;
+    return { queue: null, reason: 'queue-length-mismatch' };
   }
 
   const seenIdentities = new Set<string>();
@@ -189,7 +220,7 @@ function resolveSavedQueue(
       typeof value.lessonId !== 'string' ||
       !Number.isInteger(value.phraseIndex)
     ) {
-      return null;
+      return { queue: null, reason: 'invalid-queue-entry' };
     }
 
     const identity = getQueueIdentity({
@@ -198,20 +229,32 @@ function resolveSavedQueue(
     });
     const entry = entryByIdentity.get(identity);
 
-    if (!entry || seenIdentities.has(identity)) {
-      return null;
+    if (!entry) {
+      return { queue: null, reason: 'unknown-queue-identity' };
+    }
+
+    if (seenIdentities.has(identity)) {
+      return { queue: null, reason: 'duplicate-queue-identity' };
     }
 
     seenIdentities.add(identity);
     resolvedQueue.push(entry);
   }
 
-  return resolvedQueue;
+  return { queue: resolvedQueue, reason: null };
 }
 
 export function createFreshActiveRecallSession(
   lessons: readonly ActiveRecallLesson[],
   random: () => number = Math.random,
+  diagnostic: ActiveRecallResumeDiagnostic = {
+    savedSession: 'missing',
+    savedCurrentIndex: null,
+    signature: 'not-checked',
+    queueValidation: 'not-checked',
+    action: 'fresh',
+    reason: 'no-saved-session',
+  },
 ): PreparedActiveRecallSession {
   const queue = createActiveRecallQueue(lessons, random);
   const session: ActiveRecallSession = {
@@ -224,7 +267,7 @@ export function createFreshActiveRecallSession(
     librarySignature: createActiveRecallLibrarySignature(lessons),
   };
 
-  return { session, queue, resumed: false };
+  return { session, queue, resumed: false, diagnostic };
 }
 
 export function prepareActiveRecallSession(
@@ -232,44 +275,102 @@ export function prepareActiveRecallSession(
   storedValue: string | null,
   random: () => number = Math.random,
 ): PreparedActiveRecallSession {
-  if (storedValue) {
-    try {
-      const parsedValue: unknown = JSON.parse(storedValue);
-
-      if (
-        isRecord(parsedValue) &&
-        parsedValue.version === 1 &&
-        parsedValue.librarySignature ===
-          createActiveRecallLibrarySignature(lessons) &&
-        Number.isInteger(parsedValue.currentIndex)
-      ) {
-        const queue = resolveSavedQueue(parsedValue.queue, lessons);
-        const currentIndex = parsedValue.currentIndex as number;
-
-        if (
-          queue &&
-          currentIndex >= 0 &&
-          currentIndex < queue.length
-        ) {
-          return {
-            session: {
-              version: 1,
-              queue: queue.map(({ lessonId, phraseIndex }) => ({
-                lessonId,
-                phraseIndex,
-              })),
-              currentIndex,
-              librarySignature: parsedValue.librarySignature as string,
-            },
-            queue,
-            resumed: true,
-          };
-        }
-      }
-    } catch {
-      // Invalid persisted state falls through to a fresh session.
-    }
+  if (!storedValue) {
+    return createFreshActiveRecallSession(lessons, random);
   }
 
-  return createFreshActiveRecallSession(lessons, random);
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(storedValue);
+  } catch {
+    return createFreshActiveRecallSession(lessons, random, {
+      savedSession: 'found',
+      savedCurrentIndex: null,
+      signature: 'not-checked',
+      queueValidation: 'not-checked',
+      action: 'fresh',
+      reason: 'malformed-json',
+    });
+  }
+
+  const savedCurrentIndex =
+    isRecord(parsedValue) && Number.isInteger(parsedValue.currentIndex)
+      ? (parsedValue.currentIndex as number)
+      : null;
+
+  if (!isRecord(parsedValue) || parsedValue.version !== 1) {
+    return createFreshActiveRecallSession(lessons, random, {
+      savedSession: 'found',
+      savedCurrentIndex,
+      signature: 'not-checked',
+      queueValidation: 'not-checked',
+      action: 'fresh',
+      reason: 'invalid-schema-or-version',
+    });
+  }
+
+  if (
+    parsedValue.librarySignature !==
+    createActiveRecallLibrarySignature(lessons)
+  ) {
+    return createFreshActiveRecallSession(lessons, random, {
+      savedSession: 'found',
+      savedCurrentIndex,
+      signature: 'invalid',
+      queueValidation: 'not-checked',
+      action: 'fresh',
+      reason: 'library-signature-mismatch',
+    });
+  }
+
+  const resolvedQueue = resolveSavedQueue(parsedValue.queue, lessons);
+
+  if (!resolvedQueue.queue) {
+    return createFreshActiveRecallSession(lessons, random, {
+      savedSession: 'found',
+      savedCurrentIndex,
+      signature: 'valid',
+      queueValidation: 'invalid',
+      action: 'fresh',
+      reason: resolvedQueue.reason,
+    });
+  }
+
+  if (
+    savedCurrentIndex === null ||
+    savedCurrentIndex < 0 ||
+    savedCurrentIndex >= resolvedQueue.queue.length
+  ) {
+    return createFreshActiveRecallSession(lessons, random, {
+      savedSession: 'found',
+      savedCurrentIndex,
+      signature: 'valid',
+      queueValidation: 'valid',
+      action: 'fresh',
+      reason: 'invalid-current-index',
+    });
+  }
+
+  return {
+    session: {
+      version: 1,
+      queue: resolvedQueue.queue.map(({ lessonId, phraseIndex }) => ({
+        lessonId,
+        phraseIndex,
+      })),
+      currentIndex: savedCurrentIndex,
+      librarySignature: parsedValue.librarySignature as string,
+    },
+    queue: resolvedQueue.queue,
+    resumed: true,
+    diagnostic: {
+      savedSession: 'found',
+      savedCurrentIndex,
+      signature: 'valid',
+      queueValidation: 'valid',
+      action: 'resumed',
+      reason: 'valid-saved-session',
+    },
+  };
 }

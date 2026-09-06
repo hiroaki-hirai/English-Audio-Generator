@@ -136,6 +136,17 @@ h2 {
   font-size: 14px;
 }
 
+.resume-diagnostic {
+  margin: 0;
+  padding: 8px;
+  border: 1px dashed #9ca3af;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
 .phrases {
   margin: 24px 0 0;
   padding-left: 24px;

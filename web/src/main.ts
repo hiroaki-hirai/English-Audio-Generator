@@ -171,6 +171,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
+
+      <pre class="resume-diagnostic" aria-live="polite">Resume diagnostic v1
+Active Recall has not started.</pre>
     </div>
   `;
 
@@ -233,7 +236,15 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   const trainingStatus =
     app.querySelector<HTMLParagraphElement>('.training-status');
 
-  if (!trainingButton || !activeRecallButton || !trainingStatus) {
+  const resumeDiagnostic =
+    app.querySelector<HTMLPreElement>('.resume-diagnostic');
+
+  if (
+    !trainingButton ||
+    !activeRecallButton ||
+    !trainingStatus ||
+    !resumeDiagnostic
+  ) {
     throw new Error('Training controls were not found.');
   }
 
@@ -493,13 +504,35 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
     trainingRunId += 1;
 
     const runId = trainingRunId;
+    const storageAvailableBeforeLoad =
+      activeRecallSessionStore.isAvailable();
+    const storedSession = activeRecallSessionStore.load();
     const preparedSession = prepareActiveRecallSession(
       lessons,
-      activeRecallSessionStore.load(),
+      storedSession,
     );
     const { queue, session } = preparedSession;
 
-    activeRecallSessionStore.save(session);
+    const initialCheckpointSaved = activeRecallSessionStore.save(session);
+    const diagnosticReason =
+      storageAvailableBeforeLoad && !activeRecallSessionStore.isAvailable()
+        ? 'storage-read-failed'
+        : preparedSession.diagnostic.reason;
+
+    resumeDiagnostic.textContent = [
+      'Resume diagnostic v1',
+      `saved session: ${preparedSession.diagnostic.savedSession}`,
+      `saved currentIndex: ${preparedSession.diagnostic.savedCurrentIndex ?? 'n/a'}`,
+      `queue length: ${queue.length}`,
+      `signature: ${preparedSession.diagnostic.signature}`,
+      `queue validation: ${preparedSession.diagnostic.queueValidation}`,
+      `action: ${preparedSession.diagnostic.action}`,
+      `reason: ${diagnosticReason}`,
+      `runtime start index: ${session.currentIndex}`,
+      `UI displayed position: ${session.currentIndex + 1}/${queue.length}`,
+      `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+      `checkpoint save: ${initialCheckpointSaved ? 'saved' : 'unavailable'}`,
+    ].join('\n');
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -542,7 +575,15 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         }
 
         session.currentIndex = queueIndex;
-        activeRecallSessionStore.save(session);
+        const checkpointSaved = activeRecallSessionStore.save(session);
+
+        resumeDiagnostic.textContent = [
+          resumeDiagnostic.textContent.split('\n').slice(0, 8).join('\n'),
+          `runtime start index: ${queueIndex}`,
+          `UI displayed position: ${queueIndex + 1}/${queue.length}`,
+          `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+          `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`,
+        ].join('\n');
 
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
