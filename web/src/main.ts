@@ -172,7 +172,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Training stopped
       </p>
 
-      <pre class="resume-diagnostic" aria-live="polite">Resume diagnostic v1
+      <pre class="resume-diagnostic" aria-live="polite">Resume diagnostic v2
 Active Recall has not started.</pre>
     </div>
   `;
@@ -262,6 +262,50 @@ Active Recall has not started.</pre>
   let cancelActiveSegment: (() => void) | null = null;
   let cancelPendingWait: (() => void) | null = null;
   let loopBeforeTraining = audio.loop;
+  let runtimeKind: 'none' | 'active-recall' | 'training' = 'none';
+  let runtimeQueueIndex: number | null = null;
+  let audioPlayOwner:
+    | 'none'
+    | 'active-recall'
+    | 'training'
+    | 'phrase-tap'
+    | 'media-session' = 'none';
+  let expectedPhraseEnd: number | null = null;
+  let lastAudioEvent = 'none';
+  let lastDiagnosticSecond = -1;
+  let sessionClearReason = 'never';
+  let resumeDecisionLines = [
+    'saved session: not-checked',
+    'action: not-started',
+  ];
+
+  function getCurrentAudioLesson(): string {
+    const match = /\/lessons\/([^/]+)\//.exec(audio.currentSrc || audio.src);
+
+    return match?.[1] ?? 'unknown';
+  }
+
+  function updateResumeDiagnostic(): void {
+    try {
+      resumeDiagnostic.textContent = [
+        'Resume diagnostic v2',
+        ...resumeDecisionLines,
+        `runtime active: ${trainingActive ? 'yes' : 'no'}`,
+        `runtime kind: ${runtimeKind}`,
+        `runtime queue index: ${runtimeQueueIndex ?? 'n/a'}`,
+        `UI displayed position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/45`}`,
+        `audio owner: ${audioPlayOwner}`,
+        `audio paused: ${audio.paused}`,
+        `audio lesson: ${getCurrentAudioLesson()}`,
+        `audio currentTime: ${audio.currentTime.toFixed(2)}`,
+        `expected phrase end: ${expectedPhraseEnd?.toFixed(2) ?? 'n/a'}`,
+        `last audio event: ${lastAudioEvent}`,
+        `session clear reason: ${sessionClearReason}`,
+      ].join('\n');
+    } catch {
+      // Diagnostics must not affect training playback.
+    }
+  }
 
   function setMediaSessionPlaybackState(
     state: MediaSessionPlaybackState,
@@ -290,16 +334,41 @@ Active Recall has not started.</pre>
     }
 
     navigator.mediaSession.setActionHandler('play', () => {
+      audioPlayOwner = 'media-session';
+      lastAudioEvent = 'media-session-play';
+      updateResumeDiagnostic();
       void audio.play();
     });
     navigator.mediaSession.setActionHandler('pause', () => {
+      lastAudioEvent = 'media-session-pause';
+      updateResumeDiagnostic();
       audio.pause();
     });
   }
 
-  audio.addEventListener('play', () => setMediaSessionPlaybackState('playing'));
-  audio.addEventListener('pause', () => setMediaSessionPlaybackState('paused'));
+  audio.addEventListener('play', () => {
+    lastAudioEvent = 'play';
+    setMediaSessionPlaybackState('playing');
+    updateResumeDiagnostic();
+  });
+  audio.addEventListener('pause', () => {
+    lastAudioEvent = 'pause';
+    setMediaSessionPlaybackState('paused');
+    updateResumeDiagnostic();
+  });
+  audio.addEventListener('timeupdate', () => {
+    const currentSecond = Math.floor(audio.currentTime);
+
+    if (currentSecond !== lastDiagnosticSecond) {
+      lastDiagnosticSecond = currentSecond;
+      lastAudioEvent = 'timeupdate';
+      updateResumeDiagnostic();
+    }
+  });
   audio.addEventListener('ended', () => {
+    lastAudioEvent = 'ended';
+    updateResumeDiagnostic();
+
     if (trainingActive && audio.src.endsWith('/continuous-training.mp3')) {
       stopTraining();
     }
@@ -444,7 +513,11 @@ Active Recall has not started.</pre>
     await waitForAudioMetadata();
   }
 
-  function playSegment(segment: PhraseSegment, runId: number): Promise<void> {
+  function playSegment(
+    segment: PhraseSegment,
+    runId: number,
+    owner: 'active-recall' | 'training',
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false;
 
@@ -463,6 +536,9 @@ Active Recall has not started.</pre>
 
         settled = true;
         cleanup();
+        audioPlayOwner = 'none';
+        expectedPhraseEnd = null;
+        updateResumeDiagnostic();
         resolve();
       };
 
@@ -483,11 +559,21 @@ Active Recall has not started.</pre>
       };
 
       cancelActiveSegment = cancel;
+      audioPlayOwner = owner;
+      expectedPhraseEnd = segment.end;
+      lastAudioEvent = 'segment-play-requested';
 
       audio.currentTime = Math.max(0, segment.start - trainingSeekLeadSeconds);
       audio.addEventListener('timeupdate', handleTimeUpdate);
+      updateResumeDiagnostic();
 
       void audio.play().catch((error: unknown) => {
+        lastAudioEvent =
+          error instanceof Error
+            ? `play-rejected:${error.name}`
+            : 'play-rejected';
+        updateResumeDiagnostic();
+
         if (settled) {
           return;
         }
@@ -501,6 +587,7 @@ Active Recall has not started.</pre>
 
   async function runActiveRecall(): Promise<void> {
     trainingActive = true;
+    runtimeKind = 'active-recall';
     trainingRunId += 1;
 
     const runId = trainingRunId;
@@ -519,8 +606,7 @@ Active Recall has not started.</pre>
         ? 'storage-read-failed'
         : preparedSession.diagnostic.reason;
 
-    resumeDiagnostic.textContent = [
-      'Resume diagnostic v1',
+    resumeDecisionLines = [
       `saved session: ${preparedSession.diagnostic.savedSession}`,
       `saved currentIndex: ${preparedSession.diagnostic.savedCurrentIndex ?? 'n/a'}`,
       `queue length: ${queue.length}`,
@@ -528,11 +614,11 @@ Active Recall has not started.</pre>
       `queue validation: ${preparedSession.diagnostic.queueValidation}`,
       `action: ${preparedSession.diagnostic.action}`,
       `reason: ${diagnosticReason}`,
-      `runtime start index: ${session.currentIndex}`,
-      `UI displayed position: ${session.currentIndex + 1}/${queue.length}`,
       `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
       `checkpoint save: ${initialCheckpointSaved ? 'saved' : 'unavailable'}`,
-    ].join('\n');
+    ];
+    runtimeQueueIndex = session.currentIndex;
+    updateResumeDiagnostic();
 
     loopBeforeTraining = audio.loop;
     audio.loop = false;
@@ -577,13 +663,10 @@ Active Recall has not started.</pre>
         session.currentIndex = queueIndex;
         const checkpointSaved = activeRecallSessionStore.save(session);
 
-        resumeDiagnostic.textContent = [
-          resumeDiagnostic.textContent.split('\n').slice(0, 8).join('\n'),
-          `runtime start index: ${queueIndex}`,
-          `UI displayed position: ${queueIndex + 1}/${queue.length}`,
-          `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
-          `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`,
-        ].join('\n');
+        runtimeQueueIndex = queueIndex;
+        resumeDecisionLines[8] =
+          `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`;
+        updateResumeDiagnostic();
 
         trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
@@ -637,7 +720,7 @@ Active Recall has not started.</pre>
 
           trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
 
-          await playSegment(segment, runId);
+          await playSegment(segment, runId, 'active-recall');
 
           if (!trainingActive || trainingRunId !== runId) {
             break;
@@ -650,6 +733,8 @@ Active Recall has not started.</pre>
       }
 
       if (trainingActive && trainingRunId === runId) {
+        sessionClearReason = 'normal-completion';
+        updateResumeDiagnostic();
         activeRecallSessionStore.clear();
       }
     } catch (error) {
@@ -657,6 +742,7 @@ Active Recall has not started.</pre>
     } finally {
       if (trainingRunId === runId) {
         trainingActive = false;
+        runtimeKind = 'none';
 
         cancelJapaneseCue?.();
         cancelJapaneseCue = null;
@@ -668,6 +754,7 @@ Active Recall has not started.</pre>
         trainingButton.disabled = false;
         activeRecallButton.textContent = 'Start Active Recall';
         trainingStatus.textContent = 'Training stopped';
+        updateResumeDiagnostic();
       }
     }
   }
@@ -679,10 +766,13 @@ Active Recall has not started.</pre>
 
     if (!hasWeakPhrases) {
       trainingActive = true;
+      runtimeKind = 'training';
       trainingRunId += 1;
       loopBeforeTraining = audio.loop;
       audio.loop = false;
       audio.src = continuousTrainingAudioUrl;
+      audioPlayOwner = 'training';
+      expectedPhraseEnd = null;
       trainingButton.textContent = 'Stop Training';
       activeRecallButton.disabled = true;
       trainingStatus.textContent = 'Continuous Training playing';
@@ -700,6 +790,7 @@ Active Recall has not started.</pre>
     await waitForAudioMetadata();
 
     trainingActive = true;
+    runtimeKind = 'training';
     trainingRunId += 1;
 
     const runId = trainingRunId;
@@ -734,7 +825,7 @@ Active Recall has not started.</pre>
 
           trainingStatus.textContent = `Phrase ${index + 1} / ${segments.length} — ${phase}`;
 
-          await playSegment(segment, runId);
+          await playSegment(segment, runId, 'training');
 
           if (!trainingActive || trainingRunId !== runId) {
             break;
@@ -758,6 +849,7 @@ Active Recall has not started.</pre>
     } finally {
       if (trainingRunId === runId) {
         trainingActive = false;
+        runtimeKind = 'none';
         audio.pause();
         audio.loop = loopBeforeTraining;
         trainingButton.textContent = 'Start Training';
@@ -769,6 +861,7 @@ Active Recall has not started.</pre>
 
   function stopTraining(): void {
     trainingActive = false;
+    runtimeKind = 'none';
     trainingRunId += 1;
 
     cancelActiveSegment?.();
@@ -781,6 +874,9 @@ Active Recall has not started.</pre>
     cancelPendingWait = null;
 
     audio.pause();
+    audioPlayOwner = 'none';
+    expectedPhraseEnd = null;
+    lastAudioEvent = 'stop-training';
     audio.loop = loopBeforeTraining;
     restoreLessonAudio();
 
@@ -791,6 +887,7 @@ Active Recall has not started.</pre>
     activeRecallButton.textContent = 'Start Active Recall';
 
     trainingStatus.textContent = 'Training stopped';
+    updateResumeDiagnostic();
   }
 
   stopCurrentTraining = stopTraining;
@@ -838,6 +935,10 @@ Active Recall has not started.</pre>
       const requestedTime = Math.max(0, phraseMetadata.start - seekLeadSeconds);
 
       audio.currentTime = requestedTime;
+      audioPlayOwner = 'phrase-tap';
+      expectedPhraseEnd = null;
+      lastAudioEvent = 'phrase-tap-play-requested';
+      updateResumeDiagnostic();
 
       try {
         await audio.play();

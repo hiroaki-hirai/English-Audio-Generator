@@ -94,6 +94,8 @@ test('fresh active recall session contains every phrase and starts at zero', () 
 
   assert.equal(prepared.resumed, false);
   assert.equal(prepared.session.currentIndex, 0);
+  assert.equal(prepared.diagnostic.action, 'fresh');
+  assert.equal(prepared.diagnostic.reason, 'no-saved-session');
   assert.equal(prepared.queue.length, 3);
   assert.equal(
     new Set(prepared.session.queue.map((entry) =>
@@ -116,6 +118,10 @@ test('saved session resumes without reshuffling and restarts current phrase', ()
 
   assert.equal(resumed.resumed, true);
   assert.equal(resumed.session.currentIndex, 1);
+  assert.equal(resumed.diagnostic.action, 'resumed');
+  assert.equal(resumed.diagnostic.savedCurrentIndex, 1);
+  assert.equal(resumed.diagnostic.signature, 'valid');
+  assert.equal(resumed.diagnostic.queueValidation, 'valid');
   assert.deepEqual(resumed.session.queue, fresh.session.queue);
   assert.deepEqual(
     {
@@ -165,14 +171,15 @@ test('library signature mismatch creates a fresh session', () => {
   const saved = createFreshActiveRecallSession(lessons, () => 0);
   saved.session.librarySignature = 'stale-signature';
 
-  assert.equal(
-    prepareActiveRecallSession(
-      lessons,
-      serializeSession(saved.session),
-      () => 0,
-    ).resumed,
-    false,
+  const prepared = prepareActiveRecallSession(
+    lessons,
+    serializeSession(saved.session),
+    () => 0,
   );
+
+  assert.equal(prepared.resumed, false);
+  assert.equal(prepared.diagnostic.reason, 'library-signature-mismatch');
+  assert.equal(prepared.diagnostic.signature, 'invalid');
 });
 
 test('unknown lesson and invalid phrase index reject a saved queue', () => {
@@ -203,16 +210,24 @@ test('duplicate or missing queue identities reject a saved session', () => {
   const missing = createFreshActiveRecallSession(lessons, () => 0);
   missing.session.queue.pop();
 
-  for (const session of [duplicate.session, missing.session]) {
-    assert.equal(
-      prepareActiveRecallSession(
-        lessons,
-        serializeSession(session),
-        () => 0,
-      ).resumed,
-      false,
-    );
-  }
+  const duplicateResult = prepareActiveRecallSession(
+    lessons,
+    serializeSession(duplicate.session),
+    () => 0,
+  );
+  const missingResult = prepareActiveRecallSession(
+    lessons,
+    serializeSession(missing.session),
+    () => 0,
+  );
+
+  assert.equal(duplicateResult.resumed, false);
+  assert.equal(
+    duplicateResult.diagnostic.reason,
+    'duplicate-queue-identity',
+  );
+  assert.equal(missingResult.resumed, false);
+  assert.equal(missingResult.diagnostic.reason, 'queue-length-mismatch');
 });
 
 test('real 45-phrase library session resumes with its saved identity', () => {
