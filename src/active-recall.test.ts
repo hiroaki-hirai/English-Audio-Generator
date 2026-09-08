@@ -6,7 +6,9 @@ import {
   createActiveRecallQueue,
   createActiveRecallSessionStore,
   createFreshActiveRecallSession,
+  createNextActiveRecallRound,
   prepareActiveRecallSession,
+  prepareActiveRecallRoundState,
 } from '../web/src/active-recall.js';
 
 const lessons = [
@@ -321,4 +323,79 @@ test('storage remove failure does not break completion cleanup', () => {
 
   assert.equal(store.clear(), false);
   assert.equal(store.load(), null);
+});
+
+test('normal round completion advances diagnostics and creates a fresh queue', () => {
+  const completedSession = createFreshActiveRecallSession(lessons, () => 0);
+  const currentRound = prepareActiveRecallRoundState(null);
+  const nextRound = createNextActiveRecallRound(
+    lessons,
+    currentRound,
+    () => 0.999,
+  );
+
+  assert.deepEqual(nextRound.roundState, {
+    version: 1,
+    currentRound: 2,
+    lastCompletedRound: 1,
+  });
+  assert.equal(nextRound.preparedSession.session.currentIndex, 0);
+  assert.equal(nextRound.preparedSession.resumed, false);
+  assert.notDeepEqual(
+    nextRound.preparedSession.session.queue,
+    completedSession.session.queue,
+  );
+});
+
+test('unfinished round resumes without advancing round diagnostics', () => {
+  const savedSession = createFreshActiveRecallSession(lessons, () => 0);
+  savedSession.session.currentIndex = 2;
+  const savedRoundState = {
+    version: 1 as const,
+    currentRound: 4,
+    lastCompletedRound: 3,
+  };
+  const resumedSession = prepareActiveRecallSession(
+    lessons,
+    serializeSession(savedSession.session),
+    () => 0.999,
+  );
+  const resumedRoundState = prepareActiveRecallRoundState(
+    JSON.stringify(savedRoundState),
+  );
+
+  assert.equal(resumedSession.resumed, true);
+  assert.equal(resumedSession.session.currentIndex, 2);
+  assert.deepEqual(resumedSession.session.queue, savedSession.session.queue);
+  assert.deepEqual(resumedRoundState, savedRoundState);
+});
+
+test('explicit stop does not advance temporary round state', () => {
+  const currentRound = prepareActiveRecallRoundState(
+    JSON.stringify({
+      version: 1,
+      currentRound: 3,
+      lastCompletedRound: 2,
+    }),
+  );
+
+  assert.deepEqual(prepareActiveRecallRoundState(JSON.stringify(currentRound)), {
+    version: 1,
+    currentRound: 3,
+    lastCompletedRound: 2,
+  });
+});
+
+test('invalid temporary round state safely starts at round one', () => {
+  for (const storedValue of [
+    '{invalid-json',
+    JSON.stringify({ version: 2, currentRound: 5, lastCompletedRound: 4 }),
+    JSON.stringify({ version: 1, currentRound: 2, lastCompletedRound: 2 }),
+  ]) {
+    assert.deepEqual(prepareActiveRecallRoundState(storedValue), {
+      version: 1,
+      currentRound: 1,
+      lastCompletedRound: 0,
+    });
+  }
 });

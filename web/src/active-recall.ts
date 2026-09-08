@@ -51,6 +51,17 @@ export type ActiveRecallResumeDiagnostic = {
     | 'duplicate-queue-identity';
 };
 
+export type ActiveRecallRoundState = {
+  version: 1;
+  currentRound: number;
+  lastCompletedRound: number;
+};
+
+export type NextActiveRecallRound = {
+  roundState: ActiveRecallRoundState;
+  preparedSession: PreparedActiveRecallSession;
+};
+
 export type ActiveRecallSessionStore = {
   load: () => string | null;
   save: (session: ActiveRecallSession) => boolean;
@@ -183,6 +194,58 @@ export function createActiveRecallLibrarySignature(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function prepareActiveRecallRoundState(
+  storedValue: string | null,
+): ActiveRecallRoundState {
+  if (storedValue) {
+    try {
+      const parsedValue: unknown = JSON.parse(storedValue);
+
+      if (
+        isRecord(parsedValue) &&
+        parsedValue.version === 1 &&
+        Number.isInteger(parsedValue.currentRound) &&
+        Number.isInteger(parsedValue.lastCompletedRound) &&
+        (parsedValue.currentRound as number) >= 1 &&
+        (parsedValue.lastCompletedRound as number) >= 0 &&
+        (parsedValue.lastCompletedRound as number) <
+          (parsedValue.currentRound as number)
+      ) {
+        return {
+          version: 1,
+          currentRound: parsedValue.currentRound as number,
+          lastCompletedRound: parsedValue.lastCompletedRound as number,
+        };
+      }
+    } catch {
+      // Invalid temporary diagnostic state starts from round one.
+    }
+  }
+
+  return {
+    version: 1,
+    currentRound: 1,
+    lastCompletedRound: 0,
+  };
+}
+
+export function createNextActiveRecallRound(
+  lessons: readonly ActiveRecallLesson[],
+  roundState: ActiveRecallRoundState,
+  random: () => number = Math.random,
+): NextActiveRecallRound {
+  const nextRoundState: ActiveRecallRoundState = {
+    version: 1,
+    currentRound: roundState.currentRound + 1,
+    lastCompletedRound: roundState.currentRound,
+  };
+
+  return {
+    roundState: nextRoundState,
+    preparedSession: createFreshActiveRecallSession(lessons, random),
+  };
 }
 
 function resolveSavedQueue(

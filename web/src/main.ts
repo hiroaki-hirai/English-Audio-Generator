@@ -1,8 +1,11 @@
 import './style.css';
 
 import {
+  createNextActiveRecallRound,
   createActiveRecallSessionStore,
   prepareActiveRecallSession,
+  prepareActiveRecallRoundState,
+  type ActiveRecallRoundState,
 } from './active-recall.js';
 import lessonsData from './training-lessons.json';
 
@@ -37,10 +40,32 @@ const lessons = lessonsData as TrainingScript[];
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
 const selectedLessonStorageKey = 'eag.selectedLesson.v1';
 const activeRecallSessionStorageKey = 'eag.activeRecallSession.v1';
+const activeRecallRoundStorageKey = 'eag.activeRecallDiagnosticRound.v1';
 const activeRecallSessionStore = createActiveRecallSessionStore(
   () => window.localStorage,
   activeRecallSessionStorageKey,
 );
+
+function loadActiveRecallRoundState(): string | null {
+  try {
+    return localStorage.getItem(activeRecallRoundStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function saveActiveRecallRoundState(
+  roundState: ActiveRecallRoundState,
+): void {
+  try {
+    localStorage.setItem(
+      activeRecallRoundStorageKey,
+      JSON.stringify(roundState),
+    );
+  } catch {
+    // Round persistence is temporary diagnostic state only.
+  }
+}
 
 function loadSelectedLesson(): TrainingScript | undefined {
   const selectedLessonId = localStorage.getItem(selectedLessonStorageKey);
@@ -273,7 +298,9 @@ Active Recall has not started.</pre>
   let expectedPhraseEnd: number | null = null;
   let lastAudioEvent = 'none';
   let lastDiagnosticSecond = -1;
-  let sessionClearReason = 'never';
+  let currentRound = 1;
+  let lastCompletedRound = 0;
+  let sessionClearedThisRound = false;
   let resumeDecisionLines = [
     'saved session: not-checked',
     'action: not-started',
@@ -290,6 +317,9 @@ Active Recall has not started.</pre>
       resumeDiagnostic.textContent = [
         'Resume diagnostic v2',
         ...resumeDecisionLines,
+        `round: ${currentRound}`,
+        `round phrase position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/45`}`,
+        `last completed round: ${lastCompletedRound || 'none'}`,
         `runtime active: ${trainingActive ? 'yes' : 'no'}`,
         `runtime kind: ${runtimeKind}`,
         `runtime queue index: ${runtimeQueueIndex ?? 'n/a'}`,
@@ -300,7 +330,7 @@ Active Recall has not started.</pre>
         `audio currentTime: ${audio.currentTime.toFixed(2)}`,
         `expected phrase end: ${expectedPhraseEnd?.toFixed(2) ?? 'n/a'}`,
         `last audio event: ${lastAudioEvent}`,
-        `session clear reason: ${sessionClearReason}`,
+        `session cleared this round: ${sessionClearedThisRound ? 'yes' : 'no'}`,
       ].join('\n');
     } catch {
       // Diagnostics must not affect training playback.
@@ -594,11 +624,19 @@ Active Recall has not started.</pre>
     const storageAvailableBeforeLoad =
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
-    const preparedSession = prepareActiveRecallSession(
+    let preparedSession = prepareActiveRecallSession(
       lessons,
       storedSession,
     );
-    const { queue, session } = preparedSession;
+    let { queue, session } = preparedSession;
+    let roundState = preparedSession.resumed
+      ? prepareActiveRecallRoundState(loadActiveRecallRoundState())
+      : prepareActiveRecallRoundState(null);
+
+    currentRound = roundState.currentRound;
+    lastCompletedRound = roundState.lastCompletedRound;
+    sessionClearedThisRound = false;
+    saveActiveRecallRoundState(roundState);
 
     const initialCheckpointSaved = activeRecallSessionStore.save(session);
     const diagnosticReason =
@@ -645,97 +683,136 @@ Active Recall has not started.</pre>
         return metadataPromise;
       };
 
-      for (
-        let queueIndex = session.currentIndex;
-        queueIndex < queue.length;
-        queueIndex += 1
-      ) {
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
-        }
+      while (trainingActive && trainingRunId === runId) {
+        for (
+          let queueIndex = session.currentIndex;
+          queueIndex < queue.length;
+          queueIndex += 1
+        ) {
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
 
-        const entry = queue[queueIndex];
+          const entry = queue[queueIndex];
 
-        if (!entry) {
-          throw new Error(`Active Recall queue entry ${queueIndex} is missing.`);
-        }
+          if (!entry) {
+            throw new Error(
+              `Active Recall queue entry ${queueIndex} is missing.`,
+            );
+          }
 
-        session.currentIndex = queueIndex;
-        const checkpointSaved = activeRecallSessionStore.save(session);
+          session.currentIndex = queueIndex;
+          const checkpointSaved = activeRecallSessionStore.save(session);
 
-        runtimeQueueIndex = queueIndex;
-        resumeDecisionLines[8] =
-          `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`;
-        updateResumeDiagnostic();
+          runtimeQueueIndex = queueIndex;
+          resumeDecisionLines[8] =
+            `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`;
+          updateResumeDiagnostic();
 
-        trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
+          trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
-        await speakJapaneseCue(entry.ja);
+          await speakJapaneseCue(entry.ja);
 
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
-        }
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
 
-        trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
+          trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
 
-        const recallDelay = wait(recallMilliseconds);
+          const recallDelay = wait(recallMilliseconds);
 
-        // Prepare English media during Recall so the Japanese cue starts first.
-        const [entryMetadata] = await Promise.all([
-          getLessonMetadata(entry.lessonId),
-          useLessonAudio(entry.lessonId),
-          recallDelay,
-        ]);
+          // Prepare English media during Recall so the Japanese cue starts first.
+          const [entryMetadata] = await Promise.all([
+            getLessonMetadata(entry.lessonId),
+            useLessonAudio(entry.lessonId),
+            recallDelay,
+          ]);
 
-        if (!trainingActive || trainingRunId !== runId) {
-          break;
-        }
+          if (!trainingActive || trainingRunId !== runId) {
+            break;
+          }
 
-        const segment = getPhraseSegments(entryMetadata)[entry.phraseIndex];
+          const segment = getPhraseSegments(entryMetadata)[entry.phraseIndex];
 
-        if (!segment) {
-          throw new Error(
-            `Phrase segment was not found for ${entry.lessonId}:${entry.phraseIndex}.`,
+          if (!segment) {
+            throw new Error(
+              `Phrase segment was not found for ${entry.lessonId}:${entry.phraseIndex}.`,
+            );
+          }
+
+          const weakPhraseKey = getWeakPhraseKey(
+            entry.lessonId,
+            entry.phraseIndex,
           );
+
+          const repetitions = weakPhrases.has(weakPhraseKey) ? 3 : 2;
+
+          for (
+            let repetition = 0;
+            repetition < repetitions;
+            repetition += 1
+          ) {
+            if (!trainingActive || trainingRunId !== runId) {
+              break;
+            }
+
+            const phase =
+              repetition === 0
+                ? 'Answer'
+                : repetition === 1
+                  ? 'Repeat'
+                  : 'Weak Repeat';
+
+            trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
+
+            await playSegment(segment, runId, 'active-recall');
+
+            if (!trainingActive || trainingRunId !== runId) {
+              break;
+            }
+
+            if (repetition < repetitions - 1) {
+              await wait(repeatGapMilliseconds);
+            }
+          }
         }
 
-        const weakPhraseKey = getWeakPhraseKey(
-          entry.lessonId,
-          entry.phraseIndex,
-        );
-
-        const repetitions = weakPhrases.has(weakPhraseKey) ? 3 : 2;
-
-        for (let repetition = 0; repetition < repetitions; repetition += 1) {
-          if (!trainingActive || trainingRunId !== runId) {
-            break;
-          }
-
-          const phase =
-            repetition === 0
-              ? 'Answer'
-              : repetition === 1
-                ? 'Repeat'
-                : 'Weak Repeat';
-
-          trainingStatus.textContent = `Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
-
-          await playSegment(segment, runId, 'active-recall');
-
-          if (!trainingActive || trainingRunId !== runId) {
-            break;
-          }
-
-          if (repetition < repetitions - 1) {
-            await wait(repeatGapMilliseconds);
-          }
+        if (!trainingActive || trainingRunId !== runId) {
+          break;
         }
-      }
 
-      if (trainingActive && trainingRunId === runId) {
-        sessionClearReason = 'normal-completion';
+        sessionClearedThisRound = true;
         updateResumeDiagnostic();
         activeRecallSessionStore.clear();
+
+        const nextRound = createNextActiveRecallRound(
+          lessons,
+          roundState,
+        );
+
+        roundState = nextRound.roundState;
+        preparedSession = nextRound.preparedSession;
+        ({ queue, session } = preparedSession);
+        currentRound = roundState.currentRound;
+        lastCompletedRound = roundState.lastCompletedRound;
+        saveActiveRecallRoundState(roundState);
+
+        sessionClearedThisRound = false;
+        runtimeQueueIndex = session.currentIndex;
+        const nextRoundCheckpointSaved =
+          activeRecallSessionStore.save(session);
+        resumeDecisionLines = [
+          'saved session: created-after-round-completion',
+          'saved currentIndex: 0',
+          `queue length: ${queue.length}`,
+          'signature: valid',
+          'queue validation: valid',
+          'action: fresh',
+          'reason: normal-round-completion',
+          `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+          `checkpoint save: ${nextRoundCheckpointSaved ? 'saved' : 'unavailable'}`,
+        ];
+        updateResumeDiagnostic();
       }
     } catch (error) {
       console.error('Active Recall playback failed:', error);
