@@ -297,6 +297,12 @@ Active Recall has not started.</pre>
     | 'media-session' = 'none';
   let expectedPhraseEnd: number | null = null;
   let lastAudioEvent = 'none';
+  let lastPlayRequestSource = 'none';
+  let lastPlayRejection = 'none';
+  let lastPlayTrigger = 'none';
+  let pendingPlayTrigger: string | null = null;
+  let mediaSessionLastAction = 'none';
+  let activeRecallStartAttemptCount = 0;
   let lastDiagnosticSecond = -1;
   let currentRound = 1;
   let lastCompletedRound = 0;
@@ -330,12 +336,37 @@ Active Recall has not started.</pre>
         `audio currentTime: ${audio.currentTime.toFixed(2)}`,
         `expected phrase end: ${expectedPhraseEnd?.toFixed(2) ?? 'n/a'}`,
         `last audio event: ${lastAudioEvent}`,
+        `last play request source: ${lastPlayRequestSource}`,
+        `last play rejection: ${lastPlayRejection}`,
+        `last play trigger: ${lastPlayTrigger}`,
+        `media session last action: ${mediaSessionLastAction}`,
+        `Active Recall start attempts: ${activeRecallStartAttemptCount}`,
+        `visibility state: ${document.visibilityState}`,
         `session cleared this round: ${sessionClearedThisRound ? 'yes' : 'no'}`,
       ].join('\n');
     } catch {
       // Diagnostics must not affect training playback.
     }
   }
+
+  function recordPlayRequest(source: string, trigger: string): void {
+    lastPlayRequestSource = source;
+    lastPlayRejection = 'none';
+    lastPlayTrigger = trigger;
+    pendingPlayTrigger = trigger;
+    updateResumeDiagnostic();
+  }
+
+  function recordPlayRejection(error: unknown): void {
+    lastPlayRejection =
+      error instanceof Error ? error.name : 'unknown-error';
+    pendingPlayTrigger = null;
+    updateResumeDiagnostic();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    updateResumeDiagnostic();
+  });
 
   function setMediaSessionPlaybackState(
     state: MediaSessionPlaybackState,
@@ -366,17 +397,27 @@ Active Recall has not started.</pre>
     navigator.mediaSession.setActionHandler('play', () => {
       audioPlayOwner = 'media-session';
       lastAudioEvent = 'media-session-play';
-      updateResumeDiagnostic();
-      void audio.play();
+      mediaSessionLastAction = 'play';
+      recordPlayRequest('media-session', 'media-session-play');
+      void audio.play().catch((error: unknown) => {
+        recordPlayRejection(error);
+      });
     });
     navigator.mediaSession.setActionHandler('pause', () => {
       lastAudioEvent = 'media-session-pause';
+      mediaSessionLastAction = 'pause';
       updateResumeDiagnostic();
       audio.pause();
     });
   }
 
   audio.addEventListener('play', () => {
+    if (pendingPlayTrigger === null) {
+      lastPlayRequestSource = 'audio-native-control';
+      lastPlayTrigger = 'audio-native-control';
+    }
+
+    pendingPlayTrigger = null;
     lastAudioEvent = 'play';
     setMediaSessionPlaybackState('playing');
     updateResumeDiagnostic();
@@ -595,9 +636,11 @@ Active Recall has not started.</pre>
 
       audio.currentTime = Math.max(0, segment.start - trainingSeekLeadSeconds);
       audio.addEventListener('timeupdate', handleTimeUpdate);
+      recordPlayRequest(owner, owner);
       updateResumeDiagnostic();
 
       void audio.play().catch((error: unknown) => {
+        recordPlayRejection(error);
         lastAudioEvent =
           error instanceof Error
             ? `play-rejected:${error.name}`
@@ -855,8 +898,10 @@ Active Recall has not started.</pre>
       trainingStatus.textContent = 'Continuous Training playing';
 
       try {
+        recordPlayRequest('training', 'training-button');
         await audio.play();
       } catch (error) {
+        recordPlayRejection(error);
         console.error('Continuous Training playback failed:', error);
         stopTraining();
       }
@@ -975,6 +1020,8 @@ Active Recall has not started.</pre>
       return;
     }
 
+    activeRecallStartAttemptCount += 1;
+    updateResumeDiagnostic();
     void runActiveRecall();
   });
 
@@ -1018,8 +1065,10 @@ Active Recall has not started.</pre>
       updateResumeDiagnostic();
 
       try {
+        recordPlayRequest('phrase-tap', 'phrase-tap');
         await audio.play();
       } catch (error) {
+        recordPlayRejection(error);
         console.error('Failed to play lesson audio:', error);
       }
     });
