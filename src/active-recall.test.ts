@@ -71,7 +71,7 @@ test('active recall queue shuffles a copy without mutating lesson input', () => 
   );
 });
 
-test('current training library creates 45 unique queue entries', () => {
+test('current training library contains 7 lessons and 65 unique phrases', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
@@ -83,12 +83,38 @@ test('current training library creates 45 unique queue entries', () => {
     (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
   );
 
-  assert.equal(queue.length, 45);
-  assert.equal(new Set(identities).size, 45);
+  assert.equal(trainingLessons.length, 7);
+  assert.equal(queue.length, 65);
+  assert.equal(new Set(identities).size, 65);
   assert.deepEqual(
     new Set(queue.map((entry) => entry.lessonId)),
     new Set(trainingLessons.map((lesson) => lesson.id)),
   );
+});
+
+test('giving-directions contributes 20 unique phrase identities', () => {
+  const trainingLessons = JSON.parse(
+    readFileSync(
+      new URL('../web/src/training-lessons.json', import.meta.url),
+      'utf8',
+    ),
+  ) as typeof lessons;
+  const givingDirections = trainingLessons.find(
+    (lesson) => lesson.id === 'giving-directions',
+  );
+
+  assert.ok(givingDirections);
+  assert.equal(givingDirections.phrases.length, 20);
+
+  const queue = createActiveRecallQueue(trainingLessons, () => 0.5);
+  const givingDirectionsIdentities = queue
+    .filter((entry) => entry.lessonId === 'giving-directions')
+    .map((entry) => `${entry.lessonId}:${entry.phraseIndex}`);
+
+  assert.equal(givingDirectionsIdentities.length, 20);
+  assert.equal(new Set(givingDirectionsIdentities).size, 20);
+  assert.ok(givingDirectionsIdentities.includes('giving-directions:0'));
+  assert.ok(givingDirectionsIdentities.includes('giving-directions:19'));
 });
 
 test('fresh active recall session contains every phrase and starts at zero', () => {
@@ -232,7 +258,7 @@ test('duplicate or missing queue identities reject a saved session', () => {
   assert.equal(missingResult.diagnostic.reason, 'queue-length-mismatch');
 });
 
-test('real 45-phrase library session resumes with its saved identity', () => {
+test('real 65-phrase library session resumes with its saved identity', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
@@ -248,9 +274,60 @@ test('real 45-phrase library session resumes with its saved identity', () => {
   );
 
   assert.equal(resumed.resumed, true);
-  assert.equal(resumed.queue.length, 45);
+  assert.equal(resumed.queue.length, 65);
   assert.equal(resumed.session.currentIndex, 17);
   assert.deepEqual(resumed.session.queue, fresh.session.queue);
+});
+
+test('old 45-phrase library session falls back after library expansion', () => {
+  const trainingLessons = JSON.parse(
+    readFileSync(
+      new URL('../web/src/training-lessons.json', import.meta.url),
+      'utf8',
+    ),
+  ) as typeof lessons;
+  const oldTrainingLessons = trainingLessons.filter(
+    (lesson) => lesson.id !== 'giving-directions',
+  );
+  const oldSession = createFreshActiveRecallSession(
+    oldTrainingLessons,
+    () => 0.25,
+  );
+  const prepared = prepareActiveRecallSession(
+    trainingLessons,
+    serializeSession(oldSession.session),
+    () => 0.75,
+  );
+
+  assert.equal(oldSession.queue.length, 45);
+  assert.equal(prepared.resumed, false);
+  assert.equal(prepared.diagnostic.reason, 'library-signature-mismatch');
+  assert.equal(prepared.queue.length, 65);
+});
+
+test('real library next round creates a fresh 65-entry queue', () => {
+  const trainingLessons = JSON.parse(
+    readFileSync(
+      new URL('../web/src/training-lessons.json', import.meta.url),
+      'utf8',
+    ),
+  ) as typeof lessons;
+  const completed = createFreshActiveRecallSession(
+    trainingLessons,
+    () => 0,
+  );
+  const nextRound = createNextActiveRecallRound(
+    trainingLessons,
+    { version: 1, currentRound: 1, lastCompletedRound: 0 },
+    () => 0.999,
+  );
+
+  assert.equal(nextRound.preparedSession.queue.length, 65);
+  assert.equal(nextRound.preparedSession.session.currentIndex, 0);
+  assert.notDeepEqual(
+    nextRound.preparedSession.session.queue,
+    completed.session.queue,
+  );
 });
 
 test('storage get failure falls back to a fresh in-memory session', () => {

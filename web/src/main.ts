@@ -36,6 +36,10 @@ type PhraseSegment = {
 };
 
 const lessons = lessonsData as TrainingScript[];
+const activeRecallPhraseCount = lessons.reduce(
+  (total, lesson) => total + lesson.phrases.length,
+  0,
+);
 
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
 const selectedLessonStorageKey = 'eag.selectedLesson.v1';
@@ -324,12 +328,12 @@ Active Recall has not started.</pre>
         'Resume diagnostic v2',
         ...resumeDecisionLines,
         `round: ${currentRound}`,
-        `round phrase position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/45`}`,
+        `round phrase position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${activeRecallPhraseCount}`}`,
         `last completed round: ${lastCompletedRound || 'none'}`,
         `runtime active: ${trainingActive ? 'yes' : 'no'}`,
         `runtime kind: ${runtimeKind}`,
         `runtime queue index: ${runtimeQueueIndex ?? 'n/a'}`,
-        `UI displayed position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/45`}`,
+        `UI displayed position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${activeRecallPhraseCount}`}`,
         `audio owner: ${audioPlayOwner}`,
         `audio paused: ${audio.paused}`,
         `audio lesson: ${getCurrentAudioLesson()}`,

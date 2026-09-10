@@ -1,0 +1,87 @@
+{
+  "id": "giving-directions",
+  "scenario": "Giving Directions",
+  "scenarioJa": "道案内",
+  "phrases": [
+    {
+      "en": "Sure. Where are you trying to go?",
+      "ja": "もちろんです。どこへ行きたいですか？"
+    },
+    {
+      "en": "Could you show me on the map?",
+      "ja": "地図で見せてもらえますか？"
+    },
+    {
+      "en": "Let me check Google Maps.",
+      "ja": "Google Mapsで確認してみます。"
+    },
+    {
+      "en": "Go straight down this road.",
+      "ja": "この道をまっすぐ行ってください。"
+    },
+    {
+      "en": "Turn right at the traffic light.",
+      "ja": "信号を右に曲がってください。"
+    },
+    {
+      "en": "Turn left at the next intersection.",
+      "ja": "次の交差点を左に曲がってください。"
+    },
+    {
+      "en": "Turn right at the second traffic light.",
+      "ja": "2つ目の信号を右に曲がってください。"
+    },
+    {
+      "en": "Cross the street and keep going straight.",
+      "ja": "道を渡って、そのまままっすぐ進んでください。"
+    },
+    {
+      "en": "It’s on your right.",
+      "ja": "右手にあります。"
+    },
+    {
+      "en": "It’s on your left.",
+      "ja": "左手にあります。"
+    },
+    {
+      "en": "It’s next to the convenience store.",
+      "ja": "コンビニの隣にあります。"
+    },
+    {
+      "en": "It’s across from the station.",
+      "ja": "駅の向かい側にあります。"
+    },
+    {
+      "en": "It’s about a five-minute walk from here.",
+      "ja": "ここから歩いて5分くらいです。"
+    },
+    {
+      "en": "It’s a little far from here.",
+      "ja": "ここからは少し遠いです。"
+    },
+    {
+      "en": "You’re going the right way.",
+      "ja": "この方向で合っています。"
+    },
+    {
+      "en": "You’re going the wrong way.",
+      "ja": "反対方向に向かっています。"
+    },
+    {
+      "en": "Sorry, I’m not very familiar with this area.",
+      "ja": "すみません、この辺りはあまり詳しくありません。"
+    },
+    {
+      "en": "I’m not sure, but I can check the map.",
+      "ja": "よく分かりませんが、地図で確認できます。"
+    },
+    {
+      "en": "Could you say the name of the place again?",
+      "ja": "場所の名前をもう一度言ってもらえますか？"
+    },
+    {
+      "en": "I think this is the easiest way to get there.",
+      "ja": "この行き方が一番分かりやすいと思います。"
+    }
+  ]
+}
