@@ -1,6 +1,7 @@
 [
   {
     "id": "basic-delivery",
+    "domain": "delivery",
     "scenario": "Basic Delivery",
     "scenarioJa": "基本の受け渡し",
     "phrases": [
@@ -88,6 +89,7 @@
   },
   {
     "id": "cash-payment",
+    "domain": "delivery",
     "scenario": "Cash Payment",
     "scenarioJa": "現金払い",
     "phrases": [
@@ -115,6 +117,7 @@
   },
   {
     "id": "change-handling",
+    "domain": "delivery",
     "scenario": "Giving Change",
     "scenarioJa": "お釣りの受け渡し",
     "phrases": [
@@ -142,6 +145,7 @@
   },
   {
     "id": "giving-directions",
+    "domain": "everyday",
     "scenario": "Giving Directions",
     "scenarioJa": "道案内",
     "phrases": [
@@ -229,6 +233,7 @@
   },
   {
     "id": "order-verification",
+    "domain": "delivery",
     "scenario": "Order Verification",
     "scenarioJa": "注文者確認",
     "phrases": [
@@ -256,6 +261,7 @@
   },
   {
     "id": "pin-verification",
+    "domain": "delivery",
     "scenario": "PIN Verification",
     "scenarioJa": "PINコード確認",
     "phrases": [
@@ -283,6 +289,7 @@
   },
   {
     "id": "restaurant-delay",
+    "domain": "delivery",
     "scenario": "Restaurant Delay",
     "scenarioJa": "店舗での受け取り遅延",
     "phrases": [

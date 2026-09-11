@@ -1,5 +1,6 @@
 {
   "id": "order-verification",
+  "domain": "delivery",
   "scenario": "Order Verification",
   "scenarioJa": "注文者確認",
   "phrases": [

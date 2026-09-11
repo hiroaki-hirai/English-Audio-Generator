@@ -7,6 +7,7 @@ import {
   createActiveRecallSessionStore,
   createFreshActiveRecallSession,
   createNextActiveRecallRound,
+  createSequentialCategoryActiveRecallQueue,
   prepareActiveRecallSession,
   prepareActiveRecallRoundState,
 } from '../web/src/active-recall.js';
@@ -71,6 +72,55 @@ test('active recall queue shuffles a copy without mutating lesson input', () => 
   );
 });
 
+test('sequential category queue shuffles within each lesson without mixing lessons', () => {
+  const queue = createSequentialCategoryActiveRecallQueue(lessons, () => 0);
+
+  assert.deepEqual(
+    queue.map((entry) => `${entry.lessonId}:${entry.phraseIndex}`),
+    ['first-lesson:1', 'first-lesson:0', 'second-lesson:0'],
+  );
+});
+
+test('sequential category sessions resume with their saved category order', () => {
+  const fresh = createFreshActiveRecallSession(
+    lessons,
+    () => 0,
+    undefined,
+    'sequential-category',
+  );
+  fresh.session.currentIndex = 1;
+
+  const resumed = prepareActiveRecallSession(
+    lessons,
+    serializeSession(fresh.session),
+    () => {
+      throw new Error('resume must not reshuffle');
+    },
+    'sequential-category',
+  );
+
+  assert.equal(resumed.resumed, true);
+  assert.deepEqual(resumed.session.queue, fresh.session.queue);
+  assert.equal(resumed.session.currentIndex, 1);
+});
+
+test('sequential category mode remains grouped when starting the next round', () => {
+  const nextRound = createNextActiveRecallRound(
+    lessons,
+    { version: 1, currentRound: 1, lastCompletedRound: 0 },
+    () => 0,
+    'sequential-category',
+  );
+
+  assert.deepEqual(
+    nextRound.preparedSession.queue.map(
+      (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
+    ),
+    ['first-lesson:1', 'first-lesson:0', 'second-lesson:0'],
+  );
+  assert.equal(nextRound.roundState.currentRound, 2);
+});
+
 test('current training library contains 7 lessons and 65 unique phrases', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
@@ -115,6 +165,26 @@ test('giving-directions contributes 20 unique phrase identities', () => {
   assert.equal(new Set(givingDirectionsIdentities).size, 20);
   assert.ok(givingDirectionsIdentities.includes('giving-directions:0'));
   assert.ok(givingDirectionsIdentities.includes('giving-directions:19'));
+});
+
+test('giving-directions is the Everyday lesson and all other lessons are Delivery', () => {
+  const trainingLessons = JSON.parse(
+    readFileSync(
+      new URL('../web/src/training-lessons.json', import.meta.url),
+      'utf8',
+    ),
+  ) as Array<{ id: string; domain: string }>;
+
+  assert.deepEqual(
+    trainingLessons
+      .filter((lesson) => lesson.domain === 'everyday')
+      .map((lesson) => lesson.id),
+    ['giving-directions'],
+  );
+  assert.equal(
+    trainingLessons.filter((lesson) => lesson.domain === 'delivery').length,
+    6,
+  );
 });
 
 test('fresh active recall session contains every phrase and starts at zero', () => {

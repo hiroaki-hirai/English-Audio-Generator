@@ -1,5 +1,6 @@
 {
   "id": "restaurant-delay",
+  "domain": "delivery",
   "scenario": "Restaurant Delay",
   "scenarioJa": "店舗での受け取り遅延",
   "phrases": [

@@ -6,6 +6,8 @@ export type ActiveRecallLesson = {
   }>;
 };
 
+export type ActiveRecallQueueMode = 'global' | 'sequential-category';
+
 export type ActiveRecallQueueEntry = {
   lessonId: string;
   phraseIndex: number;
@@ -165,6 +167,33 @@ export function createActiveRecallQueue(
   return shuffleActiveRecallEntries(entries, random);
 }
 
+export function createSequentialCategoryActiveRecallQueue(
+  lessons: readonly ActiveRecallLesson[],
+  random: () => number = Math.random,
+): ActiveRecallQueueEntry[] {
+  return lessons.flatMap((lesson) =>
+    shuffleActiveRecallEntries(
+      lesson.phrases.map((phrase, phraseIndex) => ({
+        lessonId: lesson.id,
+        phraseIndex,
+        en: phrase.en,
+        ja: phrase.ja,
+      })),
+      random,
+    ),
+  );
+}
+
+function createQueueForMode(
+  lessons: readonly ActiveRecallLesson[],
+  mode: ActiveRecallQueueMode,
+  random: () => number,
+): ActiveRecallQueueEntry[] {
+  return mode === 'sequential-category'
+    ? createSequentialCategoryActiveRecallQueue(lessons, random)
+    : createActiveRecallQueue(lessons, random);
+}
+
 function getQueueIdentity(
   entry: ActiveRecallQueueIdentity,
 ): string {
@@ -235,6 +264,7 @@ export function createNextActiveRecallRound(
   lessons: readonly ActiveRecallLesson[],
   roundState: ActiveRecallRoundState,
   random: () => number = Math.random,
+  mode: ActiveRecallQueueMode = 'global',
 ): NextActiveRecallRound {
   const nextRoundState: ActiveRecallRoundState = {
     version: 1,
@@ -244,7 +274,12 @@ export function createNextActiveRecallRound(
 
   return {
     roundState: nextRoundState,
-    preparedSession: createFreshActiveRecallSession(lessons, random),
+    preparedSession: createFreshActiveRecallSession(
+      lessons,
+      random,
+      undefined,
+      mode,
+    ),
   };
 }
 
@@ -310,16 +345,18 @@ function resolveSavedQueue(
 export function createFreshActiveRecallSession(
   lessons: readonly ActiveRecallLesson[],
   random: () => number = Math.random,
-  diagnostic: ActiveRecallResumeDiagnostic = {
+  diagnostic: ActiveRecallResumeDiagnostic | undefined = undefined,
+  mode: ActiveRecallQueueMode = 'global',
+): PreparedActiveRecallSession {
+  const resolvedDiagnostic: ActiveRecallResumeDiagnostic = diagnostic ?? {
     savedSession: 'missing',
     savedCurrentIndex: null,
     signature: 'not-checked',
     queueValidation: 'not-checked',
     action: 'fresh',
     reason: 'no-saved-session',
-  },
-): PreparedActiveRecallSession {
-  const queue = createActiveRecallQueue(lessons, random);
+  };
+  const queue = createQueueForMode(lessons, mode, random);
   const session: ActiveRecallSession = {
     version: 1,
     queue: queue.map(({ lessonId, phraseIndex }) => ({
@@ -330,16 +367,17 @@ export function createFreshActiveRecallSession(
     librarySignature: createActiveRecallLibrarySignature(lessons),
   };
 
-  return { session, queue, resumed: false, diagnostic };
+  return { session, queue, resumed: false, diagnostic: resolvedDiagnostic };
 }
 
 export function prepareActiveRecallSession(
   lessons: readonly ActiveRecallLesson[],
   storedValue: string | null,
   random: () => number = Math.random,
+  mode: ActiveRecallQueueMode = 'global',
 ): PreparedActiveRecallSession {
   if (!storedValue) {
-    return createFreshActiveRecallSession(lessons, random);
+    return createFreshActiveRecallSession(lessons, random, undefined, mode);
   }
 
   let parsedValue: unknown;
@@ -354,7 +392,7 @@ export function prepareActiveRecallSession(
       queueValidation: 'not-checked',
       action: 'fresh',
       reason: 'malformed-json',
-    });
+    }, mode);
   }
 
   const savedCurrentIndex =
@@ -370,7 +408,7 @@ export function prepareActiveRecallSession(
       queueValidation: 'not-checked',
       action: 'fresh',
       reason: 'invalid-schema-or-version',
-    });
+    }, mode);
   }
 
   if (
@@ -384,7 +422,7 @@ export function prepareActiveRecallSession(
       queueValidation: 'not-checked',
       action: 'fresh',
       reason: 'library-signature-mismatch',
-    });
+    }, mode);
   }
 
   const resolvedQueue = resolveSavedQueue(parsedValue.queue, lessons);
@@ -397,7 +435,7 @@ export function prepareActiveRecallSession(
       queueValidation: 'invalid',
       action: 'fresh',
       reason: resolvedQueue.reason,
-    });
+    }, mode);
   }
 
   if (
@@ -412,7 +450,7 @@ export function prepareActiveRecallSession(
       queueValidation: 'valid',
       action: 'fresh',
       reason: 'invalid-current-index',
-    });
+    }, mode);
   }
 
   return {

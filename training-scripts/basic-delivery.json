@@ -1,5 +1,6 @@
 {
   "id": "basic-delivery",
+  "domain": "delivery",
   "scenario": "Basic Delivery",
   "scenarioJa": "基本の受け渡し",
   "phrases": [

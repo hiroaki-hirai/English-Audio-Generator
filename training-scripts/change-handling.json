@@ -1,5 +1,6 @@
 {
   "id": "change-handling",
+  "domain": "delivery",
   "scenario": "Giving Change",
   "scenarioJa": "お釣りの受け渡し",
   "phrases": [

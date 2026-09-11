@@ -1,5 +1,6 @@
 {
   "id": "cash-payment",
+  "domain": "delivery",
   "scenario": "Cash Payment",
   "scenarioJa": "現金払い",
   "phrases": [

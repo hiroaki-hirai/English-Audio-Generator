@@ -7,6 +7,7 @@ type TrainingPhrase = {
 
 type TrainingScript = {
   id: string;
+  domain: 'delivery' | 'everyday';
   scenario: string;
   scenarioJa: string;
   phrases: TrainingPhrase[];
@@ -32,6 +33,12 @@ async function main(): Promise<void> {
     if (!lesson.id || !lesson.scenario || !lesson.scenarioJa) {
       throw new Error(
         `Training script ${fileName} must contain id, scenario, and scenarioJa.`,
+      );
+    }
+
+    if (lesson.domain !== 'delivery' && lesson.domain !== 'everyday') {
+      throw new Error(
+        `Training script ${fileName} must contain a valid domain.`,
       );
     }
 

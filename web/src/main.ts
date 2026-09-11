@@ -5,6 +5,7 @@ import {
   createActiveRecallSessionStore,
   prepareActiveRecallSession,
   prepareActiveRecallRoundState,
+  type ActiveRecallQueueMode,
   type ActiveRecallRoundState,
 } from './active-recall.js';
 import lessonsData from './training-lessons.json';
@@ -16,6 +17,7 @@ type TrainingPhrase = {
 
 type TrainingScript = {
   id: string;
+  domain: 'delivery' | 'everyday';
   scenario: string;
   scenarioJa: string;
   phrases: TrainingPhrase[];
@@ -36,6 +38,10 @@ type PhraseSegment = {
 };
 
 const lessons = lessonsData as TrainingScript[];
+const lessonsByDomain = [
+  ...lessons.filter((lesson) => lesson.domain === 'delivery'),
+  ...lessons.filter((lesson) => lesson.domain === 'everyday'),
+];
 const activeRecallPhraseCount = lessons.reduce(
   (total, lesson) => total + lesson.phrases.length,
   0,
@@ -44,15 +50,35 @@ const activeRecallPhraseCount = lessons.reduce(
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
 const selectedLessonStorageKey = 'eag.selectedLesson.v1';
 const activeRecallSessionStorageKey = 'eag.activeRecallSession.v1';
+const sequentialActiveRecallSessionStorageKey =
+  'eag.sequentialCategoryActiveRecallSession.v1';
 const activeRecallRoundStorageKey = 'eag.activeRecallDiagnosticRound.v1';
-const activeRecallSessionStore = createActiveRecallSessionStore(
-  () => window.localStorage,
-  activeRecallSessionStorageKey,
-);
+const sequentialActiveRecallRoundStorageKey =
+  'eag.sequentialCategoryActiveRecallDiagnosticRound.v1';
 
-function loadActiveRecallRoundState(): string | null {
+const activeRecallSessionStores: Record<
+  ActiveRecallQueueMode,
+  ReturnType<typeof createActiveRecallSessionStore>
+> = {
+  global: createActiveRecallSessionStore(
+    () => window.localStorage,
+    activeRecallSessionStorageKey,
+  ),
+  'sequential-category': createActiveRecallSessionStore(
+    () => window.localStorage,
+    sequentialActiveRecallSessionStorageKey,
+  ),
+};
+
+function getActiveRecallRoundStorageKey(mode: ActiveRecallQueueMode): string {
+  return mode === 'sequential-category'
+    ? sequentialActiveRecallRoundStorageKey
+    : activeRecallRoundStorageKey;
+}
+
+function loadActiveRecallRoundState(mode: ActiveRecallQueueMode): string | null {
   try {
-    return localStorage.getItem(activeRecallRoundStorageKey);
+    return localStorage.getItem(getActiveRecallRoundStorageKey(mode));
   } catch {
     return null;
   }
@@ -60,10 +86,11 @@ function loadActiveRecallRoundState(): string | null {
 
 function saveActiveRecallRoundState(
   roundState: ActiveRecallRoundState,
+  mode: ActiveRecallQueueMode,
 ): void {
   try {
     localStorage.setItem(
-      activeRecallRoundStorageKey,
+      getActiveRecallRoundStorageKey(mode),
       JSON.stringify(roundState),
     );
   } catch {
@@ -128,9 +155,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
 
   const metadata = (await metadataResponse.json()) as LessonMetadata;
 
-  const lessonButtons = lessons
-    .map(
-      (lesson) => `
+  const renderLessonButtons = (domain: TrainingScript['domain']): string =>
+    lessons
+      .filter((lesson) => lesson.domain === domain)
+      .map(
+        (lesson) => `
         <button
           class="lesson-button"
           type="button"
@@ -141,8 +170,8 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           <span>${lesson.scenario}</span>
         </button>
       `,
-    )
-    .join('');
+      )
+      .join('');
 
   const phrases = selectedLesson.phrases
     .map((phrase, index) => {
@@ -191,10 +220,19 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       </button>
 
       <button
-        class="active-recall-button"
+        class="training-button active-recall-button"
         type="button"
+        data-active-recall-mode="global"
       >
-        Start Active Recall
+        Start Global Shuffle Active Recall
+      </button>
+
+      <button
+        class="training-button active-recall-button"
+        type="button"
+        data-active-recall-mode="sequential-category"
+      >
+        Start Sequential Category Shuffle
       </button>
 
       <p class="training-status" aria-live="polite">
@@ -210,13 +248,20 @@ Active Recall has not started.</pre>
     <section class="app-shell">
       <header>
         <p class="eyebrow">English Audio Generator</p>
-        <h1>Delivery English Training</h1>
+        <h1>English Situation Training</h1>
       </header>
 
-      <nav class="lesson-selector" aria-label="Basic training lessons">
-        <p class="lesson-label">Basic Training</p>
+      <nav class="lesson-selector" aria-label="Delivery English lessons">
+        <p class="lesson-label">Delivery English</p>
         <div class="lesson-buttons">
-          ${lessonButtons}
+          ${renderLessonButtons('delivery')}
+        </div>
+      </nav>
+
+      <nav class="lesson-selector" aria-label="Everyday English lessons">
+        <p class="lesson-label">Everyday English</p>
+        <div class="lesson-buttons">
+          ${renderLessonButtons('everyday')}
         </div>
       </nav>
 
@@ -258,9 +303,9 @@ Active Recall has not started.</pre>
   const trainingButton =
     app.querySelector<HTMLButtonElement>('.training-button');
 
-  const activeRecallButton = app.querySelector<HTMLButtonElement>(
-    '.active-recall-button',
-  );
+  const activeRecallButtons = [
+    ...app.querySelectorAll<HTMLButtonElement>('.active-recall-button'),
+  ];
 
   const trainingStatus =
     app.querySelector<HTMLParagraphElement>('.training-status');
@@ -270,7 +315,7 @@ Active Recall has not started.</pre>
 
   if (
     !trainingButton ||
-    !activeRecallButton ||
+    activeRecallButtons.length !== 2 ||
     !trainingStatus ||
     !resumeDiagnostic
   ) {
@@ -662,28 +707,50 @@ Active Recall has not started.</pre>
     });
   }
 
-  async function runActiveRecall(): Promise<void> {
+  function getActiveRecallButtonLabel(mode: ActiveRecallQueueMode): string {
+    return mode === 'sequential-category'
+      ? 'Start Sequential Category Shuffle'
+      : 'Start Global Shuffle Active Recall';
+  }
+
+  function resetActiveRecallButtons(): void {
+    activeRecallButtons.forEach((button) => {
+      const mode = button.dataset.activeRecallMode as ActiveRecallQueueMode;
+      button.disabled = false;
+      button.textContent = getActiveRecallButtonLabel(mode);
+    });
+  }
+
+  async function runActiveRecall(
+    mode: ActiveRecallQueueMode,
+    activeButton: HTMLButtonElement,
+  ): Promise<void> {
     trainingActive = true;
     runtimeKind = 'active-recall';
     trainingRunId += 1;
 
     const runId = trainingRunId;
+    const activeRecallSessionStore = activeRecallSessionStores[mode];
+    const activeRecallLessons =
+      mode === 'sequential-category' ? lessonsByDomain : lessons;
     const storageAvailableBeforeLoad =
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
     let preparedSession = prepareActiveRecallSession(
-      lessons,
+      activeRecallLessons,
       storedSession,
+      undefined,
+      mode,
     );
     let { queue, session } = preparedSession;
     let roundState = preparedSession.resumed
-      ? prepareActiveRecallRoundState(loadActiveRecallRoundState())
+      ? prepareActiveRecallRoundState(loadActiveRecallRoundState(mode))
       : prepareActiveRecallRoundState(null);
 
     currentRound = roundState.currentRound;
     lastCompletedRound = roundState.lastCompletedRound;
     sessionClearedThisRound = false;
-    saveActiveRecallRoundState(roundState);
+    saveActiveRecallRoundState(roundState, mode);
 
     const initialCheckpointSaved = activeRecallSessionStore.save(session);
     const diagnosticReason =
@@ -709,7 +776,10 @@ Active Recall has not started.</pre>
     audio.loop = false;
 
     trainingButton.disabled = true;
-    activeRecallButton.textContent = 'Stop Active Recall';
+    activeRecallButtons.forEach((button) => {
+      button.disabled = button !== activeButton;
+    });
+    activeButton.textContent = 'Stop Active Recall';
 
     try {
       const metadataPromisesByLessonId = new Map<
@@ -756,7 +826,12 @@ Active Recall has not started.</pre>
             `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`;
           updateResumeDiagnostic();
 
-          trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
+          const statusPrefix =
+            mode === 'sequential-category'
+              ? `Round ${currentRound} — Category: ${activeRecallLessons.find((lesson) => lesson.id === entry.lessonId)?.scenario ?? entry.lessonId}`
+              : `Round ${currentRound}`;
+
+          trainingStatus.textContent = `${statusPrefix} — Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
           await speakJapaneseCue(entry.ja);
 
@@ -764,7 +839,7 @@ Active Recall has not started.</pre>
             break;
           }
 
-          trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
+          trainingStatus.textContent = `${statusPrefix} — Phrase ${queueIndex + 1} / ${queue.length} — Recall`;
 
           const recallDelay = wait(recallMilliseconds);
 
@@ -810,7 +885,7 @@ Active Recall has not started.</pre>
                   ? 'Repeat'
                   : 'Weak Repeat';
 
-            trainingStatus.textContent = `Round ${currentRound} — Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
+            trainingStatus.textContent = `${statusPrefix} — Phrase ${queueIndex + 1} / ${queue.length} — ${phase}`;
 
             await playSegment(segment, runId, 'active-recall');
 
@@ -833,8 +908,10 @@ Active Recall has not started.</pre>
         activeRecallSessionStore.clear();
 
         const nextRound = createNextActiveRecallRound(
-          lessons,
+          activeRecallLessons,
           roundState,
+          undefined,
+          mode,
         );
 
         roundState = nextRound.roundState;
@@ -842,7 +919,7 @@ Active Recall has not started.</pre>
         ({ queue, session } = preparedSession);
         currentRound = roundState.currentRound;
         lastCompletedRound = roundState.lastCompletedRound;
-        saveActiveRecallRoundState(roundState);
+        saveActiveRecallRoundState(roundState, mode);
 
         sessionClearedThisRound = false;
         runtimeQueueIndex = session.currentIndex;
@@ -876,7 +953,7 @@ Active Recall has not started.</pre>
         restoreLessonAudio();
 
         trainingButton.disabled = false;
-        activeRecallButton.textContent = 'Start Active Recall';
+        resetActiveRecallButtons();
         trainingStatus.textContent = 'Training stopped';
         updateResumeDiagnostic();
       }
@@ -898,7 +975,9 @@ Active Recall has not started.</pre>
       audioPlayOwner = 'training';
       expectedPhraseEnd = null;
       trainingButton.textContent = 'Stop Training';
-      activeRecallButton.disabled = true;
+      activeRecallButtons.forEach((button) => {
+        button.disabled = true;
+      });
       trainingStatus.textContent = 'Continuous Training playing';
 
       try {
@@ -925,7 +1004,9 @@ Active Recall has not started.</pre>
     loopBeforeTraining = audio.loop;
     audio.loop = false;
     trainingButton.textContent = 'Stop Training';
-    activeRecallButton.disabled = true;
+    activeRecallButtons.forEach((button) => {
+      button.disabled = true;
+    });
 
     try {
       for (const [index, segment] of segments.entries()) {
@@ -979,7 +1060,7 @@ Active Recall has not started.</pre>
         audio.pause();
         audio.loop = loopBeforeTraining;
         trainingButton.textContent = 'Start Training';
-        activeRecallButton.disabled = false;
+        resetActiveRecallButtons();
         trainingStatus.textContent = 'Training stopped';
       }
     }
@@ -1009,8 +1090,7 @@ Active Recall has not started.</pre>
     trainingButton.disabled = false;
     trainingButton.textContent = 'Start Training';
 
-    activeRecallButton.disabled = false;
-    activeRecallButton.textContent = 'Start Active Recall';
+    resetActiveRecallButtons();
 
     trainingStatus.textContent = 'Training stopped';
     updateResumeDiagnostic();
@@ -1018,15 +1098,23 @@ Active Recall has not started.</pre>
 
   stopCurrentTraining = stopTraining;
 
-  activeRecallButton.addEventListener('click', () => {
-    if (trainingActive) {
-      stopTraining();
-      return;
-    }
+  activeRecallButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (trainingActive) {
+        stopTraining();
+        return;
+      }
 
-    activeRecallStartAttemptCount += 1;
-    updateResumeDiagnostic();
-    void runActiveRecall();
+      const mode = button.dataset.activeRecallMode;
+
+      if (mode !== 'global' && mode !== 'sequential-category') {
+        return;
+      }
+
+      activeRecallStartAttemptCount += 1;
+      updateResumeDiagnostic();
+      void runActiveRecall(mode, button);
+    });
   });
 
   trainingButton.addEventListener('click', () => {

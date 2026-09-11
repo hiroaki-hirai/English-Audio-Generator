@@ -1,5 +1,6 @@
 {
   "id": "pin-verification",
+  "domain": "delivery",
   "scenario": "PIN Verification",
   "scenarioJa": "PINコード確認",
   "phrases": [
