@@ -1181,7 +1181,7 @@ The existing generation pipeline remained the source of lesson content.
 The new web layer was designed around the generated training material
 rather than replacing it.
 
----
+------------------------------------------------------------------------
 
 ## Phase 8 --- Reusable training lessons and Web UI
 
@@ -1190,7 +1190,7 @@ situations.
 
 The initial training library contains six lessons:
 
-```text
+``` text
 basic-delivery
 cash-payment
 change-handling
@@ -1201,11 +1201,11 @@ restaurant-delay
 
 Each training lesson contains:
 
-- a stable lesson ID,
-- an English scenario,
-- a Japanese scenario translation,
-- five English practice phrases,
-- five Japanese phrase translations.
+-   a stable lesson ID,
+-   an English scenario,
+-   a Japanese scenario translation,
+-   five English practice phrases,
+-   five Japanese phrase translations.
 
 A generated lesson index allows the Web UI to discover these lessons
 without manually maintaining the same lesson information separately in
@@ -1213,16 +1213,16 @@ the frontend.
 
 The browser interface provides:
 
-- lesson selection,
-- scenario display,
-- English/Japanese phrase references,
-- audio playback,
-- repeated playback,
-- phrase-level navigation.
+-   lesson selection,
+-   scenario display,
+-   English/Japanese phrase references,
+-   audio playback,
+-   repeated playback,
+-   phrase-level navigation.
 
 This created a second major EAG workflow:
 
-```text
+``` text
 training script
         ↓
 generate training audio
@@ -1236,7 +1236,7 @@ select lesson on iPhone
 listen / repeat / tap individual phrases
 ```
 
----
+------------------------------------------------------------------------
 
 ## Phase 9 --- Training asset synchronization
 
@@ -1253,7 +1253,7 @@ added, the project generates the lesson index consumed by the Web UI.
 This reduced duplicated lesson-registration work and established the
 training scripts as the canonical lesson definitions.
 
----
+------------------------------------------------------------------------
 
 ### Incremental training audio builds
 
@@ -1269,7 +1269,7 @@ current lesson source is compared with the stored hash.
 
 The resulting behavior is:
 
-```text
+``` text
 lesson unchanged
         ↓
 skip TTS/audio rebuild
@@ -1285,14 +1285,14 @@ update source hash
 
 A validated run with all six lessons unchanged produced:
 
-```text
+``` text
 Training audio build complete: 0 built, 6 skipped.
 ```
 
 This reduces unnecessary API usage, build time, and accidental
 regeneration of otherwise stable audio.
 
----
+------------------------------------------------------------------------
 
 ## Phase 10 --- Phrase-level audio navigation
 
@@ -1308,7 +1308,7 @@ directly from the English reference list.
 To support this, lesson construction began producing phrase timing
 metadata:
 
-```json
+``` json
 {
   "phrases": [
     {
@@ -1325,7 +1325,7 @@ metadata:
 
 Each training lesson therefore has two related generated artifacts:
 
-```text
+``` text
 lesson.mp3
 metadata.json
 ```
@@ -1336,7 +1336,7 @@ start value to seek within `lesson.mp3`.
 This transformed the phrase list from a passive text reference into an
 interactive training control.
 
----
+------------------------------------------------------------------------
 
 ## Phase 11 --- iPhone / PWA audio-seeking investigation
 
@@ -1352,7 +1352,7 @@ Several hypotheses were tested incrementally.
 
 Commits:
 
-```text
+``` text
 5a64fc2 test: add seek lead for iPhone audio
 6d66f9f fix: tune phrase seek lead time
 ecf7c81 fix: tune phrase seek lead time
@@ -1366,7 +1366,7 @@ position.
 Small changes alone did not initially resolve the behavior consistently,
 which showed that the problem was not simply an incorrect constant.
 
----
+------------------------------------------------------------------------
 
 ### PWA cache investigation
 
@@ -1375,13 +1375,13 @@ which showed that the problem was not simply an incorrect constant.
 The investigation then moved to Service Worker behavior.
 
 Because the iPhone application was installed as a PWA and also needed to
-work offline, lesson audio could be served from Cache Storage rather than
-directly from the network.
+work offline, lesson audio could be served from Cache Storage rather
+than directly from the network.
 
 The Service Worker was refined so application resources could refresh
 appropriately while preserving offline support.
 
----
+------------------------------------------------------------------------
 
 ### Audio Range Request investigation
 
@@ -1392,8 +1392,8 @@ HTML audio seeking can use HTTP byte-range requests.
 This became particularly important on iPhone/Safari, where media seeking
 behavior differed from the desktop environment.
 
-The Service Worker already contained support for constructing `206
-Partial Content` responses from cached MP3 data for offline use.
+The Service Worker already contained support for constructing
+`206 Partial Content` responses from cached MP3 data for offline use.
 
 As part of the investigation, online audio range requests were allowed
 to use the network while cached range handling remained available as an
@@ -1401,7 +1401,7 @@ offline fallback.
 
 This separated two cases:
 
-```text
+``` text
 online
     → native network Range Request
 
@@ -1410,7 +1410,7 @@ offline
     → Service Worker creates 206 Partial Content response
 ```
 
----
+------------------------------------------------------------------------
 
 ### iPhone seek diagnostics
 
@@ -1418,13 +1418,13 @@ offline
 
 Temporary runtime diagnostics were added to observe:
 
-- metadata phrase start,
-- requested seek position,
-- actual playback position.
+-   metadata phrase start,
+-   requested seek position,
+-   actual playback position.
 
 An example observed during debugging was:
 
-```text
+``` text
 Phrase 3 | start=32.528 | requested=29.528 | playing=29.911
 ```
 
@@ -1434,7 +1434,7 @@ was broadly honoring the requested seek position.
 The investigation therefore shifted from JavaScript seeking itself to
 the correctness and freshness of the timing metadata.
 
----
+------------------------------------------------------------------------
 
 ## Phase 12 --- Synchronizing lesson audio and metadata
 
@@ -1445,7 +1445,7 @@ did not correspond to the actual phrase boundaries in the MP3.
 
 For example, phrase 3 was reported around:
 
-```text
+``` text
 32.528 seconds
 ```
 
@@ -1453,10 +1453,10 @@ while inspection of the audio showed the phrase beginning much earlier.
 
 FFprobe and waveform inspection were used to compare:
 
-- individual phrase durations,
-- final lesson duration,
-- generated metadata,
-- actual waveform structure.
+-   individual phrase durations,
+-   final lesson duration,
+-   generated metadata,
+-   actual waveform structure.
 
 This revealed an important build invariant:
 
@@ -1466,7 +1466,7 @@ Regenerating or restoring only one side of this pair can produce a
 technically valid MP3 and a technically valid metadata file that are
 nevertheless semantically incompatible.
 
----
+------------------------------------------------------------------------
 
 ### Synchronize lesson audio and seek metadata
 
@@ -1477,7 +1477,7 @@ the timing metadata generated from the same source audio.
 
 For `change-handling`, for example, stale timing values changed from:
 
-```text
+``` text
 16.624
 32.528
 45.264
@@ -1486,7 +1486,7 @@ For `change-handling`, for example, stale timing values changed from:
 
 to timing values corresponding to the rebuilt lesson:
 
-```text
+``` text
 15.520
 30.128
 43.056
@@ -1498,14 +1498,14 @@ again.
 
 This established a new EAG artifact rule:
 
-```text
+``` text
 lesson.mp3 + metadata.json = one generated artifact pair
 ```
 
 They should not be independently restored, copied, or published when the
 other member of the pair was generated from different phrase audio.
 
----
+------------------------------------------------------------------------
 
 ## Phase 13 --- PWA metadata freshness
 
@@ -1519,7 +1519,7 @@ could continue reading an older cached `metadata.json`.
 The Service Worker was therefore changed so lesson metadata uses a
 network-first strategy:
 
-```text
+``` text
 metadata request
         ↓
 network available?
@@ -1536,7 +1536,7 @@ assets could be retired during activation.
 This resolved the stale metadata behavior after the new Service Worker
 became active on the iPhone.
 
----
+------------------------------------------------------------------------
 
 ## Phase 14 --- Final iPhone phrase-seeking calibration
 
@@ -1549,13 +1549,13 @@ sentences sound slightly clipped.
 
 The final calibration became:
 
-```typescript
+``` typescript
 const seekLeadSeconds = 0.5;
 ```
 
 and the requested position is calculated as:
 
-```typescript
+``` typescript
 Math.max(0, phraseMetadata.start - seekLeadSeconds);
 ```
 
@@ -1567,17 +1567,17 @@ correction for incorrect metadata.
 
 The final implementation was committed as:
 
-```text
+``` text
 9ef253e fix: seek directly to phrase start
 ```
 
 Temporary seek diagnostics were then removed:
 
-```text
+``` text
 cad1da9 chore: remove audio seek diagnostics
 ```
 
----
+------------------------------------------------------------------------
 
 ## 16. Web / PWA Acceptance Validation
 
@@ -1587,22 +1587,22 @@ The completed training player was validated on both desktop and iPhone.
 
 Confirmed:
 
-- all six training lessons are selectable,
-- lesson audio plays correctly,
-- English and Japanese references correspond to the selected lesson,
-- tapping an English phrase seeks to the intended phrase,
-- phrase playback begins naturally from the sentence start.
+-   all six training lessons are selectable,
+-   lesson audio plays correctly,
+-   English and Japanese references correspond to the selected lesson,
+-   tapping an English phrase seeks to the intended phrase,
+-   phrase playback begins naturally from the sentence start.
 
 ### iPhone online
 
 Confirmed:
 
-- the application runs as an installed PWA,
-- lesson selection works,
-- lesson playback works,
-- phrase tapping works,
-- refreshed metadata is used,
-- phrase playback begins naturally.
+-   the application runs as an installed PWA,
+-   lesson selection works,
+-   lesson playback works,
+-   phrase tapping works,
+-   refreshed metadata is used,
+-   phrase playback begins naturally.
 
 ### iPhone offline
 
@@ -1610,7 +1610,7 @@ The final acceptance test was performed in airplane mode.
 
 Confirmed:
 
-```text
+``` text
 airplane mode
     ↓
 open installed EAG application
@@ -1629,14 +1629,14 @@ All tested phrases played naturally.
 This validates not only the phrase-seeking feature but the complete
 interaction between:
 
-- generated lesson audio,
-- generated seek metadata,
-- Web UI,
-- Service Worker caching,
-- cached HTTP Range responses,
-- iPhone/Safari media playback.
+-   generated lesson audio,
+-   generated seek metadata,
+-   Web UI,
+-   Service Worker caching,
+-   cached HTTP Range responses,
+-   iPhone/Safari media playback.
 
----
+------------------------------------------------------------------------
 
 ## 17. Web Training Architecture
 
@@ -1644,7 +1644,7 @@ The EAG architecture now contains two connected layers.
 
 ### Content generation
 
-```text
+``` text
 training-scripts/*.json
         ↓
 prepare training input
@@ -1660,7 +1660,7 @@ source-hash.txt
 
 ### Web delivery
 
-```text
+``` text
 training lesson definitions
         ↓
 generate training index
@@ -1676,7 +1676,7 @@ phrase-level seek
 
 ### Offline delivery
 
-```text
+``` text
 GitHub Pages deployment
         ↓
 Service Worker installation
@@ -1695,10 +1695,10 @@ phrase-level seeking
 The browser application is therefore not a separate source of lesson
 truth.
 
-Training scripts define the content, and generated Web assets expose that
-content to the player.
+Training scripts define the content, and generated Web assets expose
+that content to the player.
 
----
+------------------------------------------------------------------------
 
 ## 18. Additional Technical Decisions
 
@@ -1751,7 +1751,7 @@ It should not be increased to compensate for inaccurate metadata.
 If a future phrase requires a large lead value, audio/metadata
 synchronization should be investigated first.
 
----
+------------------------------------------------------------------------
 
 ## 19. Problems Encountered During Web/PWA Development
 
@@ -1772,21 +1772,22 @@ This demonstrated that deployment success alone does not prove that an
 installed PWA is currently executing the newest application and Service
 Worker state.
 
-**Lesson:** distinguish source-code correctness, GitHub Pages deployment,
-Service Worker activation, and client cache state during PWA debugging.
+**Lesson:** distinguish source-code correctness, GitHub Pages
+deployment, Service Worker activation, and client cache state during PWA
+debugging.
 
 ### Increasing seek lead could hide the real problem
 
-Several lead values were tested while stale or mismatched timing metadata
-was still present.
+Several lead values were tested while stale or mismatched timing
+metadata was still present.
 
 **Lesson:** a timing workaround should not be tuned until the underlying
 timeline data is known to be correct.
 
 ### MP3 and metadata could silently diverge
 
-Both files remained individually valid even when generated from different
-audio builds.
+Both files remained individually valid even when generated from
+different audio builds.
 
 **Lesson:** related generated artifacts need explicit synchronization
 invariants.
@@ -1798,13 +1799,13 @@ Playing a cached MP3 from the beginning is simpler than seeking into it.
 **Lesson:** offline media applications must account for byte-range
 semantics, not merely Cache Storage availability.
 
----
+------------------------------------------------------------------------
 
 ## 20. Current State After Web/PWA Training Slice
 
 As of **2026-08-25**, the validated EAG state is:
 
-```text
+``` text
 Branch:             main
 Remote branch:      origin/main
 HEAD:               cad1da9
@@ -1822,7 +1823,7 @@ Offline phrase seek: validated
 
 The latest relevant commits are:
 
-```text
+``` text
 cad1da9 chore: remove audio seek diagnostics
 9ef253e fix: seek directly to phrase start
 f6b8dd9 fix: seek directly to phrase start
@@ -1844,7 +1845,7 @@ The Web/PWA training slice can now be regarded as complete.
 
 The most important validated user-facing capability is:
 
-```text
+``` text
 select a training lesson on iPhone
         ↓
 listen to the complete lesson
@@ -1859,7 +1860,6 @@ repeat the exercise even while offline
 This provides a stable foundation for selecting the next EAG Vertical
 Slice from actual learning needs rather than continuing to debug the
 training playback infrastructure.
-
 
 ## 21. Continuous Phrase Training Mode
 
@@ -2205,7 +2205,6 @@ This behavior has not yet been implemented.
 
 It remains a candidate for the next Vertical Slice Selection Review
 rather than being treated as part of Training Mode v1.
-
 
 ## 25. Weak Phrase Training v1
 
@@ -2589,55 +2588,61 @@ is needed, while Normal phrases retain the faster two-repetition rhythm.
 The next EAG Vertical Slice should again be selected from observed
 learning needs rather than extending Weak Phrase Training automatically.
 
----
+------------------------------------------------------------------------
 
 ## 2026-08-26: Meaning → English Active Recall v1
 
 ### Background
 
-After completing Continuous Phrase Training Mode and Weak Phrase Training v1, the next development step was selected through a Vertical Slice Selection Review.
+After completing Continuous Phrase Training Mode and Weak Phrase
+Training v1, the next development step was selected through a Vertical
+Slice Selection Review.
 
 The selection criterion was intentionally changed from:
 
-- "What feature can be added to the app?"
+-   "What feature can be added to the app?"
 
 to:
 
-- "What is currently missing from EAG from the perspective of actual English acquisition?"
+-   "What is currently missing from EAG from the perspective of actual
+    English acquisition?"
 
 The existing Continuous Phrase Training flow was already effective for:
 
-- listening to the English phrase
-- shadowing from the first playback
-- repeating the phrase
-- recalling the phrase after hearing the correct English
-- increasing repetition for weak phrases
+-   listening to the English phrase
+-   shadowing from the first playback
+-   repeating the phrase
+-   recalling the phrase after hearing the correct English
+-   increasing repetition for weak phrases
 
-However, the existing Recall phase still occurred after the learner had just heard the correct English phrase.
+However, the existing Recall phase still occurred after the learner had
+just heard the correct English phrase.
 
 This meant that the training primarily exercised:
 
-```text
+``` text
 English
 → English reproduction
 ```
 
-rather than the retrieval path required in an actual delivery conversation:
+rather than the retrieval path required in an actual delivery
+conversation:
 
-```text
+``` text
 meaning / communicative intent
 → English
 ```
 
-In a real delivery situation, the learner first has an intention such as:
+In a real delivery situation, the learner first has an intention such
+as:
 
-```text
+``` text
 "Ask the customer to show the order screen."
 ```
 
 and must then retrieve:
 
-```text
+``` text
 "Could you show me your order screen, please?"
 ```
 
@@ -2645,7 +2650,7 @@ without hearing the correct English first.
 
 For this reason, the next Vertical Slice was selected as:
 
-```text
+``` text
 Meaning → English Active Recall v1
 ```
 
@@ -2657,7 +2662,7 @@ The two modes have different roles.
 
 Continuous Phrase Training:
 
-```text
+``` text
 English
 → shadowing
 → repetition
@@ -2666,14 +2671,14 @@ English
 
 Primary purpose:
 
-- acquire the sound
-- acquire the rhythm
-- reinforce the phrase
-- reproduce recently heard English
+-   acquire the sound
+-   acquire the rhythm
+-   reinforce the phrase
+-   reproduce recently heard English
 
 Active Recall:
 
-```text
+``` text
 Japanese meaning cue
 → silent recall
 → English answer
@@ -2681,13 +2686,13 @@ Japanese meaning cue
 
 Primary purpose:
 
-- retrieve English from meaning or communicative intent
-- create a deliberate "thinking" state before hearing the answer
-- practice the direction required during actual conversation
+-   retrieve English from meaning or communicative intent
+-   create a deliberate "thinking" state before hearing the answer
+-   practice the direction required during actual conversation
 
 The final v1 sequence for each phrase is:
 
-```text
+``` text
 Japanese meaning cue
 → 5-second Recall
 → English answer
@@ -2696,7 +2701,7 @@ Japanese meaning cue
 
 For a Weak phrase:
 
-```text
+``` text
 Japanese meaning cue
 → 5-second Recall
 → English answer
@@ -2706,21 +2711,25 @@ Japanese meaning cue
 
 Therefore:
 
-- Normal phrase: English × 2
-- Weak phrase: English × 3
-- Recall: 5 seconds for both Normal and Weak phrases
+-   Normal phrase: English × 2
+-   Weak phrase: English × 3
+-   Recall: 5 seconds for both Normal and Weak phrases
 
-The 5-second Recall interval was retained after actual use because it provided enough time to actively search for and attempt the English phrase without making the training feel excessively slow.
+The 5-second Recall interval was retained after actual use because it
+provided enough time to actively search for and attempt the English
+phrase without making the training feel excessively slow.
 
 ### Japanese Meaning Cue Strategy
 
-An initial design option was to generate dedicated Japanese cue audio through the existing OpenAI TTS build pipeline.
+An initial design option was to generate dedicated Japanese cue audio
+through the existing OpenAI TTS build pipeline.
 
-Before introducing additional generated audio artifacts, a smaller Vertical Slice was tested using the browser's built-in Web Speech API.
+Before introducing additional generated audio artifacts, a smaller
+Vertical Slice was tested using the browser's built-in Web Speech API.
 
 The existing canonical training script already contains:
 
-```json
+``` json
 {
   "en": "...",
   "ja": "..."
@@ -2729,97 +2738,107 @@ The existing canonical training script already contains:
 
 Therefore the Japanese `ja` value can be passed directly to:
 
-```text
+``` text
 SpeechSynthesisUtterance
 ```
 
 with:
 
-```text
+``` text
 lang = ja-JP
 ```
 
 This provides the Japanese meaning cue without changing:
 
-- `training-scripts/*.json`
-- existing `lesson.mp3`
-- existing `metadata.json`
-- source-hash behavior
-- the OpenAI TTS build pipeline
+-   `training-scripts/*.json`
+-   existing `lesson.mp3`
+-   existing `metadata.json`
+-   source-hash behavior
+-   the OpenAI TTS build pipeline
 
-The English answer continues to use the existing generated OpenAI TTS `lesson.mp3`.
+The English answer continues to use the existing generated OpenAI TTS
+`lesson.mp3`.
 
 Conceptually:
 
-```text
+``` text
 training script
 ├─ ja → browser speechSynthesis → Japanese meaning cue
 └─ en → existing lesson.mp3     → English answer
 ```
 
-This kept the Active Recall implementation small and preserved the existing validated English audio pipeline.
+This kept the Active Recall implementation small and preserved the
+existing validated English audio pipeline.
 
 ### Initial Web Speech Validation
 
-Before integrating Active Recall into the player, browser speech synthesis was tested independently.
+Before integrating Active Recall into the player, browser speech
+synthesis was tested independently.
 
 The test confirmed:
 
-```text
+``` text
 SpeechSynthesisUtterance
 → Japanese speech
 → end event
 ```
 
-The `end` event was important because Active Recall must wait until the Japanese cue has completely finished before starting the 5-second Recall period.
+The `end` event was important because Active Recall must wait until the
+Japanese cue has completely finished before starting the 5-second Recall
+period.
 
-After successful validation, a cancellable `speakJapaneseCue()` helper was added.
+After successful validation, a cancellable `speakJapaneseCue()` helper
+was added.
 
 The helper:
 
-- creates a `SpeechSynthesisUtterance`
-- sets `lang` to `ja-JP`
-- resolves after the `end` event
-- rejects on speech synthesis error
-- exposes cancellation behavior through the existing training stop flow
+-   creates a `SpeechSynthesisUtterance`
+-   sets `lang` to `ja-JP`
+-   resolves after the `end` event
+-   rejects on speech synthesis error
+-   exposes cancellation behavior through the existing training stop
+    flow
 
 ### Active Recall Implementation
 
 Added a separate:
 
-```text
+``` text
 Start Active Recall
 ```
 
 control alongside the existing:
 
-```text
+``` text
 Start Training
 ```
 
-The existing Continuous Phrase Training behavior was preserved rather than replaced.
+The existing Continuous Phrase Training behavior was preserved rather
+than replaced.
 
-Active Recall automatically progresses through all phrases in the selected lesson.
+Active Recall automatically progresses through all phrases in the
+selected lesson.
 
 For each phrase:
 
-1. Read the Japanese meaning cue.
-2. Wait 5 seconds for silent Active Recall.
-3. Play the existing English phrase segment.
-4. Repeat the English phrase.
-5. Add a third English playback when the phrase is marked Weak.
-6. Continue automatically to the next phrase.
+1.  Read the Japanese meaning cue.
+2.  Wait 5 seconds for silent Active Recall.
+3.  Play the existing English phrase segment.
+4.  Repeat the English phrase.
+5.  Add a third English playback when the phrase is marked Weak.
+6.  Continue automatically to the next phrase.
 
 The existing phrase segmentation logic is reused.
 
 The existing iPhone training playback behavior is also reused:
 
-```text
+``` text
 repeatGapMilliseconds = 0
 trainingSeekLeadSeconds = 0.5
 ```
 
-Therefore the English answer playback retains the same pre-roll behavior previously validated for Continuous Phrase Training.
+Therefore the English answer playback retains the same pre-roll behavior
+previously validated for Continuous Phrase Training.
 
 ### Weak Phrase Integration
 
@@ -2827,7 +2846,7 @@ Active Recall reuses the existing Weak Phrase state.
 
 Weak status continues to be stored by:
 
-```text
+``` text
 lesson ID + phrase index
 ```
 
@@ -2837,21 +2856,22 @@ No new learning-state format was introduced.
 
 The playback behavior is:
 
-```text
+``` text
 Normal:
 Japanese cue
 → 5-second Recall
 → English × 2
 ```
 
-```text
+``` text
 Weak:
 Japanese cue
 → 5-second Recall
 → English × 3
 ```
 
-Removing Weak status immediately returns the phrase to two English playbacks.
+Removing Weak status immediately returns the phrase to two English
+playbacks.
 
 ### Training Mode Coordination
 
@@ -2859,51 +2879,58 @@ Continuous Training and Active Recall are intentionally separate modes.
 
 While Continuous Training is active:
 
-- the Active Recall button is disabled
+-   the Active Recall button is disabled
 
 While Active Recall is active:
 
-- the normal Training button is disabled
+-   the normal Training button is disabled
 
-The existing shared training lifecycle is reused so that Active Recall can be stopped by the same user actions already supported by Continuous Training.
+The existing shared training lifecycle is reused so that Active Recall
+can be stopped by the same user actions already supported by Continuous
+Training.
 
 Active Recall stops correctly when:
 
-- Stop Active Recall is pressed
-- another lesson is selected
-- an English phrase is tapped for normal phrase playback
+-   Stop Active Recall is pressed
+-   another lesson is selected
+-   an English phrase is tapped for normal phrase playback
 
 Stopping Active Recall cancels:
 
-- an active Japanese speech synthesis cue
-- an active English phrase segment
-- the current training run
+-   an active Japanese speech synthesis cue
+-   an active English phrase segment
+-   the current training run
 
 The player then returns to its normal non-training state.
 
 ### Learning Evaluation
 
-The first implementation deliberately tested the smallest useful flow before expanding to all phrases:
+The first implementation deliberately tested the smallest useful flow
+before expanding to all phrases:
 
-```text
+``` text
 Japanese meaning cue
 → 5-second Recall
 → English answer
 ```
 
-Actual use confirmed that hearing the meaning before the answer naturally creates the desired mental state:
+Actual use confirmed that hearing the meaning before the answer
+naturally creates the desired mental state:
 
-```text
+``` text
 "What was the English for this?"
 ```
 
-This was judged to be a useful training load because the learner must actively search for the English phrase before receiving the answer.
+This was judged to be a useful training load because the learner must
+actively search for the English phrase before receiving the answer.
 
 The 5-second Recall interval also felt appropriate in actual use.
 
-It was long enough to attempt retrieval while still preserving the high-throughput training philosophy of EAG.
+It was long enough to attempt retrieval while still preserving the
+high-throughput training philosophy of EAG.
 
-The feature was then expanded to continuous progression across the full lesson.
+The feature was then expanded to continuous progression across the full
+lesson.
 
 Overall, Active Recall was judged highly useful in actual training.
 
@@ -2911,15 +2938,15 @@ Overall, Active Recall was judged highly useful in actual training.
 
 Verified on PC:
 
-- Japanese meaning cue playback works
-- speech synthesis completion can be detected
-- 5-second Recall occurs after the Japanese cue
-- English answer follows Recall
-- all phrases progress automatically
-- Normal phrases play English twice
-- Weak phrases play English three times
-- Active Recall can be stopped
-- existing Continuous Training remains available
+-   Japanese meaning cue playback works
+-   speech synthesis completion can be detected
+-   5-second Recall occurs after the Japanese cue
+-   English answer follows Recall
+-   all phrases progress automatically
+-   Normal phrases play English twice
+-   Weak phrases play English three times
+-   Active Recall can be stopped
+-   existing Continuous Training remains available
 
 ### iPhone PWA Validation
 
@@ -2927,46 +2954,49 @@ Verified on the installed iPhone PWA.
 
 Online:
 
-- Japanese meaning cue plays correctly
-- Active Recall progresses correctly
-- 5-second Recall works correctly
-- English answer playback works correctly
-- Continuous phrase progression works correctly
+-   Japanese meaning cue plays correctly
+-   Active Recall progresses correctly
+-   5-second Recall works correctly
+-   English answer playback works correctly
+-   Continuous phrase progression works correctly
 
 Airplane mode / offline:
 
-- Japanese meaning cue still plays correctly
-- English answer audio plays correctly
-- Active Recall progresses correctly
+-   Japanese meaning cue still plays correctly
+-   English answer audio plays correctly
+-   Active Recall progresses correctly
 
-This confirmed that, on the tested iPhone environment, browser speech synthesis can provide the Japanese meaning cue without requiring an online TTS request.
+This confirmed that, on the tested iPhone environment, browser speech
+synthesis can provide the Japanese meaning cue without requiring an
+online TTS request.
 
-Therefore dedicated generated Japanese cue MP3 files are not currently required.
+Therefore dedicated generated Japanese cue MP3 files are not currently
+required.
 
 ### Implementation Commit
 
 Feature implementation:
 
-```text
+``` text
 3dd0d4a feat: add meaning to English active recall
 ```
 
 Files changed:
 
-```text
+``` text
 web/src/main.ts
 ```
 
 The implementation added:
 
-- `Start Active Recall`
-- Japanese Web Speech cue playback
-- cancellable Japanese cue handling
-- 5-second pre-answer Recall
-- full-lesson automatic Active Recall progression
-- Normal ×2 / Weak ×3 English answer playback
-- coordination with existing Continuous Training
-- shared stop behavior
+-   `Start Active Recall`
+-   Japanese Web Speech cue playback
+-   cancellable Japanese cue handling
+-   5-second pre-answer Recall
+-   full-lesson automatic Active Recall progression
+-   Normal ×2 / Weak ×3 English answer playback
+-   coordination with existing Continuous Training
+-   shared stop behavior
 
 ### Current Training Architecture
 
@@ -2974,7 +3004,7 @@ EAG now provides two complementary continuous training modes.
 
 #### Continuous Phrase Training
 
-```text
+``` text
 English
 → English
 → 5-second Recall
@@ -2982,7 +3012,7 @@ English
 
 Weak:
 
-```text
+``` text
 English
 → English
 → English
@@ -2991,13 +3021,13 @@ English
 
 Purpose:
 
-```text
+``` text
 sound / rhythm / shadowing / immediate reproduction
 ```
 
 #### Meaning → English Active Recall
 
-```text
+``` text
 Japanese meaning
 → 5-second Recall
 → English
@@ -3006,7 +3036,7 @@ Japanese meaning
 
 Weak:
 
-```text
+``` text
 Japanese meaning
 → 5-second Recall
 → English
@@ -3016,21 +3046,21 @@ Japanese meaning
 
 Purpose:
 
-```text
+``` text
 meaning / communicative intent
 → English retrieval
 ```
 
 Together, these modes train two different directions:
 
-```text
+``` text
 English input
 → reproduction
 ```
 
 and:
 
-```text
+``` text
 meaning / intent
 → English production
 ```
@@ -3041,18 +3071,18 @@ No additional Active Recall features are being added immediately.
 
 Deferred possibilities include:
 
-- generated Japanese cue audio
-- speech recognition
-- automatic answer evaluation
-- spaced retrieval scheduling
-- automatic Weak detection
-- recall-time adjustment
-- randomized phrase order
-- context / phrase variation
+-   generated Japanese cue audio
+-   speech recognition
+-   automatic answer evaluation
+-   spaced retrieval scheduling
+-   automatic Weak detection
+-   recall-time adjustment
+-   randomized phrase order
+-   context / phrase variation
 
 The current priority remains:
 
-```text
+``` text
 use the training system in real practice
 → observe actual learning friction
 → select the next Vertical Slice from evidence
@@ -3066,11 +3096,12 @@ Meaning → English Active Recall v1 is complete.
 
 Validated environments now include:
 
-- PC
-- iPhone PWA online
-- iPhone PWA airplane mode / offline
+-   PC
+-   iPhone PWA online
+-   iPhone PWA airplane mode / offline
 
-The feature adds a new retrieval pathway to EAG while preserving the existing Continuous Phrase Training and Weak Phrase Training behavior.
+The feature adds a new retrieval pathway to EAG while preserving the
+existing Continuous Phrase Training and Weak Phrase Training behavior.
 
 ------------------------------------------------------------------------
 
@@ -3442,8 +3473,8 @@ iOS suspends or throttles the standalone PWA JavaScript
 
 ### Single-Resource Continuous Training
 
-The smallest architecture change was to generate a dedicated
-Continuous Training audio resource for each lesson.
+The smallest architecture change was to generate a dedicated Continuous
+Training audio resource for each lesson.
 
 For Normal phrases, the generated resource contains:
 
@@ -3496,8 +3527,8 @@ loudness LRA          → 7
 true peak              → -1.5
 ```
 
-The Continuous Training source hash includes the ordered training
-script and the audio build settings that affect the resulting track.
+The Continuous Training source hash includes the ordered training script
+and the audio build settings that affect the resulting track.
 
 This provides deterministic incremental generation.
 
@@ -3666,10 +3697,10 @@ the tested iOS standalone PWA environment stops background media
 even when EAG plays one uninterrupted HTML media resource
 ```
 
-The strongest conclusion supported by the real-device comparison is
-that the remaining limitation is associated with the tested iOS
-standalone PWA / WebKit background-media behavior rather than EAG phrase
-transition JavaScript.
+The strongest conclusion supported by the real-device comparison is that
+the remaining limitation is associated with the tested iOS standalone
+PWA / WebKit background-media behavior rather than EAG phrase transition
+JavaScript.
 
 This is an observed platform limitation under the tested configuration.
 It is not a claim that every iOS version or standalone PWA can never
@@ -3725,8 +3756,8 @@ The following remain possible future vertical slices:
 -   dynamic Weak/Normal session composition
 -   playback speed controls
 -   richer lock-screen controls
--   native-wrapper or native-application investigation if standalone
-    PWA background playback later becomes sufficiently important
+-   native-wrapper or native-application investigation if standalone PWA
+    background playback later becomes sufficiently important
 
 None of these are being implemented as part of the current slice.
 
@@ -3774,9 +3805,9 @@ start Active Recall before riding
 → continue learning without touching the screen
 ```
 
-Fixed lesson order also made the next topic and phrase easier to predict.
-The next slice therefore focused on both riding usability and retrieval
-quality:
+Fixed lesson order also made the next topic and phrase easier to
+predict. The next slice therefore focused on both riding usability and
+retrieval quality:
 
 ``` text
 one start action
@@ -3813,8 +3844,9 @@ Each queue entry retains the identity and content needed for playback:
 This distinction is important because the visible, manually selected
 lesson can differ from the lesson supplying the current shuffled phrase.
 
-Active Recall no longer stops at a lesson boundary. One session continues
-until all 45 queued phrases have been processed or the learner stops it.
+Active Recall no longer stops at a lesson boundary. One session
+continues until all 45 queued phrases have been processed or the learner
+stops it.
 
 ### Phrase-Level Fisher-Yates Shuffle
 
@@ -3852,10 +3884,10 @@ order itself is not persisted.
 The implementation retains one stable `HTMLAudioElement` rather than
 creating an audio element for every lesson or phrase.
 
-Before playing each queue entry, Active Recall uses its lesson ID to select
-the correct `lesson.mp3` and metadata. This allows consecutive entries from
-different lessons to play the correct English answer while preserving the
-existing segment-playback architecture.
+Before playing each queue entry, Active Recall uses its lesson ID to
+select the correct `lesson.mp3` and metadata. This allows consecutive
+entries from different lessons to play the correct English answer while
+preserving the existing segment-playback architecture.
 
 The validated Active Recall sequence remains:
 
@@ -3905,9 +3937,9 @@ Active Recall now resolves Weak state from the queue entry's actual:
 lesson ID + phrase index
 ```
 
-It does not use the currently rendered lesson ID. Identical phrase indexes
-in different lessons therefore remain independent, including when shuffled
-phrases cross lesson boundaries on every transition.
+It does not use the currently rendered lesson ID. Identical phrase
+indexes in different lessons therefore remain independent, including
+when shuffled phrases cross lesson boundaries on every transition.
 
 ### Stop and Cancellation Behavior
 
@@ -3923,8 +3955,8 @@ The existing run identity also prevents stale asynchronous work from
 restarting playback after cancellation.
 
 The same full-session stop occurs when the learner taps a normal English
-phrase or switches lessons. After stop or completion, the audio source is
-restored to the manually selected lesson.
+phrase or switches lessons. After stop or completion, the audio source
+is restored to the manually selected lesson.
 
 ### Selected Lesson Persistence
 
@@ -3943,8 +3975,9 @@ no saved value          → Basic Delivery
 unknown saved ID        → Basic Delivery
 ```
 
-Internal cross-lesson audio switching during Active Recall does not change
-the saved lesson. The architecture therefore explicitly distinguishes:
+Internal cross-lesson audio switching during Active Recall does not
+change the saved lesson. The architecture therefore explicitly
+distinguishes:
 
 ``` text
 manually selected lesson
@@ -4006,8 +4039,8 @@ src/active-recall.test.ts
 
 ### iPhone and Safari Real-Device Validation
 
-The deployed implementation was validated on a physical iPhone in Safari.
-All seven validation categories passed.
+The deployed implementation was validated on a physical iPhone in
+Safari. All seven validation categories passed.
 
 #### Lesson restoration
 
@@ -4028,7 +4061,8 @@ All seven validation categories passed.
 #### Cross-lesson audio correctness
 
 -   each Japanese cue corresponded to the correct English answer
--   crossing lesson boundaries did not play stale or incorrect lesson audio
+-   crossing lesson boundaries did not play stale or incorrect lesson
+    audio
 
 #### Weak behavior
 
@@ -4046,8 +4080,9 @@ Safari
 → open Uber Eats / delivery application
 ```
 
-Active Recall continued across lessons and progressed to subsequent phrases
-after Uber Eats notifications. No lesson-boundary interaction was required.
+Active Recall continued across lessons and progressed to subsequent
+phrases after Uber Eats notifications. No lesson-boundary interaction
+was required.
 
 #### Stop behavior
 
@@ -4057,8 +4092,8 @@ after Uber Eats notifications. No lesson-boundary interaction was required.
 
 ### Development Decision
 
-Ride Active Recall Shuffle is complete and becomes the validated baseline
-for the current training library.
+Ride Active Recall Shuffle is complete and becomes the validated
+baseline for the current training library.
 
 The resulting workflow is:
 
@@ -4119,8 +4154,8 @@ Ride Active Recall Shuffle made it possible to start one randomized
 45-phrase session before riding and continue across all six lessons.
 
 However, an interrupted session still lost its position. Starting Active
-Recall again created a new shuffle and returned the learner to the start of
-a different session.
+Recall again created a new shuffle and returned the learner to the start
+of a different session.
 
 The next vertical slice focused on one recovery behavior:
 
@@ -4131,9 +4166,9 @@ Active Recall stops partway through
 → restart the same phrase from its Japanese cue
 ```
 
-The feature does not attempt automatic OS-level playback recovery or exact
-audio-position restoration. Its purpose is to preserve the learning session
-when playback is interrupted.
+The feature does not attempt automatic OS-level playback recovery or
+exact audio-position restoration. Its purpose is to preserve the
+learning session when playback is interrupted.
 
 ### Persistent Active Recall Session
 
@@ -4152,8 +4187,8 @@ The persisted state contains only:
 -   current queue index
 -   training-library signature
 
-English and Japanese text are resolved from the current library rather than
-being duplicated in storage.
+English and Japanese text are resolved from the current library rather
+than being duplicated in storage.
 
 Micro playback state is intentionally not persisted. This includes:
 
@@ -4163,8 +4198,8 @@ Micro playback state is intentionally not persisted. This includes:
 -   audio current time
 -   current media URL
 
-The session therefore remains small and has a clear recovery boundary at the
-phrase level.
+The session therefore remains small and has a clear recovery boundary at
+the phrase level.
 
 ### Current-Phrase Restart Semantics
 
@@ -4179,14 +4214,15 @@ If playback stops during any of the following stages:
 -   second English playback
 -   Weak third English playback
 
-the next Active Recall start restores the same queue and restarts the same
-phrase from its Japanese cue.
+the next Active Recall start restores the same queue and restarts the
+same phrase from its Japanese cue.
 
 This deliberately favors repeating one phrase over accidentally skipping
-one. Playback phase and partial progress within the phrase are not restored.
+one. Playback phase and partial progress within the phrase are not
+restored.
 
-Resume does not reshuffle the saved queue. The original session order and
-its one-pass properties are retained:
+Resume does not reshuffle the saved queue. The original session order
+and its one-pass properties are retained:
 
 ``` text
 no missing phrase
@@ -4195,13 +4231,13 @@ every phrase exactly once in the saved queue
 ```
 
 Stop, normal phrase tap, and lesson switching still cancel the current
-runtime completely, including stale asynchronous continuation. They retain
-the unfinished persisted session so that the next Active Recall start can
-resume it.
+runtime completely, including stale asynchronous continuation. They
+retain the unfinished persisted session so that the next Active Recall
+start can resume it.
 
-Only normal completion of the final queued phrase removes the saved session.
-The following start then creates a fresh Fisher-Yates shuffle beginning at
-index zero.
+Only normal completion of the final queued phrase removes the saved
+session. The following start then creates a fresh Fisher-Yates shuffle
+beginning at index zero.
 
 ### Training-Library Compatibility
 
@@ -4214,8 +4250,8 @@ A deterministic signature is derived from the canonical ordered list of:
 -   phrase index
 -   English text
 
-The source is shortened using FNV-1a 32-bit and the phrase count is included
-in the resulting signature.
+The source is shortened using FNV-1a 32-bit and the phrase count is
+included in the resulting signature.
 
 A saved session is rejected when validation detects:
 
@@ -4228,16 +4264,16 @@ A saved session is rejected when validation detects:
 -   duplicate queue identity
 -   missing queue identity
 
-Invalid or stale state does not prevent training. Active Recall discards it
-and creates a fresh in-memory shuffled session.
+Invalid or stale state does not prevent training. Active Recall discards
+it and creates a fresh in-memory shuffled session.
 
-This provides a compatibility boundary for future training-library changes,
-including the planned expansion beyond the current 45 phrases.
+This provides a compatibility boundary for future training-library
+changes, including the planned expansion beyond the current 45 phrases.
 
 ### Storage Failure Isolation
 
-During iPhone investigation, persistent session storage was isolated behind
-a safe session store.
+During iPhone investigation, persistent session storage was isolated
+behind a safe session store.
 
 The store protects access to:
 
@@ -4246,8 +4282,9 @@ The store protects access to:
 -   `setItem`
 -   `removeItem`
 
-If any operation throws, persistence is disabled for the remainder of that
-page lifetime. Active Recall continues with a fresh in-memory queue.
+If any operation throws, persistence is disabled for the remainder of
+that page lifetime. Active Recall continues with a fresh in-memory
+queue.
 
 The resulting failure boundary is:
 
@@ -4289,19 +4326,21 @@ The focused test coverage includes:
 
 ### iPhone Safari Regression
 
-After Session Resume was introduced, Active Recall continued to work in the
-PC browser but stopped starting on the tested iPhone Safari environment.
+After Session Resume was introduced, Active Recall continued to work in
+the PC browser but stopped starting on the tested iPhone Safari
+environment.
 
-Pressing Start produced no Japanese cue, English audio, or visible playback
-progress.
+Pressing Start produced no Japanese cue, English audio, or visible
+playback progress.
 
 Because the same iPhone had successfully run Ride Active Recall Shuffle
-before the Resume change, the new persistence path was investigated first.
-Storage failure handling was strengthened, but the real-device symptom
-remained.
+before the Resume change, the new persistence path was investigated
+first. Storage failure handling was strengthened, but the real-device
+symptom remained.
 
-Temporary on-screen diagnostics were then added so the iPhone could report
-the actual start-path stage without depending on a remote console.
+Temporary on-screen diagnostics were then added so the iPhone could
+report the actual start-path stage without depending on a remote
+console.
 
 The first diagnostic build confirmed:
 
@@ -4322,17 +4361,19 @@ However, after `speak()` returned:
 -   the utterance `end` event did not occur
 -   the utterance `error` event did not occur
 
-The visible build marker also confirmed that the latest JavaScript bundle
-was executing. The observed failure was therefore not explained by an old
-Service Worker-controlled application shell or stale deployed bundle.
+The visible build marker also confirmed that the latest JavaScript
+bundle was executing. The observed failure was therefore not explained
+by an old Service Worker-controlled application shell or stale deployed
+bundle.
 
-This is recorded as an observation from the tested device and deployment,
-not as a general claim about all Safari or WebKit environments.
+This is recorded as an observation from the tested device and
+deployment, not as a general claim about all Safari or WebKit
+environments.
 
 ### Playback Ordering Investigation
 
-The start path was compared with the previously validated implementation in
-commit `58de11e`.
+The start path was compared with the previously validated implementation
+in commit `58de11e`.
 
 That implementation used the following order:
 
@@ -4346,12 +4387,13 @@ button click
 → speechSynthesis.speak()
 ```
 
-Session Resume added synchronous session loading, validation, and saving.
-It did not add a new `await` boundary before the first Japanese cue.
+Session Resume added synchronous session loading, validation, and
+saving. It did not add a new `await` boundary before the first Japanese
+cue.
 
 Nevertheless, the English media did not need to be prepared before the
-Japanese cue. Active Recall semantics already require Japanese speech first
-and English playback only after Recall.
+Japanese cue. Active Recall semantics already require Japanese speech
+first and English playback only after Recall.
 
 The execution order was therefore changed to:
 
@@ -4371,12 +4413,12 @@ This places the first Japanese cue before unnecessary English media
 preparation while using the five-second Recall interval to prepare the
 correct cross-lesson audio.
 
-Recall never becomes shorter than five seconds. If media preparation takes
-longer, English playback waits for it and the Recall interval is extended by
-the necessary amount.
+Recall never becomes shorter than five seconds. If media preparation
+takes longer, English playback waits for it and the Recall interval is
+extended by the necessary amount.
 
-No silent-audio unlock, dummy playback, `speechSynthesis.resume()` workaround,
-or automatic interruption workaround was added.
+No silent-audio unlock, dummy playback, `speechSynthesis.resume()`
+workaround, or automatic interruption workaround was added.
 
 ### Second iPhone Diagnostic Validation
 
@@ -4397,8 +4439,8 @@ speechSynthesis.speak returned
 → English audio.play resolved
 ```
 
-Playback continued to the next phrase and crossed lesson boundaries in the
-observed order:
+Playback continued to the next phrase and crossed lesson boundaries in
+the observed order:
 
 ``` text
 pin-verification
@@ -4407,12 +4449,12 @@ pin-verification
 ```
 
 The Japanese cue and English answer remained correct across these
-transitions. Progression also continued while Uber Eats notifications were
-displayed.
+transitions. Progression also continued while Uber Eats notifications
+were displayed.
 
-The real-device result supports the cue-first ordering as the effective fix
-for this observed regression. It does not establish that every iPhone Safari
-speech-synthesis failure has the same cause.
+The real-device result supports the cue-first ordering as the effective
+fix for this observed regression. It does not establish that every
+iPhone Safari speech-synthesis failure has the same cause.
 
 ### Session Resume Real-Device Validation
 
@@ -4431,8 +4473,8 @@ Start Active Recall
 
 The same-phrase restart began from the Japanese cue as designed.
 
-Together with the cross-lesson observation, this confirmed the target usage
-path:
+Together with the cross-lesson observation, this confirmed the target
+usage path:
 
 ``` text
 unfinished shuffled session
@@ -4489,16 +4531,16 @@ The completed slice preserves:
 -   Active Recall Session Resume
 -   storage failure fallback
 
-No training content, generated audio, Service Worker behavior, or Continuous
-Training architecture was changed in this slice.
+No training content, generated audio, Service Worker behavior, or
+Continuous Training architecture was changed in this slice.
 
-The planned 75-phrase expansion remains deferred. The training library is
-still the validated six-lesson, 45-phrase set.
+The planned 75-phrase expansion remains deferred. The training library
+is still the validated six-lesson, 45-phrase set.
 
 ### Result
 
-Active Recall Session Resume and its iPhone Safari regression investigation
-are complete.
+Active Recall Session Resume and its iPhone Safari regression
+investigation are complete.
 
 The validated progression is:
 
@@ -4514,4 +4556,879 @@ all-lesson shuffled Active Recall
 → complete speech and audio event progression restored
 → cross-lesson and Uber Eats notification validation
 → temporary diagnostics removed
+```
+
+------------------------------------------------------------------------
+
+## 2026-09-12: Active Recall Runtime and Audio Ownership Investigation
+
+### Background
+
+After Active Recall Session Resume was validated on iPhone Safari, real
+delivery use exposed a different class of problems.
+
+The learning behavior itself was judged highly effective. However, the
+runtime could still stop or enter an unexpected state during
+long-running background use.
+
+Two practical symptoms became the focus of the next investigation.
+
+### Issue 1 --- Long-idle Active Recall Start Failure
+
+After EAG had been left unused for a long period, typically around eight
+hours or more in the observed cases, pressing:
+
+``` text
+Start Active Recall
+```
+
+could fail to start the expected Japanese cue and English playback.
+
+A practical recovery was observed:
+
+``` text
+Start Active Recall
+→ no useful playback start
+→ select another lesson
+→ player returns to a fresh rendered state
+→ Start Active Recall works again
+```
+
+The investigation did not treat the eight-hour interval as a proven
+browser threshold. It is only the approximate idle duration observed
+during actual use.
+
+Code-path inspection showed that the English answer is eventually
+started through:
+
+``` text
+audio.play()
+```
+
+after:
+
+-   the Japanese speech-synthesis cue,
+-   asynchronous Promise / await boundaries,
+-   the minimum five-second Recall interval,
+-   lesson metadata and audio preparation.
+
+A diagnostic run exposed a `NotAllowedError` rejection from
+`audio.play()`.
+
+The exact observed path was:
+
+``` text
+Start Active Recall click
+→ restore session
+→ save checkpoint
+→ Japanese cue
+→ Recall
+→ prepare English media
+→ audio.play()
+→ NotAllowedError
+→ Active Recall catch/finally
+→ runtime returns to stopped state
+```
+
+The unfinished saved Active Recall session is not cleared by this
+failure.
+
+The current investigation therefore distinguishes:
+
+``` text
+session persistence
+```
+
+from:
+
+``` text
+browser permission / media playback state
+```
+
+No claim is made that long idle by itself always causes Safari to revoke
+media permission.
+
+### Why Lesson Switching Was Investigated
+
+Selecting another lesson does more than change a string identifying the
+lesson.
+
+The player path performs operations equivalent to:
+
+``` text
+stop current training
+→ pause shared audio
+→ restore lesson audio
+→ render the newly selected lesson
+→ rebuild the player DOM
+→ create a new HTMLAudioElement
+→ load the new source
+→ register Media Session handlers
+```
+
+Because this correlates with the observed recovery, media-element state
+became part of the investigation.
+
+However, the project has not concluded that recreating the audio element
+is the definitive fix.
+
+### Issue 2 --- Unexpected Normal Audio After Returning to Safari
+
+A second real-use symptom was observed after Active Recall had stopped
+or ceased producing the expected training sequence.
+
+The operational sequence was approximately:
+
+``` text
+Active Recall running
+→ Uber Eats in foreground
+→ Active Recall stops or becomes silent
+→ return to Safari EAG
+→ normal lesson audio is playing
+```
+
+This was unexpected because the user had not intentionally started
+ordinary lesson playback.
+
+Code inspection confirmed that Active Recall, Continuous Training,
+phrase tap playback, native audio controls, and Media Session
+integration all share the same `HTMLAudioElement`.
+
+Active Recall English playback uses the complete lesson MP3 and controls
+a phrase segment with JavaScript:
+
+``` text
+select lesson.mp3
+→ seek to phrase segment
+→ audio.play()
+→ observe timeupdate
+→ pause at expected phrase end
+```
+
+This means the underlying media resource is still the complete lesson.
+
+If background JavaScript does not execute the segment-end `timeupdate`
+handling at the expected moment, the shared media element can
+theoretically continue beyond the intended phrase boundary.
+
+A second relevant path is Media Session.
+
+The Media Session play action can call `audio.play()` on the shared
+media element. This made it necessary to distinguish whether unexpected
+playback was requested by:
+
+-   Active Recall,
+-   Continuous Training,
+-   phrase tap,
+-   Media Session,
+-   native audio controls,
+-   or a resumed shared media element.
+
+No foreground `visibilitychange` handler was added that intentionally
+starts audio.
+
+The issue remains under investigation.
+
+------------------------------------------------------------------------
+
+## Resume Diagnostic v2
+
+Rather than changing playback behavior from an unconfirmed hypothesis,
+the diagnostic instrumentation was expanded.
+
+The diagnostic view records Active Recall session state, runtime state,
+and shared-audio state together.
+
+Important fields include:
+
+``` text
+saved session
+saved currentIndex
+signature
+queue validation
+action
+reason
+runtime start index
+
+runtime active
+runtime kind
+runtime queue index
+UI displayed position
+
+audio owner
+audio paused
+audio lesson
+audio currentTime
+expected phrase end
+last audio event
+
+last play request source
+last play trigger
+last play rejection
+media session last action
+
+Active Recall start attempts
+visibility state
+session clear reason
+```
+
+Audio ownership can distinguish states such as:
+
+``` text
+active-recall
+training
+phrase-tap
+media-session
+none
+```
+
+The diagnostic was deliberately observational.
+
+It did not add a new automatic playback recovery path, lifecycle
+restart, dummy media unlock, or speculative media reset.
+
+### Session-Clear Invariant
+
+Inspection confirmed that an unfinished session is not intentionally
+cleared by:
+
+-   Stop,
+-   phrase tap,
+-   lesson switching,
+-   playback exceptions,
+-   normal `finally` cleanup.
+
+The saved Active Recall session is cleared only after normal completion
+of the entire queue while the same run is still active.
+
+This was important because a visible return to:
+
+``` text
+1 / 45
+```
+
+could not be treated as a display-only problem.
+
+The UI counter is derived from the runtime queue index, so a displayed
+first position means the runtime actually started from queue index zero.
+
+The diagnostic therefore records whether the cause is:
+
+-   missing saved session,
+-   invalid saved session,
+-   signature mismatch,
+-   queue validation failure,
+-   storage read failure,
+-   or a saved `currentIndex` of zero.
+
+------------------------------------------------------------------------
+
+## Continuous-Round Diagnostic Mode
+
+### Motivation
+
+Natural interruption was difficult to reproduce on demand.
+
+A single 45-phrase shuffled Active Recall session could also finish
+normally before the suspected interruption occurred.
+
+To increase observation time without duplicating training content, a
+temporary continuous-round diagnostic mode was introduced.
+
+### Round Behavior
+
+The design is:
+
+``` text
+Round 1
+→ process all 45 shuffled phrases
+→ normal completion
+→ clear completed session
+→ generate a fresh Fisher-Yates queue
+→ save Round 2 session
+→ continue automatically
+
+Round 2
+→ 45 shuffled phrases
+→ Round 3
+→ ...
+→ continue until explicit Stop
+```
+
+The phrase library itself is not duplicated.
+
+Every round still contains the current phrase identities exactly once.
+
+Each new round receives a newly generated Fisher-Yates order.
+
+### Resume Invariant
+
+An unfinished round retains the existing Session Resume behavior:
+
+``` text
+phrase N begins
+→ save currentIndex = N
+→ Japanese cue
+→ Recall
+→ English answer
+
+interruption or Stop
+→ preserve unfinished round and queue
+
+next Start
+→ restore same round
+→ restore same queue
+→ restart same phrase from Japanese cue
+```
+
+Stop does not advance the round.
+
+Only normal completion advances to the next round.
+
+### Temporary Round State
+
+Round information is stored separately from the existing Active Recall
+session schema using:
+
+``` text
+eag.activeRecallDiagnosticRound.v1
+```
+
+The temporary state records:
+
+``` text
+currentRound
+lastCompletedRound
+```
+
+The diagnostic display was extended with:
+
+``` text
+round
+round phrase position
+last completed round
+session cleared this round
+```
+
+This makes it possible to distinguish:
+
+``` text
+normal 45/45 completion
+```
+
+from:
+
+``` text
+unexpected interruption before the round completes
+```
+
+### Validation
+
+The diagnostic-round implementation was covered by tests for:
+
+-   normal round completion,
+-   creation of a fresh next-round queue,
+-   non-reuse of a completed queue as a resume queue,
+-   unfinished-round queue and index preservation,
+-   no round advance on explicit Stop,
+-   invalid temporary state fallback,
+-   consistency of `currentRound` and `lastCompletedRound`.
+
+The automated validation at that stage was:
+
+``` text
+npm test         → 23 / 23 passed
+npx tsc --noEmit → passed
+npm run web:build → passed
+git diff --check → passed
+```
+
+This mode exists to increase real-device observation time. It should not
+be interpreted as the final product design for endless Active Recall.
+
+------------------------------------------------------------------------
+
+## Development Decision --- Do Not Block Learning Expansion on Safari Diagnosis
+
+Real delivery conditions made the Safari investigation slow.
+
+Delivery frequency was temporarily lower because available delivery
+offers were less attractive, reducing opportunities to reproduce
+long-running background behavior.
+
+At the same time, practical use had already shown that Meaning → English
+Active Recall produced substantial learning value.
+
+The development priority was therefore adjusted.
+
+The project would continue collecting evidence for the two Safari
+issues, but new training content would no longer be blocked until those
+issues were fully explained.
+
+The new working principle became:
+
+``` text
+keep unresolved runtime issues observable
+        ↓
+do not hide or prematurely "fix" them
+        ↓
+continue expanding useful training content
+        ↓
+validate both learning value and runtime behavior during future use
+```
+
+This separates two workstreams:
+
+``` text
+runtime reliability investigation
+```
+
+and:
+
+``` text
+learning-content expansion
+```
+
+------------------------------------------------------------------------
+
+## 2026-09-12: Training Expansion Beyond Delivery Situations
+
+### Background
+
+EAG began as a delivery-English training tool.
+
+The original reusable lessons focused on situations directly connected
+to Uber Eats work.
+
+By this stage, however, Active Recall had established a more general
+learning pattern:
+
+``` text
+realistic situation / communicative meaning
+→ Japanese cue
+→ deliberate retrieval
+→ English response
+```
+
+That pattern is not limited to food delivery.
+
+The next content direction was therefore expanded toward situations the
+learner is reasonably likely to encounter in ordinary life.
+
+The objective is not to add arbitrary textbook vocabulary.
+
+The content should remain situation-driven and action-oriented:
+
+``` text
+encounter a realistic situation
+→ understand what needs to be communicated
+→ retrieve a practical English phrase
+```
+
+The first non-delivery-oriented lesson selected for this expansion was:
+
+``` text
+Giving Directions
+```
+
+This provides a natural transition because being asked for directions
+can occur during ordinary movement around town and also overlaps with
+the learner's existing delivery environment.
+
+------------------------------------------------------------------------
+
+## 2026-09-12: Giving Directions Training Lesson
+
+### Lesson Expansion
+
+A new canonical training script was added:
+
+``` text
+training-scripts/giving-directions.json
+```
+
+This became the seventh EAG training lesson.
+
+The training library changed from:
+
+``` text
+6 lessons
+45 phrases
+```
+
+to:
+
+``` text
+7 lessons
+65 phrases
+```
+
+The new lesson contains 20 phrases.
+
+### Giving Directions Phrase Set
+
+The lesson contains the following English phrases:
+
+``` text
+1.  Sure. Where are you trying to go?
+2.  Could you show me on the map?
+3.  Let me check Google Maps.
+4.  Go straight down this road.
+5.  Turn right at the traffic light.
+6.  Turn left at the next intersection.
+7.  Turn right at the second traffic light.
+8.  Cross the street and keep going straight.
+9.  It’s on your right.
+10. It’s on your left.
+11. It’s next to the convenience store.
+12. It’s across from the station.
+13. It’s about a five-minute walk from here.
+14. It’s a little far from here.
+15. You’re going the right way.
+16. You’re going the wrong way.
+17. Sorry, I’m not very familiar with this area.
+18. I’m not sure, but I can check the map.
+19. Could you say the name of the place again?
+20. I think this is the easiest way to get there.
+```
+
+The lesson follows the same bilingual training-script structure as the
+existing lessons.
+
+### Integration With Existing Training Architecture
+
+Giving Directions was added through the existing canonical training
+pipeline rather than through lesson-specific frontend logic.
+
+The flow remains:
+
+``` text
+training-scripts/*.json
+→ generated training index
+→ Web lesson selector
+→ Active Recall library
+→ generated lesson audio and metadata
+```
+
+The new lesson therefore participates automatically in:
+
+-   lesson selection,
+-   English / Japanese reference display,
+-   Weak Phrase identity,
+-   phrase playback,
+-   Continuous Training assets,
+-   shuffled all-lesson Active Recall,
+-   Active Recall Session Resume.
+
+The phrase identities are:
+
+``` text
+giving-directions:0
+...
+giving-directions:19
+```
+
+### Active Recall Library Expansion
+
+The all-lesson Active Recall library now contains 65 unique phrase
+identities.
+
+The existing Fisher-Yates architecture continues to provide one shuffled
+queue containing every current phrase exactly once.
+
+Conceptually:
+
+``` text
+7 lessons
+→ flatten 65 phrase identities
+→ Fisher-Yates shuffle
+→ Japanese cue
+→ Recall
+→ correct lesson audio
+→ continue across lesson boundaries
+```
+
+No special Giving Directions branch was required.
+
+### Resume Compatibility
+
+The Active Recall session signature includes the current training
+library.
+
+A saved session created against the previous 45-phrase library therefore
+no longer matches the new 65-phrase library.
+
+The expected transition is:
+
+``` text
+old 45-phrase saved session
+→ library signature mismatch
+→ reject stale queue safely
+→ create fresh 65-phrase shuffled session
+```
+
+A current valid 65-phrase unfinished session remains resumable using the
+existing same-phrase restart semantics.
+
+### Dynamic Diagnostic Phrase Count
+
+The diagnostic UI previously contained a fixed `/45` assumption.
+
+Because the training library now contains 65 phrases and is expected to
+continue growing, the displayed total was changed to derive from the
+actual Active Recall library size.
+
+This is a diagnostic/UI generalization rather than a change to Active
+Recall learning semantics.
+
+### Generated Audio Assets
+
+The new lesson generated the same artifact family used by existing
+lessons:
+
+``` text
+web/public/lessons/giving-directions/
+├─ lesson.mp3
+├─ continuous-training.mp3
+├─ metadata.json
+└─ source-hash.txt
+```
+
+The Web training asset index was updated accordingly.
+
+The generation used the repository's current audio configuration:
+
+``` text
+Model:       gpt-4o-mini-tts
+Voice:       cedar
+Sample rate: 24 kHz
+Codec:       MP3 / libmp3lame
+Loudness I:  -16
+LRA:         7
+True peak:   -1.5
+```
+
+Continuous Training retains the existing generated structure:
+
+``` text
+English
+→ repeat
+→ Recall interval
+→ next phrase
+```
+
+The generated audio was inspected as:
+
+``` text
+lesson.mp3
+→ 24 kHz
+→ mono
+→ approximately 293.304 seconds
+
+continuous-training.mp3
+→ 24 kHz
+→ mono
+→ approximately 218.304 seconds
+```
+
+The metadata contains 20 ordered phrase entries with increasing
+timestamps.
+
+After generation, the incremental audio build recognized all seven
+lessons as current:
+
+``` text
+0 built
+7 skipped
+```
+
+### Files Added or Updated
+
+The lesson expansion affected:
+
+``` text
+training-scripts/giving-directions.json
+web/src/training-lessons.json
+web/src/main.ts
+web/src/training-audio-assets.js
+src/active-recall.test.ts
+
+web/public/lessons/giving-directions/lesson.mp3
+web/public/lessons/giving-directions/continuous-training.mp3
+web/public/lessons/giving-directions/metadata.json
+web/public/lessons/giving-directions/source-hash.txt
+```
+
+The Service Worker was not changed for this content slice.
+
+The existing Safari Issue 1 / Issue 2 playback logic was also not
+changed as part of Giving Directions.
+
+### Automated Validation
+
+The expanded training library passed:
+
+``` text
+npm test
+→ 26 / 26 passed
+
+npx tsc --noEmit
+→ passed
+
+npm run web:build
+→ passed
+
+npm run build:training-audio
+→ passed
+
+git diff --check
+→ passed
+```
+
+The tests cover the expanded 65-phrase Active Recall library and the
+existing resume / shuffle invariants.
+
+### Result
+
+Giving Directions establishes the first deliberate expansion of EAG
+beyond delivery-only situations.
+
+The progression is now:
+
+``` text
+delivery-specific English
+→ reusable situation lessons
+→ Meaning → English Active Recall
+→ shuffled cross-lesson retrieval
+→ persistent session resume
+→ first broader everyday-life situation
+→ Giving Directions
+```
+
+This is an important product-direction milestone.
+
+EAG is evolving from:
+
+``` text
+a tool for practicing Uber Eats English
+```
+
+toward:
+
+``` text
+a personal situation-based spoken-English training system
+```
+
+while retaining the same practical design principle:
+
+``` text
+train phrases that are likely to be needed in a recognizable real situation
+```
+
+------------------------------------------------------------------------
+
+## Current State as of 2026-09-12
+
+The current EAG training state is:
+
+``` text
+Training lessons:          7
+Total training phrases:    65
+
+Basic Delivery:            20 phrases
+Cash Payment:               5 phrases
+Change Handling:            5 phrases
+Order Verification:         5 phrases
+PIN Verification:           5 phrases
+Restaurant Delay:           5 phrases
+Giving Directions:         20 phrases
+
+Continuous Training:       operational
+Weak Phrase Training:      operational
+Meaning → English Recall:  operational
+All-lesson shuffle:        operational
+Session Resume:            operational
+Cross-lesson audio:        operational
+
+Normal English repeats:    2
+Weak English repeats:      3
+Recall interval:           minimum 5 seconds
+Training seek pre-roll:    0.5 seconds
+
+Automated tests:           26 / 26 passed
+TypeScript validation:     passed
+Web production build:      passed
+Training audio build:      passed
+```
+
+The temporary continuous-round mode and Resume diagnostic v2 remain part
+of the current investigation environment for long-running real-device
+observation.
+
+### Known Issue 1
+
+``` text
+Long-idle Active Recall start can fail
+Observed rejection: NotAllowedError
+Status: investigation in progress
+```
+
+The current evidence is insufficient to conclude that the approximate
+eight-hour idle period is itself the browser rule or root cause.
+
+### Known Issue 2
+
+``` text
+After Active Recall stops or becomes silent,
+returning to Safari can expose ordinary lesson audio playback
+Status: investigation in progress
+```
+
+The investigation is tracing shared audio ownership, Media Session
+actions, native controls, phrase segment boundaries, and background
+runtime state.
+
+No speculative production fix has been accepted for either issue.
+
+### Current Development Direction
+
+The immediate development philosophy is:
+
+``` text
+continue real-device diagnosis when delivery use provides evidence
+        +
+continue expanding high-value situation-based training content
+```
+
+The remaining planned delivery-content expansion is still available as a
+future step, including expansion of the five remaining five-phrase
+lessons.
+
+However, content development is no longer limited to delivery
+situations.
+
+Future lesson selection can now consider:
+
+-   everyday directions,
+-   stores and shopping,
+-   transportation,
+-   restaurants,
+-   simple requests,
+-   asking for help,
+-   clarification,
+-   small everyday interactions,
+
+provided the situation is realistic enough to justify active retrieval
+practice.
+
+The central learning loop remains:
+
+``` text
+recognize situation / meaning
+→ retrieve English before hearing the answer
+→ hear correct English
+→ repeat
+→ mark difficult phrases Weak
+→ encounter the phrase again in shuffled practice
+→ gradually make retrieval automatic
 ```
