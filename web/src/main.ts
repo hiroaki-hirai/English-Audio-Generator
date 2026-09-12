@@ -52,9 +52,13 @@ const selectedLessonStorageKey = 'eag.selectedLesson.v1';
 const activeRecallSessionStorageKey = 'eag.activeRecallSession.v1';
 const sequentialActiveRecallSessionStorageKey =
   'eag.sequentialCategoryActiveRecallSession.v1';
+const orderedActiveRecallSessionStorageKey =
+  'eag.sequentialCategoryOrderedActiveRecallSession.v1';
 const activeRecallRoundStorageKey = 'eag.activeRecallDiagnosticRound.v1';
 const sequentialActiveRecallRoundStorageKey =
   'eag.sequentialCategoryActiveRecallDiagnosticRound.v1';
+const orderedActiveRecallRoundStorageKey =
+  'eag.sequentialCategoryOrderedActiveRecallDiagnosticRound.v1';
 
 const activeRecallSessionStores: Record<
   ActiveRecallQueueMode,
@@ -68,9 +72,17 @@ const activeRecallSessionStores: Record<
     () => window.localStorage,
     sequentialActiveRecallSessionStorageKey,
   ),
+  'sequential-category-order': createActiveRecallSessionStore(
+    () => window.localStorage,
+    orderedActiveRecallSessionStorageKey,
+  ),
 };
 
 function getActiveRecallRoundStorageKey(mode: ActiveRecallQueueMode): string {
+  if (mode === 'sequential-category-order') {
+    return orderedActiveRecallRoundStorageKey;
+  }
+
   return mode === 'sequential-category'
     ? sequentialActiveRecallRoundStorageKey
     : activeRecallRoundStorageKey;
@@ -235,6 +247,14 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Start Sequential Category Shuffle
       </button>
 
+      <button
+        class="training-button active-recall-button"
+        type="button"
+        data-active-recall-mode="sequential-category-order"
+      >
+        Start Sequential Category Order
+      </button>
+
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
@@ -315,7 +335,7 @@ Active Recall has not started.</pre>
 
   if (
     !trainingButton ||
-    activeRecallButtons.length !== 2 ||
+    activeRecallButtons.length !== 3 ||
     !trainingStatus ||
     !resumeDiagnostic
   ) {
@@ -708,6 +728,10 @@ Active Recall has not started.</pre>
   }
 
   function getActiveRecallButtonLabel(mode: ActiveRecallQueueMode): string {
+    if (mode === 'sequential-category-order') {
+      return 'Start Sequential Category Order';
+    }
+
     return mode === 'sequential-category'
       ? 'Start Sequential Category Shuffle'
       : 'Start Global Shuffle Active Recall';
@@ -731,8 +755,7 @@ Active Recall has not started.</pre>
 
     const runId = trainingRunId;
     const activeRecallSessionStore = activeRecallSessionStores[mode];
-    const activeRecallLessons =
-      mode === 'sequential-category' ? lessonsByDomain : lessons;
+    const activeRecallLessons = mode === 'global' ? lessons : lessonsByDomain;
     const storageAvailableBeforeLoad =
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
@@ -827,7 +850,7 @@ Active Recall has not started.</pre>
           updateResumeDiagnostic();
 
           const statusPrefix =
-            mode === 'sequential-category'
+            mode !== 'global'
               ? `Round ${currentRound} — Category: ${activeRecallLessons.find((lesson) => lesson.id === entry.lessonId)?.scenario ?? entry.lessonId}`
               : `Round ${currentRound}`;
 
@@ -1107,7 +1130,11 @@ Active Recall has not started.</pre>
 
       const mode = button.dataset.activeRecallMode;
 
-      if (mode !== 'global' && mode !== 'sequential-category') {
+      if (
+        mode !== 'global' &&
+        mode !== 'sequential-category' &&
+        mode !== 'sequential-category-order'
+      ) {
         return;
       }
 

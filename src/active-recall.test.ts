@@ -8,6 +8,7 @@ import {
   createFreshActiveRecallSession,
   createNextActiveRecallRound,
   createSequentialCategoryActiveRecallQueue,
+  createSequentialCategoryOrderedActiveRecallQueue,
   prepareActiveRecallSession,
   prepareActiveRecallRoundState,
 } from '../web/src/active-recall.js';
@@ -117,6 +118,58 @@ test('sequential category mode remains grouped when starting the next round', ()
       (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
     ),
     ['first-lesson:1', 'first-lesson:0', 'second-lesson:0'],
+  );
+  assert.equal(nextRound.roundState.currentRound, 2);
+});
+
+test('sequential category ordered queue preserves lesson and phrase order', () => {
+  const queue = createSequentialCategoryOrderedActiveRecallQueue(lessons);
+
+  assert.deepEqual(
+    queue.map((entry) => `${entry.lessonId}:${entry.phraseIndex}`),
+    ['first-lesson:0', 'first-lesson:1', 'second-lesson:0'],
+  );
+});
+
+test('sequential category ordered sessions resume without using randomness', () => {
+  const noRandom = (): number => {
+    throw new Error('ordered mode must not use randomness');
+  };
+  const fresh = createFreshActiveRecallSession(
+    lessons,
+    noRandom,
+    undefined,
+    'sequential-category-order',
+  );
+  fresh.session.currentIndex = 1;
+
+  const resumed = prepareActiveRecallSession(
+    lessons,
+    serializeSession(fresh.session),
+    noRandom,
+    'sequential-category-order',
+  );
+
+  assert.equal(resumed.resumed, true);
+  assert.deepEqual(resumed.session.queue, fresh.session.queue);
+  assert.equal(resumed.session.currentIndex, 1);
+});
+
+test('sequential category ordered mode remains ordered in the next round', () => {
+  const nextRound = createNextActiveRecallRound(
+    lessons,
+    { version: 1, currentRound: 1, lastCompletedRound: 0 },
+    () => {
+      throw new Error('ordered mode must not use randomness');
+    },
+    'sequential-category-order',
+  );
+
+  assert.deepEqual(
+    nextRound.preparedSession.queue.map(
+      (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
+    ),
+    ['first-lesson:0', 'first-lesson:1', 'second-lesson:0'],
   );
   assert.equal(nextRound.roundState.currentRound, 2);
 });

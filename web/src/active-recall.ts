@@ -6,7 +6,10 @@ export type ActiveRecallLesson = {
   }>;
 };
 
-export type ActiveRecallQueueMode = 'global' | 'sequential-category';
+export type ActiveRecallQueueMode =
+  | 'global'
+  | 'sequential-category'
+  | 'sequential-category-order';
 
 export type ActiveRecallQueueEntry = {
   lessonId: string;
@@ -184,11 +187,28 @@ export function createSequentialCategoryActiveRecallQueue(
   );
 }
 
+export function createSequentialCategoryOrderedActiveRecallQueue(
+  lessons: readonly ActiveRecallLesson[],
+): ActiveRecallQueueEntry[] {
+  return lessons.flatMap((lesson) =>
+    lesson.phrases.map((phrase, phraseIndex) => ({
+      lessonId: lesson.id,
+      phraseIndex,
+      en: phrase.en,
+      ja: phrase.ja,
+    })),
+  );
+}
+
 function createQueueForMode(
   lessons: readonly ActiveRecallLesson[],
   mode: ActiveRecallQueueMode,
   random: () => number,
 ): ActiveRecallQueueEntry[] {
+  if (mode === 'sequential-category-order') {
+    return createSequentialCategoryOrderedActiveRecallQueue(lessons);
+  }
+
   return mode === 'sequential-category'
     ? createSequentialCategoryActiveRecallQueue(lessons, random)
     : createActiveRecallQueue(lessons, random);
