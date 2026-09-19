@@ -8,6 +8,12 @@ import {
   type ActiveRecallQueueMode,
   type ActiveRecallRoundState,
 } from './active-recall.js';
+import {
+  createIdlePlaybackContext,
+  dispatchMediaSessionAction,
+  type AudioPlayOwner,
+  type TrainingRuntimeKind,
+} from './media-session.js';
 import lessonsData from './training-lessons.json';
 
 type TrainingPhrase = {
@@ -356,14 +362,9 @@ Active Recall has not started.</pre>
   let cancelActiveSegment: (() => void) | null = null;
   let cancelPendingWait: (() => void) | null = null;
   let loopBeforeTraining = audio.loop;
-  let runtimeKind: 'none' | 'active-recall' | 'training' = 'none';
+  let runtimeKind: TrainingRuntimeKind = 'none';
   let runtimeQueueIndex: number | null = null;
-  let audioPlayOwner:
-    | 'none'
-    | 'active-recall'
-    | 'training'
-    | 'phrase-tap'
-    | 'media-session' = 'none';
+  let audioPlayOwner: AudioPlayOwner = 'none';
   let expectedPhraseEnd: number | null = null;
   let lastAudioEvent = 'none';
   let lastPlayRequestSource = 'none';
@@ -445,6 +446,24 @@ Active Recall has not started.</pre>
     }
   }
 
+  function clearPlaybackContext(): void {
+    const idleContext = createIdlePlaybackContext();
+
+    audioPlayOwner = idleContext.audioPlayOwner;
+    expectedPhraseEnd = idleContext.expectedPhraseEnd;
+    pendingPlayTrigger = idleContext.pendingPlayTrigger;
+    setMediaSessionPlaybackState('none');
+  }
+
+  function getMediaSessionPolicyState() {
+    return {
+      runtimeActive: trainingActive,
+      runtimeKind,
+      audioPlayOwner,
+      expectedPhraseEnd,
+    };
+  }
+
   function restoreLessonAudio(): void {
     if (audio.src === new URL(lessonAudioUrl, window.location.href).href) {
       return;
@@ -464,24 +483,57 @@ Active Recall has not started.</pre>
     }
 
     navigator.mediaSession.setActionHandler('play', () => {
-      audioPlayOwner = 'media-session';
-      lastAudioEvent = 'media-session-play';
-      mediaSessionLastAction = 'play';
-      recordPlayRequest('media-session', 'media-session-play');
-      void audio.play().catch((error: unknown) => {
-        recordPlayRejection(error);
-      });
+      const handled = dispatchMediaSessionAction(
+        getMediaSessionPolicyState(),
+        'play',
+        {
+          play: () => {
+            lastAudioEvent = 'media-session-play';
+            mediaSessionLastAction = 'play';
+            recordPlayRequest('media-session', 'media-session-play');
+            void audio.play().catch((error: unknown) => {
+              recordPlayRejection(error);
+            });
+          },
+          pause: () => undefined,
+        },
+      );
+
+      if (!handled) {
+        lastAudioEvent = 'media-session-play-rejected';
+        mediaSessionLastAction = 'play-rejected-no-context';
+        updateResumeDiagnostic();
+      }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-      lastAudioEvent = 'media-session-pause';
-      mediaSessionLastAction = 'pause';
-      updateResumeDiagnostic();
-      audio.pause();
+      const handled = dispatchMediaSessionAction(
+        getMediaSessionPolicyState(),
+        'pause',
+        {
+          play: () => undefined,
+          pause: () => {
+            lastAudioEvent = 'media-session-pause';
+            mediaSessionLastAction = 'pause';
+            updateResumeDiagnostic();
+            audio.pause();
+          },
+        },
+      );
+
+      if (!handled) {
+        lastAudioEvent = 'media-session-pause-rejected';
+        mediaSessionLastAction = 'pause-rejected-no-context';
+        updateResumeDiagnostic();
+      }
     });
   }
 
   audio.addEventListener('play', () => {
     if (pendingPlayTrigger === null) {
+      if (!trainingActive) {
+        audioPlayOwner = 'lesson-player';
+      }
+
       lastPlayRequestSource = 'audio-native-control';
       lastPlayTrigger = 'audio-native-control';
     }
@@ -974,6 +1026,7 @@ Active Recall has not started.</pre>
         audio.pause();
         audio.loop = loopBeforeTraining;
         restoreLessonAudio();
+        clearPlaybackContext();
 
         trainingButton.disabled = false;
         resetActiveRecallButtons();
@@ -1082,6 +1135,7 @@ Active Recall has not started.</pre>
         runtimeKind = 'none';
         audio.pause();
         audio.loop = loopBeforeTraining;
+        clearPlaybackContext();
         trainingButton.textContent = 'Start Training';
         resetActiveRecallButtons();
         trainingStatus.textContent = 'Training stopped';
@@ -1104,11 +1158,10 @@ Active Recall has not started.</pre>
     cancelPendingWait = null;
 
     audio.pause();
-    audioPlayOwner = 'none';
-    expectedPhraseEnd = null;
     lastAudioEvent = 'stop-training';
     audio.loop = loopBeforeTraining;
     restoreLessonAudio();
+    clearPlaybackContext();
 
     trainingButton.disabled = false;
     trainingButton.textContent = 'Start Training';
