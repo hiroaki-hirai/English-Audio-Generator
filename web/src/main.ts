@@ -1,4 +1,5 @@
 import './style.css';
+import { createSpeechDiagnostic } from './speech-diagnostic.js';
 
 import {
   createNextActiveRecallRound,
@@ -377,6 +378,13 @@ Active Recall has not started.</pre>
   let currentRound = 1;
   let lastCompletedRound = 0;
   let sessionClearedThisRound = false;
+  const speechDiagnostic = createSpeechDiagnostic(() => ({
+    visibility: document.visibilityState,
+    time: performance.now(),
+    speaking: window.speechSynthesis.speaking,
+    pending: window.speechSynthesis.pending,
+    paused: window.speechSynthesis.paused,
+  }));
   let resumeDecisionLines = [
     'saved session: not-checked',
     'action: not-started',
@@ -413,6 +421,7 @@ Active Recall has not started.</pre>
         `Active Recall start attempts: ${activeRecallStartAttemptCount}`,
         `visibility state: ${document.visibilityState}`,
         `session cleared this round: ${sessionClearedThisRound ? 'yes' : 'no'}`,
+        ...speechDiagnostic.lines(),
       ].join('\n');
     } catch {
       // Diagnostics must not affect training playback.
@@ -592,7 +601,7 @@ Active Recall has not started.</pre>
 
   let cancelJapaneseCue: (() => void) | null = null;
 
-  function speakJapaneseCue(text: string): Promise<void> {
+  function speakJapaneseCue(text: string, speechRequestId: number): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false;
 
@@ -601,6 +610,7 @@ Active Recall has not started.</pre>
       utterance.lang = 'ja-JP';
 
       const cleanup = (): void => {
+        utterance.removeEventListener('start', handleStart);
         utterance.removeEventListener('end', handleEnd);
         utterance.removeEventListener('error', handleError);
 
@@ -624,11 +634,20 @@ Active Recall has not started.</pre>
         finish();
       };
 
+      const handleStart = (): void => {
+        speechDiagnostic.record(speechRequestId, 'onstart');
+        updateResumeDiagnostic();
+      };
+
       const handleEnd = (): void => {
+        speechDiagnostic.record(speechRequestId, 'onend');
+        updateResumeDiagnostic();
         finish();
       };
 
       const handleError = (event: SpeechSynthesisErrorEvent): void => {
+        speechDiagnostic.record(speechRequestId, 'onerror', event.error);
+        updateResumeDiagnostic();
         if (settled) {
           return;
         }
@@ -640,10 +659,14 @@ Active Recall has not started.</pre>
 
       cancelJapaneseCue = cancel;
 
+      utterance.addEventListener('start', handleStart);
       utterance.addEventListener('end', handleEnd);
       utterance.addEventListener('error', handleError);
 
+      // Record immediately before invocation; this does not imply speak returned.
+      speechDiagnostic.record(speechRequestId, 'speak');
       window.speechSynthesis.speak(utterance);
+      updateResumeDiagnostic();
     });
   }
 
@@ -908,7 +931,13 @@ Active Recall has not started.</pre>
 
           trainingStatus.textContent = `${statusPrefix} — Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
-          await speakJapaneseCue(entry.ja);
+          const speechRequestId = speechDiagnostic.request({
+            phraseId: `${entry.lessonId}:${entry.phraseIndex}`,
+            queueIndex,
+            textLength: entry.ja.length,
+          });
+          updateResumeDiagnostic();
+          await speakJapaneseCue(entry.ja, speechRequestId);
 
           if (!trainingActive || trainingRunId !== runId) {
             break;
