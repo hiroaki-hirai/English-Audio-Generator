@@ -5432,3 +5432,138 @@ recognize situation / meaning
 → encounter the phrase again in shuffled practice
 → gradually make retrieval automatic
 ```
+
+------------------------------------------------------------------------
+
+## 2026-10-01 — Speech Synthesis Lifecycle Diagnostics
+
+Resume diagnostic v2 was extended in commit `f3c0da5` to distinguish a stall
+before `speak()`, before utterance `onstart`, during speech before `onend`, or
+after the cue has completed.
+
+Instrumentation records request, speak invocation, onstart, onend and onerror,
+including error value, per-event visibility, `performance.now()` timestamps,
+and speaking/pending/paused snapshots. The screen also reads current speech
+state when refreshed, including on foreground return. Phrase identity, queue
+index and text length identify the latest cue without recording its full text.
+
+This instrumentation did not change speech control, Active Recall transitions,
+queue/session/checkpoint behavior or the Media Session guard. The 51 automated
+tests, production build and configured TypeScript check passed.
+
+## 2026-10-02 — iPhone Observation and Japanese Cue MP3 A/B Experiment
+
+### Real-Device Conditions and Observed Facts
+
+The user reported testing Active Recall in Safari on an iPhone running
+**iOS 27.0.1**. EAG was started in Safari, then a delivery app was brought to
+the foreground. Audio stopped around the start/during the Japanese cue while
+Safari was in the background. Returning to Safari did not resume audio.
+
+The captured Resume diagnostic v2 showed:
+
+```text
+saved session: found
+saved currentIndex: 37
+queue length: 65
+signature: valid
+queue validation: valid
+action: resumed
+checkpoint save: saved
+round: 15
+round phrase position: 41/65
+runtime active: yes
+runtime kind: active-recall
+runtime queue index: 40
+UI displayed position: 41/65
+audio owner: none
+audio paused: true
+session cleared this round: no
+```
+
+The saved-index field describes the session loaded at start; the runtime
+index describes the later stop position. Runtime, queue and saved session
+remained present, and the latest checkpoint save was reported successful.
+
+Speech diagnostics at the stop were:
+
+```text
+speech request: phrase 41 (request #8)
+speech phrase ID: restaurant-delay:0
+speech queue index: 40
+visibility at request: hidden
+speech speak called: yes
+visibility at speak: hidden
+speech onstart: yes
+visibility at onstart: hidden
+speech onend: no
+speech onerror: no
+speech error value: none
+speechSynthesis speaking: true
+speechSynthesis pending: false
+speechSynthesis paused: false
+
+request(hidden) @115058.0 [false/false/false]
+speak(hidden)   @115059.0 [false/false/false]
+onstart(hidden) @115084.0 [true/false/false]
+```
+
+Request, speak and onstart were recorded while hidden. Neither onend nor
+onerror was recorded by the time the diagnostic was captured. After foreground
+return, the browser still reported speaking=true despite the audible stop.
+These observations do not establish that an event could never arrive later.
+
+### Working Hypothesis, Not a Confirmed Root Cause
+
+This run reached the speech-start stage and then remained waiting without a
+recorded speech end/error. The Speech Synthesis background lifecycle is therefore
+a strong candidate for the observed stopping point, rather than queue loss or
+session/resume corruption. The evidence does not yet identify the underlying
+iOS/Safari mechanism or establish a universal cause for all earlier stops.
+
+### Next Experiment: Japanese Cue MP3 A/B Test
+
+A diagnostic selector preserves Speech Synthesis as the default (A) and enables
+local, pre-generated Japanese MP3 cues (B). It takes effect on the next Active
+Recall start. Both paths join the same existing Recall/English flow after the
+Japanese cue finishes; B awaits audio ended in place of utterance onend.
+
+Three Japanese MP3 files for `basic-delivery:0` through `basic-delivery:2` were
+generated with the existing OpenAI model/voice and Japanese reading instructions.
+They allow multiple Japanese → English transitions in a fresh Ordered Category
+run. The full 65-entry queue remains intact. A missing later MP3 fails visibly;
+there is no implicit Speech Synthesis fallback.
+
+B uses a dedicated audio element so the English player and Media Session guard
+remain unchanged. Its request, playing, ended and error events include visibility,
+timestamp and phrase/queue identity in the existing diagnostic UI. Play rejection
+is also recorded. This element may have its own Safari autoplay/background
+constraints, so a B failure must be interpreted using its event sequence.
+
+No changes were made to queue generation, shuffle algorithms, category modes,
+checkpoint/resume semantics, Weak Phrase behavior, English audio playback or
+Service Worker design. No retry, watchdog or automatic recovery was added.
+
+The experiment and reproducible generation command are documented in
+[Japanese cue A/B test](JAPANESE-CUE-AB-TEST.md). This implementation does not
+constitute a successful iPhone B test; that real-device comparison is pending.
+
+### Automated Validation and Limits
+
+The eight new tests cover default routing, exclusive MP3 routing, completion
+only after ended, media errors, autoplay rejection, cancellation/listener cleanup,
+unchanged queue/session/index data, observer failure and file naming.
+
+```text
+npm test             → 59 / 59 passed
+npm run web:build    → passed
+npx tsc --noEmit     → passed
+git diff --check     → passed
+```
+
+All three generated MP3 files passed FFmpeg decode validation. The existing
+Speech Synthesis function body matches the pre-experiment version exactly.
+An additional strict frontend check reports the same 60 pre-existing DOM
+nullability errors as before the change, with identical messages. The in-app
+browser was unavailable in this environment, so interactive UI and iPhone
+background playback validation remain pending.

@@ -1,5 +1,10 @@
 import './style.css';
 import { createSpeechDiagnostic } from './speech-diagnostic.js';
+import {
+  createJapaneseMp3Player,
+  getJapaneseCueMode,
+  playJapaneseCue,
+} from './japanese-cue.js';
 
 import {
   createNextActiveRecallRound,
@@ -262,6 +267,15 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Start Sequential Category Order
       </button>
 
+      <label>
+        Japanese cue mode:
+        <select class="japanese-cue-mode">
+          <option value="speech-synthesis" selected>Speech Synthesis</option>
+          <option value="mp3-diagnostic">MP3 diagnostic</option>
+        </select>
+      </label>
+      <small>Diagnostic only. Applies on next Active Recall start. MP3 files must exist for each cue; no fallback.</small>
+
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
@@ -339,12 +353,15 @@ Active Recall has not started.</pre>
 
   const resumeDiagnostic =
     app.querySelector<HTMLPreElement>('.resume-diagnostic');
+  const japaneseCueModeSelector =
+    app?.querySelector<HTMLSelectElement>('.japanese-cue-mode');
 
   if (
     !trainingButton ||
     activeRecallButtons.length !== 3 ||
     !trainingStatus ||
-    !resumeDiagnostic
+    !resumeDiagnostic ||
+    !japaneseCueModeSelector
   ) {
     throw new Error('Training controls were not found.');
   }
@@ -378,6 +395,12 @@ Active Recall has not started.</pre>
   let currentRound = 1;
   let lastCompletedRound = 0;
   let sessionClearedThisRound = false;
+  let japaneseCueMode = getJapaneseCueMode();
+  const japaneseMp3Player = createJapaneseMp3Player(
+    () => new Audio(),
+    () => ({ visibility: document.visibilityState, time: performance.now() }),
+    updateResumeDiagnostic,
+  );
   const speechDiagnostic = createSpeechDiagnostic(() => ({
     visibility: document.visibilityState,
     time: performance.now(),
@@ -422,6 +445,8 @@ Active Recall has not started.</pre>
         `visibility state: ${document.visibilityState}`,
         `session cleared this round: ${sessionClearedThisRound ? 'yes' : 'no'}`,
         ...speechDiagnostic.lines(),
+        `Japanese cue mode (last/current run): ${japaneseCueMode}`,
+        ...japaneseMp3Player.lines(),
       ].join('\n');
     } catch {
       // Diagnostics must not affect training playback.
@@ -824,6 +849,7 @@ Active Recall has not started.</pre>
     mode: ActiveRecallQueueMode,
     activeButton: HTMLButtonElement,
   ): Promise<void> {
+    japaneseCueMode = getJapaneseCueMode(japaneseCueModeSelector?.value);
     trainingActive = true;
     runtimeKind = 'active-recall';
     trainingRunId += 1;
@@ -931,13 +957,23 @@ Active Recall has not started.</pre>
 
           trainingStatus.textContent = `${statusPrefix} — Phrase ${queueIndex + 1} / ${queue.length} — Meaning`;
 
-          const speechRequestId = speechDiagnostic.request({
-            phraseId: `${entry.lessonId}:${entry.phraseIndex}`,
-            queueIndex,
-            textLength: entry.ja.length,
-          });
-          updateResumeDiagnostic();
-          await speakJapaneseCue(entry.ja, speechRequestId);
+          await playJapaneseCue(
+            japaneseCueMode,
+            () => {
+              const speechRequestId = speechDiagnostic.request({
+                phraseId: `${entry.lessonId}:${entry.phraseIndex}`,
+                queueIndex,
+                textLength: entry.ja.length,
+              });
+              updateResumeDiagnostic();
+              return speakJapaneseCue(entry.ja, speechRequestId);
+            },
+            () => japaneseMp3Player.play({
+              lessonId: entry.lessonId,
+              phraseIndex: entry.phraseIndex,
+              queueIndex,
+            }, import.meta.env.BASE_URL),
+          );
 
           if (!trainingActive || trainingRunId !== runId) {
             break;
@@ -1051,6 +1087,7 @@ Active Recall has not started.</pre>
 
         cancelJapaneseCue?.();
         cancelJapaneseCue = null;
+        japaneseMp3Player.cancel();
 
         audio.pause();
         audio.loop = loopBeforeTraining;
@@ -1182,6 +1219,7 @@ Active Recall has not started.</pre>
 
     cancelJapaneseCue?.();
     cancelJapaneseCue = null;
+    japaneseMp3Player.cancel();
 
     cancelPendingWait?.();
     cancelPendingWait = null;
