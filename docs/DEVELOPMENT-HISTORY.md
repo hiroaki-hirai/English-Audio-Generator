@@ -5567,3 +5567,92 @@ An additional strict frontend check reports the same 60 pre-existing DOM
 nullability errors as before the change, with identical messages. The in-app
 browser was unavailable in this environment, so interactive UI and iPhone
 background playback validation remain pending.
+
+------------------------------------------------------------------------
+
+## 2026-10-03 — MP3 Test Start Conditions and Further Speech Observation
+
+### Observed MP3 Result
+
+The user selected MP3 diagnostic on iPhone and captured:
+
+```text
+Japanese cue mode (last/current run): mp3-diagnostic
+Japanese MP3 phrase ID: restaurant-delay:3
+Japanese MP3 queue index: 43
+Japanese MP3 play requested: yes
+Japanese MP3 play started: no
+Japanese MP3 ended: no
+Japanese MP3 error: NotSupportedError
+
+japanese-mp3 request(visible)
+japanese-mp3 error(visible)
+
+saved currentIndex: 43
+queue length: 65
+action: resumed
+reason: valid-saved-session
+round phrase position: 44/65
+```
+
+The code restores an existing session if its schema/version, library signature,
+queue identities/completeness and currentIndex are valid. The Japanese cue mode
+does not participate in that decision. Thus this was a resumed run at index 43,
+not a fresh run at index 0. The initial instructions depended on a fresh browser
+session; the normal Ordered Category button did not guarantee a fresh start.
+
+The requested identity maps to
+`/English-Audio-Generator/diagnostics/japanese-cues/restaurant-delay/phrase-004.mp3`.
+That file is absent from the repository. Only Basic Delivery phrase-001 through
+phrase-003 are bundled. The resolver constructs a URL without checking existence,
+then the audio element attempts playback. Failure to obtain a usable media source
+can reject play() with NotSupportedError; this alone does not establish an MP3
+codec limitation (see the [HTML media specification](https://html.spec.whatwg.org/multipage/media.html)).
+
+The leading explanation is therefore a request for an ungenerated cue following
+normal resume. The original capture did not include HTTP status or response bytes,
+so the exact device response (for example, 404 versus a fallback HTML page) remains
+unconfirmed. No Safari codec conclusion is drawn from this run.
+
+### Minimal Diagnostic Start Correction
+
+An explicit **Start Fresh 3-Cue A/B Test** operation now uses the selected A/B cue
+mode with a new, memory-only session store. It uses the existing ordered queue,
+starts at Basic Delivery index 0, and stops after index 2's English repetitions.
+It does not load, clear or overwrite the normal saved session or round state.
+Both A and B can now use identical start conditions without private browsing.
+Normal Active Recall buttons retain their existing resume behavior.
+
+The MP3 diagnostic now includes resolved path/URL, bundled-sample identity,
+play() rejection versus media error event, audio.error.code/message and first
+failure source. An independent HEAD check runs only after playback failure and
+reports HTTP status, Content-Type or network failure. It neither delays play()
+nor retries it. HEAD results are distinct from the actual media response and
+cannot by themselves establish decode support. The Service Worker is unchanged.
+
+### Additional Speech Synthesis Observation
+
+The user also reported a new real-device event sequence:
+
+```text
+request(hidden) → speak(hidden) → onstart(hidden) → onerror(visible)
+speech error value: canceled
+```
+
+Unlike the previous capture (speaking=true after foreground return with no recorded
+onend/onerror), this capture includes a canceled error while visible. Background
+Speech Synthesis does not always produce the same observed lifecycle outcome.
+The sequence does not establish who initiated cancellation or why; no Speech
+Synthesis control change is made in response to this observation.
+
+### Validation
+
+All 65 automated tests passed, including six additional tests for sample paths
+and file presence, fresh-session isolation with a normal checkpoint at index 43,
+sample-order validation, HTTP classifications, both error-event/rejection orders,
+and stale HTTP-result isolation. The production build, configured TypeScript
+check and `git diff --check` passed. The configured TypeScript check covers
+`src/**/*.ts` and imported modules; Vite builds the frontend without a full
+frontend type check. The Speech Synthesis function body is unchanged.
+The corrected start operation still requires iPhone
+validation; these automated results are not a successful background A/B run.

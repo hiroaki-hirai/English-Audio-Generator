@@ -1,5 +1,6 @@
 import './style.css';
 import { createSpeechDiagnostic } from './speech-diagnostic.js';
+import { createJapaneseCueTestSessionStore, japaneseCueTestPhraseCount } from './japanese-cue-test-session.js';
 import {
   createJapaneseMp3Player,
   getJapaneseCueMode,
@@ -274,7 +275,11 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
           <option value="mp3-diagnostic">MP3 diagnostic</option>
         </select>
       </label>
-      <small>Diagnostic only. Applies on next Active Recall start. MP3 files must exist for each cue; no fallback.</small>
+      <button class="training-button active-recall-button" type="button"
+        data-active-recall-mode="sequential-category-order" data-diagnostic-fresh="true">
+        Start Fresh 3-Cue A/B Test
+      </button>
+      <small>The fresh test uses the selected cue mode and stops after Basic Delivery cues 1–3. Saved training progress is kept. Other start buttons resume normally.</small>
 
       <p class="training-status" aria-live="polite">
         Training stopped
@@ -358,7 +363,7 @@ Active Recall has not started.</pre>
 
   if (
     !trainingButton ||
-    activeRecallButtons.length !== 3 ||
+    activeRecallButtons.length !== 4 ||
     !trainingStatus ||
     !resumeDiagnostic ||
     !japaneseCueModeSelector
@@ -396,6 +401,7 @@ Active Recall has not started.</pre>
   let lastCompletedRound = 0;
   let sessionClearedThisRound = false;
   let japaneseCueMode = getJapaneseCueMode();
+  let diagnosticTestStatus = 'not-started';
   const japaneseMp3Player = createJapaneseMp3Player(
     () => new Audio(),
     () => ({ visibility: document.visibilityState, time: performance.now() }),
@@ -446,6 +452,7 @@ Active Recall has not started.</pre>
         `session cleared this round: ${sessionClearedThisRound ? 'yes' : 'no'}`,
         ...speechDiagnostic.lines(),
         `Japanese cue mode (last/current run): ${japaneseCueMode}`,
+        `Japanese cue fresh test: ${diagnosticTestStatus}`,
         ...japaneseMp3Player.lines(),
       ].join('\n');
     } catch {
@@ -841,22 +848,28 @@ Active Recall has not started.</pre>
     activeRecallButtons.forEach((button) => {
       const mode = button.dataset.activeRecallMode as ActiveRecallQueueMode;
       button.disabled = false;
-      button.textContent = getActiveRecallButtonLabel(mode);
+      button.textContent = button.dataset.diagnosticFresh === 'true'
+        ? 'Start Fresh 3-Cue A/B Test'
+        : getActiveRecallButtonLabel(mode);
     });
   }
 
   async function runActiveRecall(
     mode: ActiveRecallQueueMode,
     activeButton: HTMLButtonElement,
+    diagnosticFresh = false,
   ): Promise<void> {
+    const activeRecallLessons = mode === 'global' ? lessons : lessonsByDomain;
+    const activeRecallSessionStore = diagnosticFresh
+      ? createJapaneseCueTestSessionStore(activeRecallLessons)
+      : activeRecallSessionStores[mode];
     japaneseCueMode = getJapaneseCueMode(japaneseCueModeSelector?.value);
+    diagnosticTestStatus = diagnosticFresh ? 'running (fresh, memory-only, 3 cues)' : 'not-used (normal resume)';
     trainingActive = true;
     runtimeKind = 'active-recall';
     trainingRunId += 1;
 
     const runId = trainingRunId;
-    const activeRecallSessionStore = activeRecallSessionStores[mode];
-    const activeRecallLessons = mode === 'global' ? lessons : lessonsByDomain;
     const storageAvailableBeforeLoad =
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
@@ -874,7 +887,7 @@ Active Recall has not started.</pre>
     currentRound = roundState.currentRound;
     lastCompletedRound = roundState.lastCompletedRound;
     sessionClearedThisRound = false;
-    saveActiveRecallRoundState(roundState, mode);
+    if (!diagnosticFresh) saveActiveRecallRoundState(roundState, mode);
 
     const initialCheckpointSaved = activeRecallSessionStore.save(session);
     const diagnosticReason =
@@ -890,8 +903,8 @@ Active Recall has not started.</pre>
       `queue validation: ${preparedSession.diagnostic.queueValidation}`,
       `action: ${preparedSession.diagnostic.action}`,
       `reason: ${diagnosticReason}`,
-      `storage: ${activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
-      `checkpoint save: ${initialCheckpointSaved ? 'saved' : 'unavailable'}`,
+      `storage: ${diagnosticFresh ? 'memory-only (normal saved session untouched)' : activeRecallSessionStore.isAvailable() ? 'enabled' : 'disabled'}`,
+      `checkpoint save: ${initialCheckpointSaved ? diagnosticFresh ? 'memory-only' : 'saved' : 'unavailable'}`,
     ];
     runtimeQueueIndex = session.currentIndex;
     updateResumeDiagnostic();
@@ -947,7 +960,7 @@ Active Recall has not started.</pre>
 
           runtimeQueueIndex = queueIndex;
           resumeDecisionLines[8] =
-            `checkpoint save: ${checkpointSaved ? 'saved' : 'unavailable'}`;
+            `checkpoint save: ${checkpointSaved ? diagnosticFresh ? 'memory-only' : 'saved' : 'unavailable'}`;
           updateResumeDiagnostic();
 
           const statusPrefix =
@@ -1037,6 +1050,13 @@ Active Recall has not started.</pre>
               await wait(repeatGapMilliseconds);
             }
           }
+
+          if (diagnosticFresh && queueIndex + 1 === japaneseCueTestPhraseCount) {
+            if (trainingActive && trainingRunId === runId) {
+              diagnosticTestStatus = 'completed (3 cues)';
+            }
+            return;
+          }
         }
 
         if (!trainingActive || trainingRunId !== runId) {
@@ -1059,7 +1079,7 @@ Active Recall has not started.</pre>
         ({ queue, session } = preparedSession);
         currentRound = roundState.currentRound;
         lastCompletedRound = roundState.lastCompletedRound;
-        saveActiveRecallRoundState(roundState, mode);
+        if (!diagnosticFresh) saveActiveRecallRoundState(roundState, mode);
 
         sessionClearedThisRound = false;
         runtimeQueueIndex = session.currentIndex;
@@ -1082,6 +1102,9 @@ Active Recall has not started.</pre>
       console.error('Active Recall playback failed:', error);
     } finally {
       if (trainingRunId === runId) {
+        if (diagnosticFresh && diagnosticTestStatus.startsWith('running')) {
+          diagnosticTestStatus = 'stopped before completion';
+        }
         trainingActive = false;
         runtimeKind = 'none';
 
@@ -1096,7 +1119,9 @@ Active Recall has not started.</pre>
 
         trainingButton.disabled = false;
         resetActiveRecallButtons();
-        trainingStatus.textContent = 'Training stopped';
+        trainingStatus.textContent = diagnosticFresh && diagnosticTestStatus === 'completed (3 cues)'
+          ? 'Diagnostic test completed — 3 cues'
+          : 'Training stopped';
         updateResumeDiagnostic();
       }
     }
@@ -1210,6 +1235,9 @@ Active Recall has not started.</pre>
   }
 
   function stopTraining(): void {
+    if (diagnosticTestStatus.startsWith('running')) {
+      diagnosticTestStatus = 'stopped before completion';
+    }
     trainingActive = false;
     runtimeKind = 'none';
     trainingRunId += 1;
@@ -1260,7 +1288,7 @@ Active Recall has not started.</pre>
 
       activeRecallStartAttemptCount += 1;
       updateResumeDiagnostic();
-      void runActiveRecall(mode, button);
+      void runActiveRecall(mode, button, button.dataset.diagnosticFresh === 'true');
     });
   });
 

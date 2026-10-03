@@ -4,6 +4,13 @@ This is an experiment, not a production replacement for Speech Synthesis.
 Speech Synthesis remains the default on page load. The selector applies to
 the next Active Recall start and is not persisted or applied mid-run.
 
+Use **Start Fresh 3-Cue A/B Test** for this experiment. It uses the selected
+cue mode, starts an independent memory-only Ordered Category session at
+`basic-delivery:0`, and ends after the third phrase's English repetitions.
+The normal saved session and round state are neither read nor overwritten.
+The normal start buttons still resume their respective saved sessions; merely
+selecting MP3 diagnostic does not reset their position.
+
 ## Assets and generation
 
 Three Japanese cues are provided for the first three phrases of Basic Delivery:
@@ -53,28 +60,57 @@ The Service Worker and its precache asset list are unchanged. Use an online test
 the three files are copied into the normal web build but are not added to the
 offline audio precache.
 
+### Resource failure diagnostics
+
+The UI reports the resolved path, the audio element's resolved URL, whether the
+identity belongs to the three checked-in sample files, the first failure source,
+play() rejection name/message, media error event, and audio.error.code/message.
+The sample flag does not assert that a file has been deployed or is reachable.
+
+Only after a playback failure, a separate HEAD request checks the same path:
+
+- `not-found; HTTP 404`: the diagnostic request found no resource.
+- `HTTP-failure`: a different unsuccessful HTTP status (including unsupported HEAD).
+- `network-failure`: no usable HTTP response; not proof of a missing file.
+- `reachable (not a decode test)`: successful HTTP status, with Content-Type.
+  For example, text/html can indicate an error/fallback document rather than MP3.
+
+This is an independent, post-failure network check, not the media request's HTTP
+status. It does not delay play(), prefetch successful cues, retry or recover
+playback. HEAD bypasses the existing GET-only Service Worker handler. A successful
+HEAD response alone cannot prove codec support or prove that the media request
+received the same bytes. The original iPhone failure had no HTTP-status capture.
+
+With the configured deployment base, `restaurant-delay:3` resolves to
+`/English-Audio-Generator/diagnostics/japanese-cues/restaurant-delay/phrase-004.mp3`
+(not bundled). `basic-delivery:0` resolves to
+`/English-Audio-Generator/diagnostics/japanese-cues/basic-delivery/phrase-001.mp3`.
+These paths are relative to the current origin; the UI displays the full resolved
+URL on the actual deployment.
+
 ## iPhone procedure
 
 1. Serve the changed build at an iPhone-accessible test URL. Check that the
    selector and the three MP3 URLs load. This work does not deploy the build.
-2. Keep the normal Safari session containing the original checkpoint intact.
-   Use a fresh private browsing session for each A/B run so both start from
-   the same queue position. Verify `action: fresh`, position `1/65` and
-   `basic-delivery:0`; if the private session has existing EAG state, it is not
-   a fresh test. Do not use Global Shuffle for this three-file sample.
-3. A: leave **Speech Synthesis** selected and tap **Start Sequential Category
-   Order**. Move the delivery app to the foreground at a recorded, repeatable
+2. Stop any current training, then select **Speech Synthesis** for A or
+   **MP3 diagnostic** for B. No private session or saved-session deletion is
+   needed. Leave the normal start buttons unused for this test.
+3. Tap **Start Fresh 3-Cue A/B Test**. Verify `action: fresh`, position `1/65`,
+   `storage: memory-only`, fresh-test status `running`, and `basic-delivery:0`.
+   Move the delivery app to the foreground at a recorded, repeatable
    point (for example, during the first English answer, before cue 2).
 4. Record whether Japanese cue 2 → English answer 2 → Japanese cue 3 → English
    answer 3 are heard while Safari remains in the background. After a stop,
    return to Safari and capture the diagnostics before pressing any controls.
-5. B: start from another fresh private session, select **MP3 diagnostic**, and
-   repeat the same Ordered Category start and app-switch timing. Observe the
+5. For B, stop A if needed, select **MP3 diagnostic**, and tap the same
+   **Start Fresh 3-Cue A/B Test** button. Repeat the app-switch timing. Observe the
    same phrase sequence. Capture MP3 request/play/ended/error, visibility,
    phrase/index, runtime, checkpoint and the existing English audio fields.
-6. Only the first three cues exist. Cue 4 is intentionally not generated; an
-   error there is the sample boundary, not evidence of a background failure.
-   The queue still has all 65 phrases; it is never shortened or skipped.
+6. The test finishes after the third phrase's English repetitions and displays
+   `Diagnostic test completed — 3 cues`; it does not request cue 4 or start a
+   new round. The underlying ordered queue still has all 65 phrases.
+   Normal start buttons retain their full-queue behavior and may request
+   ungenerated cues when MP3 diagnostic is selected.
 7. Repeat with app switching during cue 1 if investigating interruption during
    speech itself. Record that timing separately from the before-cue-2 test.
 
