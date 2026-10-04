@@ -117,7 +117,7 @@ Each new diagnostic start creates a separate memory-only store, starts at Cue 1,
 
 The existing observer remains in use: performance timestamp, visibility, activation, audio state, owner, queue index, element identity, previous playback and play request ID. Capacity increases from 100 to **4,000 events**, in memory; the header displays the actual retained count. History resets at an explicit next Active Recall start, not at cue transitions or completion. Completion, stop and failure leave the current history available for capture until the next start. Bounded retention and observer failure isolation are tested. No 20-Cue browser run event count is claimed: local browser automation was unavailable. In a normal 20-Cue run, the existing non-timeupdate event recording is well within this capacity.
 
-## 10–14. Local checks
+## 10–14. Initial fixture local checks (historical)
 
 - `npm test`: 70 passed, 0 failed. Includes all 65-phrase/Resume/3-Cue regressions, ordered memory-only 20-Cue session, final English checksum and decoded sample count, exact fixture metadata, and all 20 Japanese MP3 decoding checks.
 - `npm run web:build`: passed; normal index remains seven lessons / 65 phrases / 21 precache audio paths.
@@ -134,4 +134,43 @@ Built Vite preview also served all 22 diagnostic URLs (21 MP3s + metadata) with 
 3. Switch to the delivery app at the same point used in the successful three-cue test. Keep Safari in the background and observe Cue 1–20 in order.
 4. After completion or a stall, return and capture the full Audio transition sequence before starting another session. Expected completion: `Diagnostic test completed — 20 cues`, without Cue 21 or another round.
 
-The in-app Browser connection was unavailable, so no local browser playback run was completed. iPhone Safari background continuity remains the purpose of the subsequent real-device test; automated asset/session checks do not establish that result.
+The in-app Browser connection was unavailable during local validation, so no local browser playback run was completed. The subsequent user-reported real-device result is recorded below; it is distinct from the automated checks.
+
+## Real-device result reported on 2026-10-04
+
+The user confirmed successful testing on **iPhone Safari**, after deploying
+`d5a4a4f20d02b34de02e682233ff3396661af9bc` (training controls initialization fix).
+All Start buttons worked normally. **Start Fresh 20-Cue MP3 Diagnostic** started
+at Cue 1 and completed **Cue 1 through Cue 20**, with each Japanese MP3 followed
+by its English lesson segment. During playback, another app was brought into
+the foreground; Safari remained in the background and playback continued,
+including subsequent Japanese MP3 → English segment transitions and completion.
+
+The playback control path that succeeded for three cues was retained without
+substantive changes. No retry, unlock, dummy/muted audio, WebAudio, automatic
+fallback or autoplay workaround was used. The session remained memory-only.
+
+This run confirms that pre-generated Japanese MP3 cues can support 20 consecutive
+Japanese → English transitions in iPhone Safari, including continued transitions
+after Safari moves into the background. It makes MP3 a strong migration candidate
+for normal 65-phrase Active Recall. It does not establish that all 20 transitions
+occurred in the background, or validate all normal shuffle, weak-phrase and Resume
+paths. Device/iOS version, exact app-switch cue and full transition logs were not
+provided. Normal Active Recall remains unchanged; 65-cue migration is design-only.
+
+### Training controls regression and correction
+
+The 20-Cue button increased `.active-recall-button` elements from four to five.
+The shared `length !== 4` check then threw `Training controls were not found.`
+after rendering, before Start click handlers were registered. Thus all Start
+buttons were visible but inactive. Commit
+`d5a4a4f20d02b34de02e682233ff3396661af9bc` changed the check to `length !== 5`
+and added initialization regression tests. The real rendered page is bundled
+in memory and evaluated with a minimal DOM: five Active Recall buttons and all
+six Start handlers must exist. The old four-button guard reproduces the exception
+and zero Start registrations. The user subsequently confirmed that every Start
+button worked on iPhone Safari. No playback control change was needed.
+
+The fix's local checks passed: 72 tests, production build, configured TypeScript
+check and diff check. Real-device success is user-reported evidence, not a local
+browser test performed by the assistant.

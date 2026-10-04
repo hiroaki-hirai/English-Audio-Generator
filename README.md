@@ -257,7 +257,10 @@ The generated track is included in the PWA's offline precache.
 Use **Start Fresh 20-Cue MP3 Diagnostic** for the independent, memory-only
 Japanese MP3 / English lesson experiment. It preserves normal saved progress
 and the existing 3-Cue test. See [fixture, timing tables and verification](docs/20-CUE-DIAGNOSTIC.md).
-This experiment still requires iPhone Safari background testing.
+The user confirmed completion of all 20 cues on iPhone Safari, including
+Japanese-to-English transitions while another app was in the foreground.
+Japanese MP3 is now a strong candidate for normal Active Recall; that migration
+has not been implemented.
 
 ## Development Status
 

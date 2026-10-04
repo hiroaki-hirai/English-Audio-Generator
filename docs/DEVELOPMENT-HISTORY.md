@@ -5698,3 +5698,58 @@ element identification, unavailable activation APIs, bounded history, observer
 failure isolation and Japanese-ended/English-continuation ordering. Production
 build, configured `npx tsc --noEmit`, and `git diff --check` passed. Device
 validation of this instrumentation remains pending.
+
+------------------------------------------------------------------------
+
+## 2026-10-04 — 20-Cue Japanese MP3 Background Success on iPhone Safari
+
+The independent fixture was introduced in
+`922643db9b9c1d5ce6da0621bbc8776cef6ea6c2` with 20 fixed Japanese MP3s,
+one newly generated English lesson and measured/verified start/end metadata.
+It starts fresh at Cue 1 in memory only and ends after Cue 20, preserving normal
+65-phrase lessons, saved progress and the existing three-cue fixture. The shared
+Audio transition sequence capacity was extended from 100 to 4,000 events.
+
+Adding the diagnostic button exposed an initialization regression:
+
+```text
+20-Cue button added
+→ .active-recall-button count increased from 4 to 5
+→ unchanged length !== 4 check threw after page rendering
+→ initialization stopped before Start handler registration
+→ length !== 5 correction and initialization regression tests
+→ all Start buttons confirmed functional on iPhone
+```
+
+The correction was committed and pushed as
+`d5a4a4f20d02b34de02e682233ff3396661af9bc`,
+`fix: restore training control initialization`. Application code changed by one
+line only. Tests bundle the actual initial page in memory, require five recall
+buttons and six registered Start handlers, and reproduce failure with the old
+guard. All 72 tests, production build, configured TypeScript check and diff check
+passed. Compilation/unit checks alone had not detected the original DOM mismatch.
+
+The user then reported successful **iPhone Safari** testing:
+
+- Every Start button worked after the controls fix.
+- **Start Fresh 20-Cue MP3 Diagnostic** began at Cue 1.
+- All 20 Japanese MP3 → English lesson segment pairs were heard and completed.
+- Another app was brought into the foreground during playback.
+- Safari continued playback and subsequent Japanese → English transitions while
+  in the background, completing Cue 20.
+- The successful three-cue playback path was retained without substantive change.
+- No retry, unlock, dummy/muted audio, WebAudio, automatic fallback or autoplay
+  workaround was used.
+
+This is a user-reported real-device success, separate from local automated
+validation. It confirms 20 consecutive cue pairs with background continuation
+after switching apps; the exact switch cue, device/iOS version and full event log
+were not supplied. It does not yet validate normal 65-phrase shuffle, weak-phrase
+or Resume behavior with Japanese MP3.
+
+Pre-generated Japanese MP3 is now a strong candidate for normal Active Recall.
+The next step is design investigation only: reuse the proven ended → existing
+English seek/play/segment-finish path, retain Speech Synthesis as a selectable
+legacy mode, and preserve existing sessions. No normal-mode migration or 65-MP3
+generation is included in this documentation update. See
+[the diagnostic record](20-CUE-DIAGNOSTIC.md) for fixture timings and device results.
