@@ -1,3 +1,5 @@
+import { diagnosticLesson, diagnosticJapanesePath, diagnosticCueCount } from './diagnostic-fixture.js';
+
 export type JapaneseCueMode = 'speech-synthesis' | 'mp3-diagnostic';
 
 export function getJapaneseCueMode(value?: string): JapaneseCueMode {
@@ -18,11 +20,13 @@ type CueAudio = Pick<HTMLAudioElement,
 > & { readonly error: { readonly code: number; readonly message?: string } | null };
 
 export function japaneseCueMp3Path(lessonId: string, phraseIndex: number): string {
+  if (lessonId === diagnosticLesson.id) return diagnosticJapanesePath(phraseIndex);
   return `diagnostics/japanese-cues/${lessonId}/phrase-${String(phraseIndex + 1).padStart(3, '0')}.mp3`;
 }
 
 // Describes the checked-in sample, not a claim about HTTP availability.
 export function isBundledJapaneseCueMp3(lessonId: string, phraseIndex: number): boolean {
+  if (lessonId === diagnosticLesson.id) return Number.isInteger(phraseIndex) && phraseIndex >= 0 && phraseIndex < diagnosticCueCount;
   return lessonId === 'basic-delivery' && Number.isInteger(phraseIndex)
     && phraseIndex >= 0 && phraseIndex < 3;
 }

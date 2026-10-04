@@ -1,3 +1,4 @@
+export const audioTransitionEventLimit = 4000;
 type PlaybackType = 'Japanese MP3' | 'English';
 type Snapshot = {
   time: number;
@@ -41,7 +42,7 @@ export function createAudioTransitionDiagnostic(sample: () => Snapshot) {
           isActive: state.isActive ?? 'unavailable',
           hasBeenActive: state.hasBeenActive ?? 'unavailable',
         })}`);
-        events = events.slice(-100);
+        events = events.slice(-audioTransitionEventLimit);
         if (playback) previousPlayback = playback;
       } catch {
         // Unavailable APIs or diagnostic failures must not affect playback.
@@ -49,7 +50,7 @@ export function createAudioTransitionDiagnostic(sample: () => Snapshot) {
       return playRequest;
     },
     lines(): string[] {
-      return ['Audio transition sequence (performance ms; snapshots of English element):', ...events];
+      return [`Audio transition sequence (performance ms; snapshots of English element; retained ${events.length}/${audioTransitionEventLimit}):`, ...events];
     },
   };
 }

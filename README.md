@@ -252,6 +252,13 @@ parameter. The source hash includes the ordered script content and all
 Continuous Training timing, sample-rate, codec, and normalization settings.
 The generated track is included in the PWA's offline precache.
 
+## 20-Cue background diagnostic
+
+Use **Start Fresh 20-Cue MP3 Diagnostic** for the independent, memory-only
+Japanese MP3 / English lesson experiment. It preserves normal saved progress
+and the existing 3-Cue test. See [fixture, timing tables and verification](docs/20-CUE-DIAGNOSTIC.md).
+This experiment still requires iPhone Safari background testing.
+
 ## Development Status
 
 Current status:

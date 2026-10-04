@@ -23,6 +23,9 @@ import {
   type TrainingRuntimeKind,
 } from './media-session.js';
 import lessonsData from './training-lessons.json';
+import diagnosticFixture from './diagnostic-cues.json';
+import { createTwentyCueSessionStore } from './twenty-cue-diagnostic.js';
+import { lessonMediaPath } from './diagnostic-fixture.js';
 
 type TrainingPhrase = {
   en: string;
@@ -39,6 +42,7 @@ type TrainingScript = {
 
 type PhraseMetadata = {
   index: number;
+  end?: number;
   start: number;
 };
 
@@ -282,6 +286,12 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       </button>
       <small>The fresh test uses the selected cue mode and stops after Basic Delivery cues 1–3. Saved training progress is kept. Other start buttons resume normally.</small>
 
+      <button class="training-button active-recall-button" type="button"
+        data-active-recall-mode="sequential-category-order" data-diagnostic-fresh="true" data-diagnostic-twenty="true">
+        Start Fresh 20-Cue MP3 Diagnostic
+      </button>
+      <small>20 fixed diagnostic cues, MP3 only, memory-only. Saved training progress is kept.</small>
+
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
@@ -403,6 +413,7 @@ Active Recall has not started.</pre>
   let sessionClearedThisRound = false;
   let japaneseCueMode = getJapaneseCueMode();
   let diagnosticTestStatus = 'not-started';
+  let diagnosticDisplayPhraseCount = activeRecallPhraseCount;
   const audioTransitionDiagnostic = createAudioTransitionDiagnostic(() => ({
     time: performance.now(), visibility: document.visibilityState,
     isActive: navigator.userActivation?.isActive,
@@ -434,7 +445,7 @@ Active Recall has not started.</pre>
   ];
 
   function getCurrentAudioLesson(): string {
-    const match = /\/lessons\/([^/]+)\//.exec(audio.currentSrc || audio.src);
+    const match = /\/(?:lessons|diagnostics)\/([^/]+)\//.exec(audio.currentSrc || audio.src);
 
     return match?.[1] ?? 'unknown';
   }
@@ -445,12 +456,12 @@ Active Recall has not started.</pre>
         'Resume diagnostic v2',
         ...resumeDecisionLines,
         `round: ${currentRound}`,
-        `round phrase position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${activeRecallPhraseCount}`}`,
+        `round phrase position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${diagnosticDisplayPhraseCount}`}`,
         `last completed round: ${lastCompletedRound || 'none'}`,
         `runtime active: ${trainingActive ? 'yes' : 'no'}`,
         `runtime kind: ${runtimeKind}`,
         `runtime queue index: ${runtimeQueueIndex ?? 'n/a'}`,
-        `UI displayed position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${activeRecallPhraseCount}`}`,
+        `UI displayed position: ${runtimeQueueIndex === null ? 'n/a' : `${runtimeQueueIndex + 1}/${diagnosticDisplayPhraseCount}`}`,
         `audio owner: ${audioPlayOwner}`,
         `audio paused: ${audio.paused}`,
         `audio lesson: ${getCurrentAudioLesson()}`,
@@ -743,6 +754,7 @@ Active Recall has not started.</pre>
 
   function getPhraseSegments(lessonMetadata: LessonMetadata): PhraseSegment[] {
     return lessonMetadata.phrases.map((phrase, index) => {
+      if (phrase.end !== undefined) return { start: phrase.start, end: phrase.end };
       const nextPhrase = lessonMetadata.phrases[index + 1];
 
       const blockEnd = nextPhrase?.start ?? audio.duration;
@@ -765,7 +777,7 @@ Active Recall has not started.</pre>
     lessonId: string,
   ): Promise<LessonMetadata> {
     const response = await fetch(
-      `${import.meta.env.BASE_URL}lessons/${lessonId}/metadata.json`,
+      `${import.meta.env.BASE_URL}${lessonMediaPath(lessonId, 'metadata.json')}`,
     );
 
     if (!response.ok) {
@@ -776,7 +788,7 @@ Active Recall has not started.</pre>
   }
 
   async function useLessonAudio(lessonId: string): Promise<void> {
-    const audioUrl = `${import.meta.env.BASE_URL}lessons/${lessonId}/lesson.mp3`;
+    const audioUrl = `${import.meta.env.BASE_URL}${lessonMediaPath(lessonId, 'lesson.mp3')}`;
     const absoluteAudioUrl = new URL(audioUrl, window.location.href).href;
 
     audioTransitionDiagnostic.record('english src-check', `resolved target=${absoluteAudioUrl}`);
@@ -893,7 +905,9 @@ Active Recall has not started.</pre>
     activeRecallButtons.forEach((button) => {
       const mode = button.dataset.activeRecallMode as ActiveRecallQueueMode;
       button.disabled = false;
-      button.textContent = button.dataset.diagnosticFresh === 'true'
+      button.textContent = button.dataset.diagnosticTwenty === 'true'
+        ? 'Start Fresh 20-Cue MP3 Diagnostic'
+        : button.dataset.diagnosticFresh === 'true'
         ? 'Start Fresh 3-Cue A/B Test'
         : getActiveRecallButtonLabel(mode);
     });
@@ -903,15 +917,22 @@ Active Recall has not started.</pre>
     mode: ActiveRecallQueueMode,
     activeButton: HTMLButtonElement,
     diagnosticFresh = false,
+    diagnosticTwenty = false,
   ): Promise<void> {
-    const activeRecallLessons = mode === 'global' ? lessons : lessonsByDomain;
-    const activeRecallSessionStore = diagnosticFresh
+    const activeRecallLessons = diagnosticTwenty
+      ? [{ ...diagnosticFixture, domain: 'delivery' as const, scenarioJa: '20-Cue診断' }]
+      : mode === 'global' ? lessons : lessonsByDomain;
+    diagnosticDisplayPhraseCount = diagnosticTwenty ? diagnosticFixture.phrases.length : activeRecallPhraseCount;
+    const diagnosticCueCount = diagnosticTwenty ? diagnosticFixture.phrases.length : japaneseCueTestPhraseCount;
+    const activeRecallSessionStore = diagnosticTwenty
+      ? createTwentyCueSessionStore()
+      : diagnosticFresh
       ? createJapaneseCueTestSessionStore(activeRecallLessons)
       : activeRecallSessionStores[mode];
     audioTransitionDiagnostic.reset();
     audioTransitionDiagnostic.record('active-recall start', `diagnosticFresh=${diagnosticFresh}`);
-    japaneseCueMode = getJapaneseCueMode(japaneseCueModeSelector?.value);
-    diagnosticTestStatus = diagnosticFresh ? 'running (fresh, memory-only, 3 cues)' : 'not-used (normal resume)';
+    japaneseCueMode = diagnosticTwenty ? 'mp3-diagnostic' : getJapaneseCueMode(japaneseCueModeSelector?.value);
+    diagnosticTestStatus = diagnosticFresh ? `running (fresh, memory-only, ${diagnosticCueCount} cues)` : 'not-used (normal resume)';
     trainingActive = true;
     runtimeKind = 'active-recall';
     trainingRunId += 1;
@@ -1098,9 +1119,9 @@ Active Recall has not started.</pre>
             }
           }
 
-          if (diagnosticFresh && queueIndex + 1 === japaneseCueTestPhraseCount) {
+          if (diagnosticFresh && queueIndex + 1 === diagnosticCueCount) {
             if (trainingActive && trainingRunId === runId) {
-              diagnosticTestStatus = 'completed (3 cues)';
+              diagnosticTestStatus = `completed (${diagnosticCueCount} cues)`;
             }
             return;
           }
@@ -1167,8 +1188,8 @@ Active Recall has not started.</pre>
 
         trainingButton.disabled = false;
         resetActiveRecallButtons();
-        trainingStatus.textContent = diagnosticFresh && diagnosticTestStatus === 'completed (3 cues)'
-          ? 'Diagnostic test completed — 3 cues'
+        trainingStatus.textContent = diagnosticFresh && diagnosticTestStatus === `completed (${diagnosticCueCount} cues)`
+          ? `Diagnostic test completed — ${diagnosticCueCount} cues`
           : 'Training stopped';
         updateResumeDiagnostic();
       }
@@ -1176,6 +1197,7 @@ Active Recall has not started.</pre>
   }
 
   async function runTraining(): Promise<void> {
+    diagnosticDisplayPhraseCount = activeRecallPhraseCount;
     const hasWeakPhrases = selectedLesson.phrases.some((_, index) =>
       weakPhrases.has(getWeakPhraseKey(selectedLesson.id, index)),
     );
@@ -1336,7 +1358,7 @@ Active Recall has not started.</pre>
 
       activeRecallStartAttemptCount += 1;
       updateResumeDiagnostic();
-      void runActiveRecall(mode, button, button.dataset.diagnosticFresh === 'true');
+      void runActiveRecall(mode, button, button.dataset.diagnosticFresh === 'true', button.dataset.diagnosticTwenty === 'true');
     });
   });
 

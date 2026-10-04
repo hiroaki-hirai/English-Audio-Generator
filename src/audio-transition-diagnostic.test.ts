@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAudioTransitionDiagnostic } from '../web/src/audio-transition-diagnostic.js';
+import { audioTransitionEventLimit, createAudioTransitionDiagnostic } from '../web/src/audio-transition-diagnostic.js';
 
 test('transition sequence preserves rejection-time state across cleanup and element changes', () => {
   const state = {
@@ -38,8 +38,8 @@ test('missing activation, bounded events and broken sampling do not affect playb
     src: '', currentSrc: '', owner: 'none', runtimeActive: false,
     queueIndex: null, element: {}, errorCode: 4, errorMessage: 'Source unavailable',
   }));
-  for (let index = 0; index < 110; index += 1) diagnostic.record('english error');
-  assert.equal(diagnostic.lines().length, 101);
+  for (let index = 0; index < audioTransitionEventLimit + 10; index += 1) diagnostic.record('english error');
+  assert.equal(diagnostic.lines().length, audioTransitionEventLimit + 1);
   assert.match(diagnostic.lines()[1]!, /isActive":"unavailable/);
   assert.match(diagnostic.lines()[1]!, /errorCode":4/);
   const broken = createAudioTransitionDiagnostic(() => { throw new Error('unavailable'); });

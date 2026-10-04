@@ -1,0 +1,86 @@
+{
+  "id": "20-cue-background-test",
+  "scenario": "20-Cue Background Diagnostic",
+  "phrases": [
+    {
+      "ja": "Uber Eats の配達です。ご注文の商品をお持ちしました。",
+      "en": "Hi! I'm with Uber Eats. I have your order."
+    },
+    {
+      "ja": "承知しました。大変お待たせ致しました。",
+      "en": "Okay. Sorry to keep you waiting."
+    },
+    {
+      "ja": "まず本人確認をさせてください。",
+      "en": "Let me just confirm it's your order first."
+    },
+    {
+      "ja": "Uber Eats のアプリの画面を見せていただけますか？",
+      "en": "Could you show me your Uber Eats app, please?"
+    },
+    {
+      "ja": "私の顔のアイコンか注文番号はありますか？",
+      "en": "Can you see my profile picture or the order number?"
+    },
+    {
+      "ja": "確認できました。ありがとうございます。",
+      "en": "Yep, the numbers match. Thank you."
+    },
+    {
+      "ja": "では、先に会計をさせてください。",
+      "en": "All right. Let's take care of the payment first."
+    },
+    {
+      "ja": "合計で2,350円になります。",
+      "en": "Your total is 2,350 yen."
+    },
+    {
+      "ja": "こちらに入れていただけますか？",
+      "en": "Could you put it here, please?"
+    },
+    {
+      "ja": "5,000円、お預かりします。",
+      "en": "That's 5,000 yen. Thank you."
+    },
+    {
+      "ja": "2,650円のお釣りです。",
+      "en": "And your change is 2,650 yen."
+    },
+    {
+      "ja": "まず2,000円。次に500円。そして50円。",
+      "en": "First, 2,000 yen. Then, 500 yen. And 50 yen."
+    },
+    {
+      "ja": "これで合計2,650円です。",
+      "en": "That's 2,650 yen altogether."
+    },
+    {
+      "ja": "間違いは無いでしょうか？",
+      "en": "Does that look right?"
+    },
+    {
+      "ja": "では、こちらがご注文の品です。",
+      "en": "All right. Here's your order."
+    },
+    {
+      "ja": "重たいので気をつけてください。",
+      "en": "It's pretty heavy, so please be careful."
+    },
+    {
+      "ja": "大丈夫でしょうか？",
+      "en": "Have you got it?"
+    },
+    {
+      "ja": "最後に暗証番号を教えていただけますでしょうか？",
+      "en": "Lastly, could I get your PIN, please?"
+    },
+    {
+      "ja": "パスが通りました。",
+      "en": "That worked."
+    },
+    {
+      "ja": "ありがとうございます。またのご利用をお待ちしております。",
+      "en": "Thank you very much. Enjoy your meal, and have a good one!"
+    }
+  ]
+}
