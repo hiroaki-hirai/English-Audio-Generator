@@ -33,12 +33,14 @@ class Control {
 function createInitialPage(metadata: unknown, saved: Record<string, string> = {}) {
   let buttons: Control[] = [];
   let selectedMode = '';
+  let renderedHtml = '';
   const japaneseAudio: Control[] = [];
   const utterances: Control[] = [];
   const audio = new Control('', '');
   const diagnostic = { textContent: '' };
   const app = {
     set innerHTML(html: string) {
+      renderedHtml = html;
       selectedMode = html.match(/<option value="([^"]*)" selected>/)?.[1] ?? '';
       buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)].map(match => {
         const button = new Control(match[1]!.match(/class="([^"]*)"/)?.[1] ?? '', match[2]!.trim());
@@ -93,7 +95,7 @@ function createInitialPage(metadata: unknown, saved: Record<string, string> = {}
     __trainingInitialization: undefined as Promise<void> | undefined,
   };
   return { app, context, requests, japaneseAudio, utterances, audio, diagnostic, selectedMode: () => selectedMode,
-    selectMode: (value: string) => { selectedMode = value; }, saved };
+    selectMode: (value: string) => { selectedMode = value; }, renderedHtml: () => renderedHtml, saved };
 }
 
 async function bundleInitialPage(useOldGuard = false): Promise<string> {
@@ -317,5 +319,39 @@ test('a full 65-phrase Weak round retains its transition history within the 4000
   assert.match(lines, /english playing/);
   assert.match(lines, /english play-resolved/);
   button.emit('click');
+  await flush();
+});
+
+
+test('actual UI groups controls, places cue mode first and closes diagnostics by default', async () => {
+  const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
+  const page = createInitialPage(metadata);
+  runInNewContext(await bundleInitialPage(), page.context);
+  await page.context.__trainingInitialization;
+  const html = page.renderedHtml();
+  assert.ok(html.indexOf('class="cue-mode-setting"') < html.indexOf('class="control-group training-controls"'));
+  assert.match(html, /Used for Active Recall/);
+  assert.match(html, /value="mp3" selected>MP3 \(recommended\)/);
+  for (const [group, labels] of [
+    ['training-controls', ['Start Training']],
+    ['recall-controls', ['Start Global Shuffle Active Recall', 'Start Sequential Category Shuffle', 'Start Sequential Category Order']],
+    ['diagnostic-controls', ['Start Fresh 3-Cue A/B Test', 'Start Fresh 20-Cue MP3 Diagnostic']],
+  ] as const) {
+    const section = html.match(new RegExp(`<section class="control-group ${group}"[^>]*>([\\s\\S]*?)</section>`))?.[1];
+    assert.ok(section, group);
+    for (const label of labels) assert.ok(section.includes(label), label);
+  }
+  assert.match(html, /<details class="diagnostic-details">/);
+  assert.doesNotMatch(html, /<details[^>]*\bopen\b/);
+  assert.match(html, /<summary>Resume \/ Audio transition diagnostics<\/summary>/);
+  assert.match(html, /class="resume-diagnostic"/);
+  page.selectMode('speech-synthesis');
+  const start = page.app.querySelectorAll('.active-recall-button').find(button =>
+    button.dataset.activeRecallMode === 'sequential-category-order' && !button.dataset.diagnosticFresh)!;
+  start.emit('click');
+  assert.equal(page.utterances.length, 1, 'selector still selects legacy speech');
+  assert.equal(page.japaneseAudio.length, 0);
+  assert.equal(start.textContent, 'Stop Active Recall');
+  start.emit('click');
   await flush();
 });

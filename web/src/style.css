@@ -215,3 +215,89 @@ h2 {
   outline: 2px solid #111827;
   outline-offset: 2px;
 }
+
+/* Keep controls and long diagnostic URLs inside narrow phone viewports. */
+.player, .control-group, .cue-mode-setting, .diagnostic-details {
+  min-width: 0;
+}
+.control-group {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+.control-group h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.cue-mode-setting {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+.player small {
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.japanese-cue-mode {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid #9ca3af;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+}
+.training-button {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.active-recall-button {
+  min-height: 48px;
+  padding-block: 10px;
+}
+.training-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Existing runtime disables the other recall buttons while keeping Stop enabled. */
+.player:has(.active-recall-button:disabled) .active-recall-button:not(:disabled) {
+  background: #fff;
+  color: #111827;
+  border-style: dashed;
+}
+.diagnostic-controls .training-button {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #9ca3af;
+  font-weight: 600;
+}
+.diagnostic-details summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.resume-diagnostic {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.lesson-button, .phrase-button, .scenario-ja {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .app-shell { padding: 20px 12px 32px; }
+  .lesson-card { padding: 16px; }
+  h1 { font-size: 25px; }
+  h2 { font-size: 22px; }
+}
+@media (min-width: 600px) {
+  .lesson-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

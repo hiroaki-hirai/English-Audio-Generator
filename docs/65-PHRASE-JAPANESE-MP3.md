@@ -1,6 +1,6 @@
 # 通常65フレーズ Japanese MP3移行
 
-2026-10-04。ローカル実装・生成・検証の記録。commit / pushは未実施。通常65フレーズのiPhone実機検証は未実施。
+2026-10-04に実装・生成・ローカル検証。commit `26cc7984a3dec82430b9436be2a1aa43c8fd0905`を公開。2026-10-05にユーザーからiPhone実機検証完了の報告。
 
 ## 変更範囲
 
@@ -97,3 +97,10 @@ Service Workerおよびprecache一覧は未変更。Japanese個別MP3は専用le
 8. stall/error時は再startせずAudio transition sequenceを取得する。MP3失敗でSpeechへ切り替わらないことを確認。
 
 20-Cue成功からの実質的変更は、通常65件のasset resolverとdefault modeへの一般化のみ。Japanese ended後のEnglish playback controlに変更なし。
+
+
+## 2026-10-05 iPhone実機成功とUI整理
+
+ユーザー報告により、Japanese MP3 modeが通常Active Recallへ適用され、iPhone Safariで正常に再生されることを確認。他アプリをforegroundにしてもbackground再生が問題なく継続した。報告された実機検証は完了し、現在のJapanese MP3 playback architectureに問題なし。端末/iOSの詳細、全queue mode・Weak・Resumeの個別結果やイベントログは未提供。
+
+UI整理ではCue Modeをcontrols上部へ配置し、適用範囲を説明。Training / Active Recall / Diagnosticsを分け、Resume / Audio transition情報をdefault closedのnative details内へ移した。実行中ボタンがStopへ切り替わる既存操作を維持し、表示で区別する。再生制御、resolver、Resume、queue、Weak、Service Worker、diagnosticデータと4,000件の履歴上限は変更しない。

@@ -242,6 +242,17 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         src="${import.meta.env.BASE_URL}lessons/${selectedLesson.id}/lesson.mp3"
       ></audio>
 
+      <label class="cue-mode-setting">
+        <span>Japanese Cue Mode</span>
+        <small id="cue-mode-help">Used for Active Recall and the 3-Cue A/B test. Training plays English only; the 20-Cue diagnostic always uses MP3.</small>
+        <select class="japanese-cue-mode" aria-describedby="cue-mode-help">
+          <option value="mp3" selected>MP3 (recommended)</option>
+          <option value="speech-synthesis">Speech Synthesis (legacy/debug)</option>
+        </select>
+      </label>
+
+      <section class="control-group training-controls" aria-labelledby="training-heading">
+        <h3 id="training-heading">Training</h3>
       <button
         class="training-button"
         type="button"
@@ -249,6 +260,10 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Start Training
       </button>
 
+      </section>
+      <section class="control-group recall-controls" aria-labelledby="recall-heading">
+        <h3 id="recall-heading">Active Recall</h3>
+        <small>During playback, the running button becomes Stop Active Recall.</small>
       <button
         class="training-button active-recall-button"
         type="button"
@@ -273,13 +288,9 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
         Start Sequential Category Order
       </button>
 
-      <label>
-        Japanese cue mode:
-        <select class="japanese-cue-mode">
-          <option value="mp3" selected>MP3</option>
-          <option value="speech-synthesis">Speech Synthesis (legacy/debug)</option>
-        </select>
-      </label>
+      </section>
+      <section class="control-group diagnostic-controls" aria-labelledby="diagnostics-heading">
+        <h3 id="diagnostics-heading">Diagnostics</h3>
       <button class="training-button active-recall-button" type="button"
         data-active-recall-mode="sequential-category-order" data-diagnostic-fresh="true">
         Start Fresh 3-Cue A/B Test
@@ -292,12 +303,17 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       </button>
       <small>20 fixed diagnostic cues, MP3 only, memory-only. Saved training progress is kept.</small>
 
+      </section>
+
       <p class="training-status" aria-live="polite">
         Training stopped
       </p>
 
+      <details class="diagnostic-details">
+        <summary>Resume / Audio transition diagnostics</summary>
       <pre class="resume-diagnostic" aria-live="polite">Resume diagnostic v2
 Active Recall has not started.</pre>
+      </details>
     </div>
   `;
 

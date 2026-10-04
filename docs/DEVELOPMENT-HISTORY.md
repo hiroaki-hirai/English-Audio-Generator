@@ -5753,3 +5753,19 @@ English seek/play/segment-finish path, retain Speech Synthesis as a selectable
 legacy mode, and preserve existing sessions. No normal-mode migration or 65-MP3
 generation is included in this documentation update. See
 [the diagnostic record](20-CUE-DIAGNOSTIC.md) for fixture timings and device results.
+
+
+## 2026-10-05 — Normal Active Recall Japanese MP3 Success and UI Organization
+
+The user completed iPhone testing of commit `26cc7984a3dec82430b9436be2a1aa43c8fd0905`:
+Japanese MP3 mode applies to normal Active Recall, plays correctly in iPhone Safari,
+and continues in the background while another app is in the foreground. No issue
+was reported with the current Japanese MP3 playback architecture. Device/iOS details,
+full event logs and separate results for every queue mode, Weak and Resume were not supplied.
+
+The subsequent UI-only update moves Japanese Cue Mode above training controls,
+explains its scope, groups Training / Active Recall / Diagnostics, improves narrow
+viewport spacing and text wrapping, and collapses Resume / Audio transition diagnostics
+using native details (closed by default). Existing button identities and Start/Stop
+handlers remain intact. Playback, resolver, saved sessions, queue/Weak logic, Media
+Session, Service Worker and the 4,000-event history capacity remain unchanged.
