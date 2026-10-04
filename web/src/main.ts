@@ -374,7 +374,7 @@ Active Recall has not started.</pre>
 
   if (
     !trainingButton ||
-    activeRecallButtons.length !== 4 ||
+    activeRecallButtons.length !== 5 ||
     !trainingStatus ||
     !resumeDiagnostic ||
     !japaneseCueModeSelector
