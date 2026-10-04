@@ -1,4 +1,5 @@
 import './style.css';
+import { createAudioTransitionDiagnostic } from './audio-transition-diagnostic.js';
 import { createSpeechDiagnostic } from './speech-diagnostic.js';
 import { createJapaneseCueTestSessionStore, japaneseCueTestPhraseCount } from './japanese-cue-test-session.js';
 import {
@@ -402,10 +403,23 @@ Active Recall has not started.</pre>
   let sessionClearedThisRound = false;
   let japaneseCueMode = getJapaneseCueMode();
   let diagnosticTestStatus = 'not-started';
+  const audioTransitionDiagnostic = createAudioTransitionDiagnostic(() => ({
+    time: performance.now(), visibility: document.visibilityState,
+    isActive: navigator.userActivation?.isActive,
+    hasBeenActive: navigator.userActivation?.hasBeenActive,
+    readyState: audio.readyState, networkState: audio.networkState,
+    paused: audio.paused, currentTime: audio.currentTime,
+    src: audio.src, currentSrc: audio.currentSrc,
+    owner: audioPlayOwner, runtimeActive: trainingActive,
+    queueIndex: runtimeQueueIndex, element: audio,
+    errorCode: audio.error?.code ?? null, errorMessage: audio.error?.message ?? '',
+  }));
   const japaneseMp3Player = createJapaneseMp3Player(
     () => new Audio(),
     () => ({ visibility: document.visibilityState, time: performance.now() }),
     updateResumeDiagnostic,
+    undefined,
+    (kind) => audioTransitionDiagnostic.record(kind, 'element=japanese-mp3 (dedicated Audio)', 'Japanese MP3'),
   );
   const speechDiagnostic = createSpeechDiagnostic(() => ({
     visibility: document.visibilityState,
@@ -454,6 +468,7 @@ Active Recall has not started.</pre>
         `Japanese cue mode (last/current run): ${japaneseCueMode}`,
         `Japanese cue fresh test: ${diagnosticTestStatus}`,
         ...japaneseMp3Player.lines(),
+        ...audioTransitionDiagnostic.lines(),
       ].join('\n');
     } catch {
       // Diagnostics must not affect training playback.
@@ -476,6 +491,7 @@ Active Recall has not started.</pre>
   }
 
   document.addEventListener('visibilitychange', () => {
+    audioTransitionDiagnostic.record('document visibilitychange');
     updateResumeDiagnostic();
   });
 
@@ -494,6 +510,7 @@ Active Recall has not started.</pre>
     expectedPhraseEnd = idleContext.expectedPhraseEnd;
     pendingPlayTrigger = idleContext.pendingPlayTrigger;
     setMediaSessionPlaybackState('none');
+    audioTransitionDiagnostic.record('english owner-cleared');
   }
 
   function getMediaSessionPolicyState() {
@@ -510,8 +527,11 @@ Active Recall has not started.</pre>
       return;
     }
 
+    audioTransitionDiagnostic.record('english src-setting', `restore target=${lessonAudioUrl}`);
     audio.src = lessonAudioUrl;
+    audioTransitionDiagnostic.record('english src-set', 'restore');
     audio.load();
+    audioTransitionDiagnostic.record('english load-called', 'restore');
   }
 
   if ('mediaSession' in navigator) {
@@ -566,6 +586,13 @@ Active Recall has not started.</pre>
         mediaSessionLastAction = 'pause-rejected-no-context';
         updateResumeDiagnostic();
       }
+    });
+  }
+
+  for (const event of ['loadedmetadata', 'canplay', 'play', 'playing', 'pause', 'ended', 'error', 'seeking', 'seeked', 'emptied']) {
+    audio.addEventListener(event, () => {
+      audioTransitionDiagnostic.record(`english ${event}`);
+      updateResumeDiagnostic();
     });
   }
 
@@ -752,12 +779,20 @@ Active Recall has not started.</pre>
     const audioUrl = `${import.meta.env.BASE_URL}lessons/${lessonId}/lesson.mp3`;
     const absoluteAudioUrl = new URL(audioUrl, window.location.href).href;
 
+    audioTransitionDiagnostic.record('english src-check', `resolved target=${absoluteAudioUrl}`);
     if (audio.src !== absoluteAudioUrl) {
+      audioTransitionDiagnostic.record('english src-setting', `target=${absoluteAudioUrl}`);
       audio.src = audioUrl;
+      audioTransitionDiagnostic.record('english src-set');
       audio.load();
+      audioTransitionDiagnostic.record('english load-called');
+    } else {
+      audioTransitionDiagnostic.record('english src-unchanged');
     }
 
+    audioTransitionDiagnostic.record('english metadata-wait');
     await waitForAudioMetadata();
+    audioTransitionDiagnostic.record('english metadata-ready');
   }
 
   function playSegment(
@@ -784,6 +819,7 @@ Active Recall has not started.</pre>
         settled = true;
         cleanup();
         audioPlayOwner = 'none';
+        audioTransitionDiagnostic.record('english owner-cleared', 'segment finish');
         expectedPhraseEnd = null;
         updateResumeDiagnostic();
         resolve();
@@ -807,15 +843,24 @@ Active Recall has not started.</pre>
 
       cancelActiveSegment = cancel;
       audioPlayOwner = owner;
+      audioTransitionDiagnostic.record('english owner-set', `owner=${owner}`);
       expectedPhraseEnd = segment.end;
       lastAudioEvent = 'segment-play-requested';
 
+      audioTransitionDiagnostic.record('english seek-setting', `target=${Math.max(0, segment.start - trainingSeekLeadSeconds)}`);
       audio.currentTime = Math.max(0, segment.start - trainingSeekLeadSeconds);
+      audioTransitionDiagnostic.record('english seek-set');
       audio.addEventListener('timeupdate', handleTimeUpdate);
+      audioTransitionDiagnostic.record('english play-request', `owner=${owner}`);
       recordPlayRequest(owner, owner);
       updateResumeDiagnostic();
 
-      void audio.play().catch((error: unknown) => {
+      const diagnosticPlayId = audioTransitionDiagnostic.record('english play-call', `run=${runId}`, 'English');
+      void audio.play().then(() => {
+        audioTransitionDiagnostic.record('english play-resolved', `request=${diagnosticPlayId}; run=${runId}`);
+        updateResumeDiagnostic();
+      }, (error: unknown) => {
+        audioTransitionDiagnostic.record('english play-rejected', `request=${diagnosticPlayId}; run=${runId}; ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`);
         recordPlayRejection(error);
         lastAudioEvent =
           error instanceof Error
@@ -863,6 +908,8 @@ Active Recall has not started.</pre>
     const activeRecallSessionStore = diagnosticFresh
       ? createJapaneseCueTestSessionStore(activeRecallLessons)
       : activeRecallSessionStores[mode];
+    audioTransitionDiagnostic.reset();
+    audioTransitionDiagnostic.record('active-recall start', `diagnosticFresh=${diagnosticFresh}`);
     japaneseCueMode = getJapaneseCueMode(japaneseCueModeSelector?.value);
     diagnosticTestStatus = diagnosticFresh ? 'running (fresh, memory-only, 3 cues)' : 'not-used (normal resume)';
     trainingActive = true;
@@ -1099,6 +1146,7 @@ Active Recall has not started.</pre>
         updateResumeDiagnostic();
       }
     } catch (error) {
+      audioTransitionDiagnostic.record('active-recall failed', error instanceof Error ? `${error.name}: ${error.message}` : String(error));
       console.error('Active Recall playback failed:', error);
     } finally {
       if (trainingRunId === runId) {

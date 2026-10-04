@@ -127,6 +127,25 @@ test('MP3 naming uses the original lesson phrase index, not shuffled queue posit
   assert.equal(japaneseCueMp3Path('restaurant-delay', 0), 'diagnostics/japanese-cues/restaurant-delay/phrase-001.mp3');
 });
 
+test('Japanese completion is observed in the shared sequence before the English continuation', async () => {
+  const audio = new FakeAudio();
+  const sequence: string[] = [];
+  const player = createJapaneseMp3Player(() => audio,
+    () => ({ visibility: 'visible', time: 0 }), () => {}, undefined,
+    kind => { sequence.push(kind); });
+  const playback = player.play(cue, '/').then(() => { sequence.push('english play-request'); });
+  audio.dispatchEvent(new Event('playing'));
+  audio.dispatchEvent(new Event('ended'));
+  await playback;
+  assert.deepEqual(sequence, ['japanese-mp3 request', 'japanese-mp3 play', 'japanese-mp3 ended', 'english play-request']);
+  const brokenObserver = createJapaneseMp3Player(() => audio,
+    () => ({ visibility: 'visible', time: 0 }), () => {}, undefined,
+    () => { throw new Error('observer failed'); });
+  const next = brokenObserver.play(cue, '/');
+  audio.dispatchEvent(new Event('ended'));
+  await next;
+});
+
 test('bundled sample paths match all three checked-in files and exclude ungenerated phrases', () => {
   for (const index of [0, 1, 2]) {
     const path = japaneseCueMp3Path('basic-delivery', index);

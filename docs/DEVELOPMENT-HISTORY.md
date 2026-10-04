@@ -5656,3 +5656,45 @@ check and `git diff --check` passed. The configured TypeScript check covers
 frontend type check. The Speech Synthesis function body is unchanged.
 The corrected start operation still requires iPhone
 validation; these automated results are not a successful background A/B run.
+
+------------------------------------------------------------------------
+
+## 2026-10-04 — Japanese MP3 Success and English Transition Diagnostics
+
+The latest iPhone A/B capture reports Japanese MP3 requested=yes, started=yes,
+ended=yes, error=none, with request(visible), play(visible), ended(visible).
+This confirms that the requested Japanese MP3 played to completion in this run;
+it does not establish background playback reliability or success for every cue.
+The subsequent Active Recall English play request was rejected with
+NotAllowedError. The runtime then became inactive, audio was paused, and the
+fresh test reported stopped before completion.
+
+The current path awaits Japanese completion, then prepares English src/metadata
+during the Recall delay, sets the segment owner and currentTime, and calls
+English play(). The existing rejection propagates to run cleanup. Final paused
+and owner values therefore cannot reconstruct the state at the rejected call.
+The exact Safari policy cause remains unconfirmed; user activation expiry and
+the switch between distinct Japanese and English audio elements need observation.
+
+Instrumentation now records one bounded, timestamped transition sequence with
+English element snapshots at each operation/event: resolved src and currentSrc,
+readyState, networkState, paused, currentTime, owner, runtime, queue index,
+visibility, and transient/sticky user activation (unavailable when unsupported).
+It records src checks/changes/load, metadata wait/completion, seek setting/set,
+owner changes, play request/call and Promise resolution/rejection with request ID
+and rejection name/message. English loadedmetadata, canplay, play, playing, pause,
+ended, error, seeking, seeked and emptied events share the Japanese MP3 timeline.
+Stable English element IDs and a dedicated Japanese element label distinguish
+element changes; previous playback type is captured before each play-call.
+Snapshots survive cleanup and the sequence resets on each Active Recall start.
+
+No retry, unlock, muted/dummy playback, WebAudio, Media Session policy change,
+or Speech Synthesis fix is introduced. The existing queue/session and A/B start
+conditions remain unchanged. Instrumentation cannot expose Safari's internal
+permission decision; the next device capture is required to test hypotheses.
+
+Validation: all 68 automated tests passed, including snapshot preservation,
+element identification, unavailable activation APIs, bounded history, observer
+failure isolation and Japanese-ended/English-continuation ordering. Production
+build, configured `npx tsc --noEmit`, and `git diff --check` passed. Device
+validation of this instrumentation remains pending.

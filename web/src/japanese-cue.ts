@@ -45,6 +45,7 @@ export function createJapaneseMp3Player(
   sample: () => { visibility: string; time: number },
   update: () => void,
   probe: (url: string) => Promise<string> = probeJapaneseMp3Url,
+  observe: (kind: string) => void = () => {},
 ) {
   let audio: CueAudio | null = null;
   let cancel: (() => void) | null = null;
@@ -70,6 +71,7 @@ export function createJapaneseMp3Player(
       const { visibility, time } = sample();
       events.push(`japanese-mp3 ${kind}(${visibility}) @${time.toFixed(1)}`);
       events = events.slice(-12);
+      observe(`japanese-mp3 ${kind}`);
       update();
     } catch {
       // Diagnostics must not affect playback.
