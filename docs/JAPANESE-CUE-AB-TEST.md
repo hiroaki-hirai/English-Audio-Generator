@@ -1,7 +1,8 @@
 # Japanese cue MP3 diagnostic A/B test
 
-This is an experiment, not a production replacement for Speech Synthesis.
-Speech Synthesis remains the default on page load. The selector applies to
+The three-cue fixture remains an independent A/B experiment. Normal Active Recall
+now defaults to MP3; Speech Synthesis remains an explicit legacy/debug choice.
+The selector applies to
 the next Active Recall start and is not persisted or applied mid-run.
 
 Use **Start Fresh 3-Cue A/B Test** for this experiment. It uses the selected
@@ -9,7 +10,8 @@ cue mode, starts an independent memory-only Ordered Category session at
 `basic-delivery:0`, and ends after the third phrase's English repetitions.
 The normal saved session and round state are neither read nor overwritten.
 The normal start buttons still resume their respective saved sessions; merely
-selecting MP3 diagnostic does not reset their position.
+selecting MP3 does not reset their position. Normal starts use their independent
+65-phrase Japanese assets; fresh starts retain the original diagnostic assets.
 
 ## Assets and generation
 
@@ -93,7 +95,7 @@ URL on the actual deployment.
 1. Serve the changed build at an iPhone-accessible test URL. Check that the
    selector and the three MP3 URLs load. This work does not deploy the build.
 2. Stop any current training, then select **Speech Synthesis** for A or
-   **MP3 diagnostic** for B. No private session or saved-session deletion is
+   **MP3** for B. No private session or saved-session deletion is
    needed. Leave the normal start buttons unused for this test.
 3. Tap **Start Fresh 3-Cue A/B Test**. Verify `action: fresh`, position `1/65`,
    `storage: memory-only`, fresh-test status `running`, and `basic-delivery:0`.
@@ -102,15 +104,15 @@ URL on the actual deployment.
 4. Record whether Japanese cue 2 → English answer 2 → Japanese cue 3 → English
    answer 3 are heard while Safari remains in the background. After a stop,
    return to Safari and capture the diagnostics before pressing any controls.
-5. For B, stop A if needed, select **MP3 diagnostic**, and tap the same
+5. For B, stop A if needed, select **MP3**, and tap the same
    **Start Fresh 3-Cue A/B Test** button. Repeat the app-switch timing. Observe the
    same phrase sequence. Capture MP3 request/play/ended/error, visibility,
    phrase/index, runtime, checkpoint and the existing English audio fields.
 6. The test finishes after the third phrase's English repetitions and displays
    `Diagnostic test completed — 3 cues`; it does not request cue 4 or start a
    new round. The underlying ordered queue still has all 65 phrases.
-   Normal start buttons retain their full-queue behavior and may request
-   ungenerated cues when MP3 diagnostic is selected.
+   Normal start buttons retain their full-queue behavior using the separate
+   65-phrase Japanese MP3 assets.
 7. Repeat with app switching during cue 1 if investigating interruption during
    speech itself. Record that timing separately from the before-cue-2 test.
 

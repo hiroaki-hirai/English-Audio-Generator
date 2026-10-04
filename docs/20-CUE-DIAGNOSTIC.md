@@ -156,7 +156,10 @@ after Safari moves into the background. It makes MP3 a strong migration candidat
 for normal 65-phrase Active Recall. It does not establish that all 20 transitions
 occurred in the background, or validate all normal shuffle, weak-phrase and Resume
 paths. Device/iOS version, exact app-switch cue and full transition logs were not
-provided. Normal Active Recall remains unchanged; 65-cue migration is design-only.
+provided. At the time of this device test, normal Active Recall was unchanged
+and 65-cue migration was design-only. The subsequent local implementation is
+documented in [the normal 65-phrase migration record](65-PHRASE-JAPANESE-MP3.md);
+its own iPhone validation remains pending.
 
 ### Training controls regression and correction
 

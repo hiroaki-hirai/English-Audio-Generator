@@ -1,9 +1,10 @@
 import { diagnosticLesson, diagnosticJapanesePath, diagnosticCueCount } from './diagnostic-fixture.js';
+import { trainingJapaneseCueMp3Path } from './training-japanese-cue.js';
 
-export type JapaneseCueMode = 'speech-synthesis' | 'mp3-diagnostic';
+export type JapaneseCueMode = 'speech-synthesis' | 'mp3' | 'mp3-diagnostic';
 
 export function getJapaneseCueMode(value?: string): JapaneseCueMode {
-  return value === 'mp3-diagnostic' ? value : 'speech-synthesis';
+  return value === 'speech-synthesis' ? value : value === 'mp3-diagnostic' ? value : 'mp3';
 }
 
 export function playJapaneseCue(
@@ -11,10 +12,10 @@ export function playJapaneseCue(
   speech: () => Promise<void>,
   mp3: () => Promise<void>,
 ): Promise<void> {
-  return mode === 'mp3-diagnostic' ? mp3() : speech();
+  return mode === 'speech-synthesis' ? speech() : mp3();
 }
 
-type CueIdentity = { lessonId: string; phraseIndex: number; queueIndex: number };
+type CueIdentity = { lessonId: string; phraseIndex: number; queueIndex: number; assetScope?: 'lesson' | 'diagnostic' };
 type CueAudio = Pick<HTMLAudioElement,
   'src' | 'loop' | 'play' | 'pause' | 'addEventListener' | 'removeEventListener'
 > & { readonly error: { readonly code: number; readonly message?: string } | null };
@@ -94,7 +95,9 @@ export function createJapaneseMp3Player(
       started = false;
       ended = false;
       errorValue = 'none';
-      resolvedPath = `${baseUrl}${japaneseCueMp3Path(context.lessonId, context.phraseIndex)}`;
+      resolvedPath = `${baseUrl}${context.assetScope === 'lesson'
+        ? trainingJapaneseCueMp3Path(context.lessonId, context.phraseIndex)
+        : japaneseCueMp3Path(context.lessonId, context.phraseIndex)}`;
       resolvedUrl = resolvedPath;
       playRejection = 'none';
       mediaErrorEvent = false;
@@ -201,9 +204,10 @@ export function createJapaneseMp3Player(
       return [
         `Japanese MP3 phrase ID: ${identity ? `${identity.lessonId}:${identity.phraseIndex}` : 'none'}`,
         `Japanese MP3 queue index: ${identity?.queueIndex ?? 'n/a'} (0-based)`,
+        `Japanese MP3 asset scope: ${identity?.assetScope ?? 'diagnostic'}`,
         `Japanese MP3 resolved path: ${resolvedPath}`,
         `Japanese MP3 resolved URL: ${resolvedUrl}`,
-        `Japanese MP3 bundled sample: ${identity && isBundledJapaneseCueMp3(identity.lessonId, identity.phraseIndex) ? 'yes' : 'no'}`,
+        `Japanese MP3 bundled sample: ${identity?.assetScope === 'lesson' ? 'not-applicable (normal lesson)' : identity && isBundledJapaneseCueMp3(identity.lessonId, identity.phraseIndex) ? 'yes' : 'no'}`,
         `Japanese MP3 play requested: ${requested ? 'yes' : 'no'}`,
         `Japanese MP3 play started: ${started ? 'yes' : 'no'}`,
         `Japanese MP3 ended: ${ended ? 'yes' : 'no'}`,

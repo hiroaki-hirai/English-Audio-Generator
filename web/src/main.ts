@@ -276,8 +276,8 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       <label>
         Japanese cue mode:
         <select class="japanese-cue-mode">
-          <option value="speech-synthesis" selected>Speech Synthesis</option>
-          <option value="mp3-diagnostic">MP3 diagnostic</option>
+          <option value="mp3" selected>MP3</option>
+          <option value="speech-synthesis">Speech Synthesis (legacy/debug)</option>
         </select>
       </label>
       <button class="training-button active-recall-button" type="button"
@@ -1053,6 +1053,7 @@ Active Recall has not started.</pre>
               lessonId: entry.lessonId,
               phraseIndex: entry.phraseIndex,
               queueIndex,
+              assetScope: diagnosticFresh ? 'diagnostic' : 'lesson',
             }, import.meta.env.BASE_URL),
           );
 

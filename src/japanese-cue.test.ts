@@ -30,13 +30,14 @@ function fixture() {
 }
 const cue = { lessonId: 'basic-delivery', phraseIndex: 0, queueIndex: 0 };
 
-test('default cue mode calls only existing speech path', async () => {
-  assert.equal(getJapaneseCueMode(), 'speech-synthesis');
-  assert.equal(getJapaneseCueMode('unknown'), 'speech-synthesis');
+test('MP3 is default and Speech Synthesis remains an explicit legacy choice', async () => {
+  assert.equal(getJapaneseCueMode(), 'mp3');
+  assert.equal(getJapaneseCueMode('unknown'), 'mp3');
+  let mp3Calls = 0;
   let speechCalls = 0;
-  await playJapaneseCue(getJapaneseCueMode(), async () => { speechCalls += 1; }, async () => {
-    assert.fail('Default must not create or play MP3');
-  });
+  await playJapaneseCue(getJapaneseCueMode(), async () => { assert.fail('No automatic speech fallback'); }, async () => { mp3Calls += 1; });
+  await playJapaneseCue(getJapaneseCueMode('speech-synthesis'), async () => { speechCalls += 1; }, async () => { assert.fail('Legacy uses speech only'); });
+  assert.equal(mp3Calls, 1);
   assert.equal(speechCalls, 1);
 });
 
