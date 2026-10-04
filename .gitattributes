@@ -1,0 +1,2 @@
+# Preserve the bytes used by the reused lesson's existing source-hash algorithm.
+training-scripts/complete-delivery.json text eol=lf

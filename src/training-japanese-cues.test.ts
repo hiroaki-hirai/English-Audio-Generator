@@ -7,8 +7,8 @@ import { createActiveRecallQueue, createSequentialCategoryActiveRecallQueue, cre
   prepareActiveRecallSession } from '../web/src/active-recall.js';
 import { createJapaneseMp3Player, playJapaneseCue } from '../web/src/japanese-cue.js';
 
-test('all 65 normal Japanese assets match source, unique mapping, manifest hashes and decoded audio', async () => {
-  assert.deepEqual(await verifyTrainingJapaneseAssets(), { files: 65, missing: 0, extra: 0, duplicateIds: 0, mismatches: 0 });
+test('all 85 normal Japanese assets match source, unique mapping, manifest hashes and decoded audio', async () => {
+  assert.deepEqual(await verifyTrainingJapaneseAssets(), { files: 85, missing: 0, extra: 0, duplicateIds: 0, mismatches: 0 });
 });
 
 test('all queue modes resolve original phrase identities and preserve resumed queue progress', async () => {
@@ -16,7 +16,7 @@ test('all queue modes resolve original phrase identities and preserve resumed qu
   const assets = await expectedJapaneseAssets();
   const queues = [createActiveRecallQueue(lessons, () => 0.25), createSequentialCategoryActiveRecallQueue(lessons, () => 0.25), createSequentialCategoryOrderedActiveRecallQueue(lessons)];
   for (const queue of queues) {
-    assert.equal(queue.length, 65);
+    assert.equal(queue.length, 85);
     queue.forEach((entry, queueIndex) => {
       const asset = assets.find(asset => asset.phraseId === `${entry.lessonId}:${entry.phraseIndex}`)!;
       assert.equal(entry.ja, asset.ja);

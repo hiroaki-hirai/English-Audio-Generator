@@ -41,6 +41,9 @@ function createInitialPage(metadata: unknown, saved: Record<string, string> = {}
   const app = {
     set innerHTML(html: string) {
       renderedHtml = html;
+      // Rendering creates an audio element with the selected lesson's HTML src.
+      audio.src = html.match(/<audio\b[^>]*src="([^"]*)"/)?.[1] ?? '';
+      audio.currentTime = 0;
       selectedMode = html.match(/<option value="([^"]*)" selected>/)?.[1] ?? '';
       buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)].map(match => {
         const button = new Control(match[1]!.match(/class="([^"]*)"/)?.[1] ?? '', match[2]!.trim());
@@ -282,7 +285,7 @@ test('actual legacy selection speaks Japanese and does not create an MP3 element
   await flush();
 });
 
-test('a full 65-phrase Weak round retains its transition history within the 4000-event bound', async () => {
+test('a full library Weak round retains its transition history within the 4000-event bound', async () => {
   const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as Array<{ id: string; phrases: unknown[] }>;
   const weak = lessons.flatMap(lesson => lesson.phrases.map((_phrase, index) => `${lesson.id}:${index}`));
   const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
@@ -293,7 +296,7 @@ test('a full 65-phrase Weak round retains its transition history within the 4000
     button.dataset.activeRecallMode === 'global')!;
   button.emit('click');
   const japanese = page.japaneseAudio[0]!;
-  for (let index = 0; index < 65; index += 1) {
+  for (let index = 0; index < weak.length; index += 1) {
     assert.equal(japanese.plays, index + 1);
     japanese.emit('playing');
     japanese.emit('ended');
@@ -307,12 +310,12 @@ test('a full 65-phrase Weak round retains its transition history within the 4000
       await flush();
     }
   }
-  assert.equal(japanese.plays, 66, 'Normal training retains next-round behavior');
+  assert.equal(japanese.plays, weak.length + 1, 'Normal training retains next-round behavior');
   const lines = page.diagnostic.textContent;
   const retained = Number(lines.match(/retained (\d+)\/4000/)?.[1]);
   assert.ok(retained > 2000 && retained < 4000);
   assert.match(lines, /active-recall start/);
-  assert.match(lines, /"queueIndex":64/);
+  assert.ok(lines.includes(`"queueIndex":${weak.length - 1}`));
   assert.match(lines, /japanese-mp3 ended/);
   assert.match(lines, /english seek-setting/);
   assert.match(lines, /english play-call/);
@@ -354,4 +357,113 @@ test('actual UI groups controls, places cue mode first and closes diagnostics by
   assert.equal(start.textContent, 'Stop Active Recall');
   start.emit('click');
   await flush();
+});
+
+test('Complete Delivery lesson selection starts continuous Training and preserves Weak Training', async () => {
+  const code = await bundleInitialPage();
+  const metadata = JSON.parse(await readFile('web/public/lessons/complete-delivery/metadata.json', 'utf8'));
+  for (const weak of [false, true]) {
+    const saved: Record<string, string> = weak
+      ? { 'eag.weakPhrases.v1': JSON.stringify(['basic-delivery:0', 'complete-delivery:0']) } : {};
+    const page = createInitialPage(metadata, saved);
+    runInNewContext(code, page.context);
+    await page.context.__trainingInitialization;
+    const lessonButton = page.app.querySelectorAll('.lesson-button').find(button => button.dataset.lessonId === 'complete-delivery')!;
+    assert.ok(lessonButton.textContent.includes('受け渡し総合'));
+    lessonButton.emit('click');
+    await flush();
+    assert.match(page.renderedHtml(), /<h2>Complete Delivery<\/h2>/);
+    assert.equal(page.selectedMode(), 'mp3');
+    const button = page.app.querySelectorAll('.training-button')[0]!;
+    button.emit('click');
+    await flush();
+    assert.equal(page.audio.src, `/English-Audio-Generator/lessons/complete-delivery/${weak ? 'lesson.mp3' : 'continuous-training.mp3'}`);
+    assert.equal(page.audio.plays, 1);
+    if (weak) {
+      for (let repeat = 1; repeat <= 3; repeat += 1) {
+        assert.equal(page.audio.plays, repeat);
+        page.audio.currentTime = 1000;
+        page.audio.emit('timeupdate');
+        await flush();
+      }
+      assert.equal(page.audio.plays, 4, 'Next phrase follows the three Weak repetitions');
+      assert.equal(saved['eag.weakPhrases.v1'], JSON.stringify(['basic-delivery:0', 'complete-delivery:0']));
+    }
+    assert.equal(page.japaneseAudio.length, 0, 'Training still plays English only');
+    assert.equal(button.textContent, 'Stop Training');
+    button.emit('click');
+    await flush();
+    assert.equal(button.textContent, 'Start Training');
+  }
+});
+
+test('Complete Delivery resumes through the unchanged MP3 path in every recall mode, including Weak', async () => {
+  const code = await bundleInitialPage();
+  const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const ordered = [...lessons.filter((lesson: { domain: string }) => lesson.domain === 'delivery'),
+    ...lessons.filter((lesson: { domain: string }) => lesson.domain === 'everyday')];
+  const metadata = JSON.parse(await readFile('web/public/lessons/complete-delivery/metadata.json', 'utf8'));
+  for (const [mode, key] of [
+    ['global', 'eag.activeRecallSession.v1'],
+    ['sequential-category', 'eag.sequentialCategoryActiveRecallSession.v1'],
+    ['sequential-category-order', 'eag.sequentialCategoryOrderedActiveRecallSession.v1'],
+  ] as const) {
+    for (const repetitions of [2, 3]) {
+      const session = prepareActiveRecallSession(mode === 'global' ? lessons : ordered, null, () => 0.25, mode);
+      session.session.currentIndex = session.queue.findIndex(entry => entry.lessonId === 'complete-delivery' && entry.phraseIndex === 0);
+      const weakValue = JSON.stringify(repetitions === 3 ? ['basic-delivery:0', 'complete-delivery:0'] : ['basic-delivery:0']);
+      const page = createInitialPage(metadata, { [key]: JSON.stringify(session.session), 'eag.weakPhrases.v1': weakValue });
+      runInNewContext(code, page.context);
+      await page.context.__trainingInitialization;
+      const button = page.app.querySelectorAll('.active-recall-button').find(button => button.dataset.activeRecallMode === mode && !button.dataset.diagnosticFresh)!;
+      button.emit('click');
+      const japanese = page.japaneseAudio[0]!;
+      assert.equal(japanese.src, '/English-Audio-Generator/lessons/complete-delivery/japanese-cues/phrase-001.mp3');
+      assert.equal(page.audio.plays, 0, 'English waits for Japanese ended');
+      japanese.emit('ended');
+      await flush();
+      assert.equal(page.audio.src, '/English-Audio-Generator/lessons/complete-delivery/lesson.mp3');
+      for (let repeat = 1; repeat <= repetitions; repeat += 1) {
+        assert.equal(page.audio.plays, repeat);
+        assert.equal(japanese.plays, 1);
+        page.audio.currentTime = 1000;
+        page.audio.emit('timeupdate');
+        await flush();
+      }
+      assert.equal(japanese.plays, 2);
+      assert.equal(page.saved['eag.weakPhrases.v1'], weakValue);
+      button.emit('click');
+      await flush();
+    }
+  }
+});
+
+test('fresh three- and twenty-cue diagnostics terminate exactly and remain memory-only', async () => {
+  const code = await bundleInitialPage();
+  const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
+  for (const count of [3, 20]) {
+    const page = createInitialPage(metadata);
+    runInNewContext(code, page.context);
+    await page.context.__trainingInitialization;
+    const button = page.app.querySelectorAll('.active-recall-button').find(button => button.dataset.diagnosticFresh === 'true'
+      && (count === 20 ? button.dataset.diagnosticTwenty === 'true' : !button.dataset.diagnosticTwenty))!;
+    button.emit('click');
+    const japanese = page.japaneseAudio[0]!;
+    for (let cue = 0; cue < count; cue += 1) {
+      assert.equal(japanese.plays, cue + 1);
+      assert.match(japanese.src, /\/diagnostics\//);
+      japanese.emit('ended');
+      await flush();
+      for (let repeat = 0; repeat < 2; repeat += 1) {
+        page.audio.currentTime = 1000;
+        page.audio.emit('timeupdate');
+        await flush();
+      }
+    }
+    assert.equal(japanese.plays, count, 'No next cue after diagnostic completion');
+    assert.equal(page.audio.plays, count * 2);
+    assert.equal(page.app.querySelectorAll('.training-button')[0]!.textContent, 'Start Training');
+    assert.deepEqual(page.saved, {});
+    assert.ok(page.diagnostic.textContent.includes(`completed (${count} cues)`));
+  }
 });

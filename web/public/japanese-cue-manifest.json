@@ -1560,6 +1560,486 @@
         "sampleRate": 24000,
         "channels": 1
       }
+    },
+    {
+      "phraseId": "complete-delivery:0",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 0,
+      "ja": "Uber Eats の配達です。ご注文の商品をお持ちしました。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-001.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "2156c680e84449f193d65a506ce1d2d21b9a055bef1649d5eb56ef04aa9b92e8",
+      "audioSha256": "30d9bb49806a9696265778dd2d28d53a5f9cee1070558bb69c09d51af2904f3e",
+      "duration": 5.352,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:1",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 1,
+      "ja": "承知しました。大変お待たせ致しました。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-002.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "050623b9ab366ccdc44f7c1a998fd75a9d2806ad87086cf60905681fdfd27fb2",
+      "audioSha256": "3b6987f97d2b287246056a33a5845ab2c3491373c8abded8e38b2c31d97e14d9",
+      "duration": 3.456,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:2",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 2,
+      "ja": "まず本人確認をさせてください。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-003.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "c52fdddd2791db938e95035d6b7d6ac3d6cc833676cdd69762a7dac6b00590b1",
+      "audioSha256": "098bd3366e0f3eca6553386d3abce5a86d53d0d0bed297bf3342676e6d0af789",
+      "duration": 3.312,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:3",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 3,
+      "ja": "Uber Eats のアプリの画面を見せていただけますか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-004.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "2c6a866930eaab9c4ec7a5bee22152622fc6f7d431fb73f0cab36ab6796a4329",
+      "audioSha256": "df97c1c7f3594d534b6e7067a8011d6c877259608522f4c65f6213ef75552a1b",
+      "duration": 4.32,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:4",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 4,
+      "ja": "私の顔のアイコンか注文番号はありますか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-005.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "61386ba23b765375f4a3d9943337c7b4edec1274d70f579788eca52c07cede6e",
+      "audioSha256": "30a8fa65636b01747709cba4193d02694d993276e748085bce6509b0ec23bb18",
+      "duration": 5.52,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:5",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 5,
+      "ja": "確認できました。ありがとうございます。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-006.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "6868d182916a0effeaba56ee2415e3d6456ef2beead99b3345b1841122082ba2",
+      "audioSha256": "2e01d69f6068d53780d9f83b96b128bc78611a290c4855c598e192f1d4dcf416",
+      "duration": 3,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:6",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 6,
+      "ja": "では、先に会計をさせてください。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-007.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "88d11905ade07dbe308f7e60c3d69e44a66d8bfe9e428d48921e666c0c872b27",
+      "audioSha256": "105d34c8f6249779890ac6e88123d96d128c98a5782ae40e5f181e49cac5453d",
+      "duration": 3.456,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:7",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 7,
+      "ja": "合計で2,350円になります。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-008.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "bd2f87e2df14dc01eaa627e95359d2bc04b414653e56d0bb3d7f11ea04b8443f",
+      "audioSha256": "abc45229183fbc805c60277a61952ab980de75a9f7bb2979a1dfc03ae26fa7b6",
+      "duration": 3.648,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:8",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 8,
+      "ja": "こちらに入れていただけますか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-009.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "c254d29b8c5b882f3126955f49cab9c7571e7df24b39b435e38d41d17d409f5b",
+      "audioSha256": "ce3e724dfd821df264861e0b9888a312426376b1463183018e0d983296855d80",
+      "duration": 3.6,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:9",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 9,
+      "ja": "5,000円、お預かりします。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-010.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "360bb929a045560c5ba56faa6135fae80f3be8739868d3947b740a941e367265",
+      "audioSha256": "f147b54044ac398bb9b61d88ae9cb76c16ccd42e1a45c3bbcb90fbab6cb56868",
+      "duration": 3.048,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:10",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 10,
+      "ja": "2,650円のお釣りです。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-011.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "437dfa9b0c2d9d111a0132a60c786d691baac305c851fb034e1794df753ad1c2",
+      "audioSha256": "a993203e1aa6af8e598e0e329f6334d4a358e88d8b67489ed235e7d2060cc7b5",
+      "duration": 3.312,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:11",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 11,
+      "ja": "まず2,000円。次に500円。そして50円。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-012.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "c7491469520f34ea418147641d1c4d063f6b4117385e393f1c139bfa428e4e50",
+      "audioSha256": "42e77d2657b2203000c9de403cf257f185109b234541e37de93d41835d9d19ba",
+      "duration": 5.712,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:12",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 12,
+      "ja": "これで合計2,650円です。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-013.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "3207261bb8912a4b995b7c60b2c7e0c1bee8d07acae561174a75f6ca1ba51975",
+      "audioSha256": "2042534d82365ea6946c27975384685914b216c3d151dfdd76d5fad6852f3399",
+      "duration": 3.408,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:13",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 13,
+      "ja": "間違いは無いでしょうか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-014.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "16d176126152cf62bfa37829f8eebd0a09409e84e99af97846198aa5e55b78c8",
+      "audioSha256": "1226e354411b64e9b6b5d69cfc8eefa152d360fc90bbb17ba01a7f590b54d2ed",
+      "duration": 2.256,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:14",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 14,
+      "ja": "では、こちらがご注文の品です。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-015.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "b29cc5163ecc05a28c6450c2c7ef5466bd24ffc3046058879c374c8e78a1e74e",
+      "audioSha256": "90e63529ff157ff472a84afd6afc306b13aab33f4538cd5129ac65b6022b9b56",
+      "duration": 3.96,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:15",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 15,
+      "ja": "重たいので気をつけてください。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-016.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "0a18a83bcaa4371fa6e43e74277a260a92b33a5df1ff955e20d44c0d66561760",
+      "audioSha256": "9135f6344b6578757326f0c83d79b4143a1f03892fb6008d12aee17c357a0160",
+      "duration": 2.568,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:16",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 16,
+      "ja": "大丈夫でしょうか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-017.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "34c02c0119bc58f3f312e506e2c4941934ae466e70a0535d96754f61b53ae4a4",
+      "audioSha256": "4d16953884ab890a1e3d6c2494b9ad8d63d7eefc548998516a15f2c6e49b8853",
+      "duration": 1.512,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:17",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 17,
+      "ja": "最後に暗証番号を教えていただけますでしょうか？",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-018.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "be6b8f60bbe690c39ac06f5f89e3844521f830a7b851ef6cfeee9e3bb6e7d03e",
+      "audioSha256": "d5a97fe06178aeeceee1783662366cd98e9be3a9dcd9e67a174b46bf57570016",
+      "duration": 3.912,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:18",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 18,
+      "ja": "パスが通りました。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-019.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "3b5a2ee1e9853617573edc554210654a52518d3dfe9aa14c47c10bfa24d97300",
+      "audioSha256": "b1d8ef742f6ddeffe1bb568729fba8b8cc07c8cb90fd740dfd729ec03f450ff8",
+      "duration": 1.848,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
+    },
+    {
+      "phraseId": "complete-delivery:19",
+      "lessonId": "complete-delivery",
+      "phraseIndex": 19,
+      "ja": "ありがとうございます。またのご利用をお待ちしております。",
+      "path": "lessons/complete-delivery/japanese-cues/phrase-020.mp3",
+      "config": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "cedar",
+        "responseFormat": "mp3",
+        "instructions": "Read the Japanese text clearly and naturally in Japanese. Do not translate it.",
+        "loudnessNormalization": "none",
+        "sampleRate": 24000,
+        "channels": 1
+      },
+      "sourceHash": "980aff13e9159eaa50f5b94b4f060cf92d0be24b91c79aedf0cc0f29304ab72f",
+      "audioSha256": "db7959cd15923313778217759c0f99926529c52c14ef132349d94e78ddf0bbfe",
+      "duration": 4.416,
+      "format": {
+        "codec": "mp3",
+        "sampleRate": 24000,
+        "channels": 1
+      }
     }
   ]
 }

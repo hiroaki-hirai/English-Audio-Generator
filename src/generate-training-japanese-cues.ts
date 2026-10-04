@@ -16,7 +16,8 @@ async function main(): Promise<void> {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
   const client = new OpenAI({ maxRetries: 0 });
-  for (const asset of await expectedJapaneseAssets()) {
+  const expected = await expectedJapaneseAssets();
+  for (const asset of expected) {
     const path = `web/public/${asset.path}`;
     const existing = manifest.entries.find(entry => entry.phraseId === asset.phraseId);
     let fileExists = true;
@@ -41,7 +42,7 @@ async function main(): Promise<void> {
     manifest.entries.push({ ...asset, config: japaneseGenerationConfig,
       sourceHash: sourceHash(asset), audioSha256: sha256(bytes), ...inspectJapaneseAudio(path) });
     await writeFile(japaneseManifestPath, JSON.stringify(manifest, null, 2) + '\n');
-    console.log(`Created ${asset.phraseId}: ${path} (${manifest.entries.length}/65)`);
+    console.log(`Created ${asset.phraseId}: ${path} (${manifest.entries.length}/${expected.length})`);
   }
   console.log(JSON.stringify(await verifyTrainingJapaneseAssets()));
 }

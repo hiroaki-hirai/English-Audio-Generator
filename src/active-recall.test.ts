@@ -174,7 +174,7 @@ test('sequential category ordered mode remains ordered in the next round', () =>
   assert.equal(nextRound.roundState.currentRound, 2);
 });
 
-test('current training library contains 7 lessons and 65 unique phrases', () => {
+test('current training library contains 8 lessons and 85 unique phrases', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
@@ -186,9 +186,9 @@ test('current training library contains 7 lessons and 65 unique phrases', () => 
     (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
   );
 
-  assert.equal(trainingLessons.length, 7);
-  assert.equal(queue.length, 65);
-  assert.equal(new Set(identities).size, 65);
+  assert.equal(trainingLessons.length, 8);
+  assert.equal(queue.length, 85);
+  assert.equal(new Set(identities).size, 85);
   assert.deepEqual(
     new Set(queue.map((entry) => entry.lessonId)),
     new Set(trainingLessons.map((lesson) => lesson.id)),
@@ -236,7 +236,7 @@ test('giving-directions is the Everyday lesson and all other lessons are Deliver
   );
   assert.equal(
     trainingLessons.filter((lesson) => lesson.domain === 'delivery').length,
-    6,
+    7,
   );
 });
 
@@ -381,7 +381,7 @@ test('duplicate or missing queue identities reject a saved session', () => {
   assert.equal(missingResult.diagnostic.reason, 'queue-length-mismatch');
 });
 
-test('real 65-phrase library session resumes with its saved identity', () => {
+test('real 85-phrase library session resumes with its saved identity', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
@@ -397,7 +397,7 @@ test('real 65-phrase library session resumes with its saved identity', () => {
   );
 
   assert.equal(resumed.resumed, true);
-  assert.equal(resumed.queue.length, 65);
+  assert.equal(resumed.queue.length, 85);
   assert.equal(resumed.session.currentIndex, 17);
   assert.deepEqual(resumed.session.queue, fresh.session.queue);
 });
@@ -410,7 +410,7 @@ test('old 45-phrase library session falls back after library expansion', () => {
     ),
   ) as typeof lessons;
   const oldTrainingLessons = trainingLessons.filter(
-    (lesson) => lesson.id !== 'giving-directions',
+    (lesson) => lesson.id !== 'giving-directions' && lesson.id !== 'complete-delivery',
   );
   const oldSession = createFreshActiveRecallSession(
     oldTrainingLessons,
@@ -425,10 +425,10 @@ test('old 45-phrase library session falls back after library expansion', () => {
   assert.equal(oldSession.queue.length, 45);
   assert.equal(prepared.resumed, false);
   assert.equal(prepared.diagnostic.reason, 'library-signature-mismatch');
-  assert.equal(prepared.queue.length, 65);
+  assert.equal(prepared.queue.length, 85);
 });
 
-test('real library next round creates a fresh 65-entry queue', () => {
+test('real library next round creates a fresh 85-entry queue', () => {
   const trainingLessons = JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
@@ -445,7 +445,7 @@ test('real library next round creates a fresh 65-entry queue', () => {
     () => 0.999,
   );
 
-  assert.equal(nextRound.preparedSession.queue.length, 65);
+  assert.equal(nextRound.preparedSession.queue.length, 85);
   assert.equal(nextRound.preparedSession.session.currentIndex, 0);
   assert.notDeepEqual(
     nextRound.preparedSession.session.queue,

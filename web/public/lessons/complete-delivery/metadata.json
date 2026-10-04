@@ -1,0 +1,209 @@
+{
+  "lessonId": "complete-delivery",
+  "sampleRate": 24000,
+  "totalSamples": 7483968,
+  "duration": 311.832,
+  "lessonSha256": "cf5c9d839f06513a4f8a28e8ed3a6a403bc6bd09c7cfe104033cb16553de59df",
+  "phrases": [
+    {
+      "index": 0,
+      "phraseId": "complete-delivery:0",
+      "en": "Hi! I'm with Uber Eats. I have your order.",
+      "ja": "Uber Eats の配達です。ご注文の商品をお持ちしました。",
+      "start": 0,
+      "end": 3.648,
+      "startSample": 0,
+      "endSample": 87552
+    },
+    {
+      "index": 1,
+      "phraseId": "complete-delivery:1",
+      "en": "Okay. Sorry to keep you waiting.",
+      "ja": "承知しました。大変お待たせ致しました。",
+      "start": 17.296,
+      "end": 19.6,
+      "startSample": 415104,
+      "endSample": 470400
+    },
+    {
+      "index": 2,
+      "phraseId": "complete-delivery:2",
+      "en": "Let me just confirm it's your order first.",
+      "ja": "まず本人確認をさせてください。",
+      "start": 31.904,
+      "end": 35.504,
+      "startSample": 765696,
+      "endSample": 852096
+    },
+    {
+      "index": 3,
+      "phraseId": "complete-delivery:3",
+      "en": "Could you show me your Uber Eats app, please?",
+      "ja": "Uber Eats のアプリの画面を見せていただけますか？",
+      "start": 49.104,
+      "end": 52.608,
+      "startSample": 1178496,
+      "endSample": 1262592
+    },
+    {
+      "index": 4,
+      "phraseId": "complete-delivery:4",
+      "en": "Can you see my profile picture or the order number?",
+      "ja": "私の顔のアイコンか注文番号はありますか？",
+      "start": 66.112,
+      "end": 69.016,
+      "startSample": 1586688,
+      "endSample": 1656384
+    },
+    {
+      "index": 5,
+      "phraseId": "complete-delivery:5",
+      "en": "Yep, the numbers match. Thank you.",
+      "ja": "確認できました。ありがとうございます。",
+      "start": 81.92,
+      "end": 84.32,
+      "startSample": 1966080,
+      "endSample": 2023680
+    },
+    {
+      "index": 6,
+      "phraseId": "complete-delivery:6",
+      "en": "All right. Let's take care of the payment first.",
+      "ja": "では、先に会計をさせてください。",
+      "start": 96.72,
+      "end": 99.576,
+      "startSample": 2321280,
+      "endSample": 2389824
+    },
+    {
+      "index": 7,
+      "phraseId": "complete-delivery:7",
+      "en": "Your total is 2,350 yen.",
+      "ja": "合計で2,350円になります。",
+      "start": 112.432,
+      "end": 115.84,
+      "startSample": 2698368,
+      "endSample": 2780160
+    },
+    {
+      "index": 8,
+      "phraseId": "complete-delivery:8",
+      "en": "Could you put it here, please?",
+      "ja": "こちらに入れていただけますか？",
+      "start": 129.248,
+      "end": 131.864,
+      "startSample": 3101952,
+      "endSample": 3164736
+    },
+    {
+      "index": 9,
+      "phraseId": "complete-delivery:9",
+      "en": "That's 5,000 yen. Thank you.",
+      "ja": "5,000円、お預かりします。",
+      "start": 144.48,
+      "end": 146.928,
+      "startSample": 3467520,
+      "endSample": 3526272
+    },
+    {
+      "index": 10,
+      "phraseId": "complete-delivery:10",
+      "en": "And your change is 2,650 yen.",
+      "ja": "2,650円のお釣りです。",
+      "start": 159.376,
+      "end": 162.928,
+      "startSample": 3825024,
+      "endSample": 3910272
+    },
+    {
+      "index": 11,
+      "phraseId": "complete-delivery:11",
+      "en": "First, 2,000 yen. Then, 500 yen. And 50 yen.",
+      "ja": "まず2,000円。次に500円。そして50円。",
+      "start": 176.48,
+      "end": 181.928,
+      "startSample": 4235520,
+      "endSample": 4366272
+    },
+    {
+      "index": 12,
+      "phraseId": "complete-delivery:12",
+      "en": "That's 2,650 yen altogether.",
+      "ja": "これで合計2,650円です。",
+      "start": 197.376,
+      "end": 201.144,
+      "startSample": 4737024,
+      "endSample": 4827456
+    },
+    {
+      "index": 13,
+      "phraseId": "complete-delivery:13",
+      "en": "Does that look right?",
+      "ja": "間違いは無いでしょうか？",
+      "start": 214.912,
+      "end": 216.52,
+      "startSample": 5157888,
+      "endSample": 5196480
+    },
+    {
+      "index": 14,
+      "phraseId": "complete-delivery:14",
+      "en": "All right. Here's your order.",
+      "ja": "では、こちらがご注文の品です。",
+      "start": 228.128,
+      "end": 230.336,
+      "startSample": 5475072,
+      "endSample": 5528064
+    },
+    {
+      "index": 15,
+      "phraseId": "complete-delivery:15",
+      "en": "It's pretty heavy, so please be careful.",
+      "ja": "重たいので気をつけてください。",
+      "start": 242.544,
+      "end": 245.304,
+      "startSample": 5821056,
+      "endSample": 5887296
+    },
+    {
+      "index": 16,
+      "phraseId": "complete-delivery:16",
+      "en": "Have you got it?",
+      "ja": "大丈夫でしょうか？",
+      "start": 258.064,
+      "end": 259.912,
+      "startSample": 6193536,
+      "endSample": 6237888
+    },
+    {
+      "index": 17,
+      "phraseId": "complete-delivery:17",
+      "en": "Lastly, could I get your PIN, please?",
+      "ja": "最後に暗証番号を教えていただけますでしょうか？",
+      "start": 271.76,
+      "end": 274.328,
+      "startSample": 6522240,
+      "endSample": 6583872
+    },
+    {
+      "index": 18,
+      "phraseId": "complete-delivery:18",
+      "en": "That worked.",
+      "ja": "パスが通りました。",
+      "start": 286.896,
+      "end": 288.096,
+      "startSample": 6885504,
+      "endSample": 6914304
+    },
+    {
+      "index": 19,
+      "phraseId": "complete-delivery:19",
+      "en": "Thank you very much. Enjoy your meal, and have a good one!",
+      "ja": "ありがとうございます。またのご利用をお待ちしております。",
+      "start": 299.296,
+      "end": 303.064,
+      "startSample": 7183104,
+      "endSample": 7273536
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import {
   readFile,
   writeFile,
 } from 'node:fs/promises';
+import { canonicalCompleteDeliverySource } from './complete-delivery-assets.js';
 import { calculateTrainingAudioSourceHash } from './continuous-training.js';
 
 async function loadLessonIds(): Promise<string[]> {
@@ -24,7 +25,8 @@ async function calculateSourceHash(lessonId: string): Promise<string> {
   const sourcePath = `training-scripts/${lessonId}.json`;
   const content = await readFile(sourcePath);
 
-  return calculateTrainingAudioSourceHash(content);
+  return calculateTrainingAudioSourceHash(lessonId === 'complete-delivery'
+    ? canonicalCompleteDeliverySource(content) : content);
 }
 
 async function readStoredHash(hashPath: string): Promise<string | null> {

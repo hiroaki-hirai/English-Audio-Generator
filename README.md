@@ -254,7 +254,7 @@ The generated track is included in the PWA's offline precache.
 
 ## Active Recall Japanese cues
 
-Normal 65-phrase Active Recall now defaults to pre-generated Japanese MP3 cues.
+Normal Active Recall (8 lessons / 85 phrases) defaults to pre-generated Japanese MP3 cues.
 The selector retains **Speech Synthesis (legacy/debug)**; MP3 errors stop the run
 without automatic fallback. Normal and diagnostic cue assets remain separate.
 See [generation, verification and iPhone test procedure](docs/65-PHRASE-JAPANESE-MP3.md).
@@ -266,8 +266,28 @@ Japanese MP3 / English lesson experiment. It preserves normal saved progress
 and the existing 3-Cue test. See [fixture, timing tables and verification](docs/20-CUE-DIAGNOSTIC.md).
 The user confirmed completion of all 20 cues on iPhone Safari, including
 Japanese-to-English transitions while another app was in the foreground.
-That playback control path is reused by normal Active Recall. The 65-phrase
-migration still needs its own iPhone mode/Resume/background validation.
+That playback control path is reused by normal Active Recall. The user also
+confirmed normal Japanese MP3 playback and background continuation on iPhone Safari
+after the original 65-phrase migration. Separate exhaustive Weak/Resume results
+were not supplied. The new 85-phrase library still requires its own device verification.
+
+## Complete Delivery / 受け渡し総合
+
+The current normal library has **8 lessons / 85 phrases**. `complete-delivery`
+is an independent 20-phrase Delivery lesson covering arrival, order verification,
+cash payment, change, handoff, PIN and closing. Its exact script and 21 copied
+English/Japanese assets come from the iPhone background-verified 20-Cue diagnostic.
+The diagnostic remains independent and unchanged.
+
+The new lesson also includes Continuous Training (English twice, 1-second repeat
+interval, 5-second recall). This track is constructed from the completed normal
+lesson's measured segments without TTS. See [asset provenance and verification](docs/COMPLETE-DELIVERY.md).
+
+Adding this lesson changes the library signature. Existing 65-phrase Active Recall
+sessions start a fresh 85-phrase queue once (`library-signature-mismatch`); no
+session migration is performed. Existing Weak identities remain intact. Sessions
+saved with the new library resume normally. Global Shuffle uses all 85 phrases;
+category modes use 8 lessons. Start Training uses the selected lesson only.
 
 ## Development Status
 

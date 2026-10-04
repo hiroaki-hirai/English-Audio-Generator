@@ -37,7 +37,7 @@ test('20-Cue fixture stays ordered and memory-only while normal resume is preser
   const resumed = prepareActiveRecallSession(lessons, normalStore.load(), undefined, 'sequential-category-order');
   assert.equal(resumed.session.currentIndex, 43);
   assert.equal(resumed.resumed, true);
-  assert.equal(resumed.queue.length, 65);
+  assert.equal(resumed.queue.length, 85);
   assert.equal(writes, 0);
   assert.equal(lessonMediaPath('basic-delivery', 'lesson.mp3'), 'lessons/basic-delivery/lesson.mp3');
   assert.equal(japaneseCueMp3Path('basic-delivery', 0), 'diagnostics/japanese-cues/basic-delivery/phrase-001.mp3');

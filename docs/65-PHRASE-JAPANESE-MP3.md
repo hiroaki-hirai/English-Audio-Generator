@@ -104,3 +104,9 @@ Service Workerおよびprecache一覧は未変更。Japanese個別MP3は専用le
 ユーザー報告により、Japanese MP3 modeが通常Active Recallへ適用され、iPhone Safariで正常に再生されることを確認。他アプリをforegroundにしてもbackground再生が問題なく継続した。報告された実機検証は完了し、現在のJapanese MP3 playback architectureに問題なし。端末/iOSの詳細、全queue mode・Weak・Resumeの個別結果やイベントログは未提供。
 
 UI整理ではCue Modeをcontrols上部へ配置し、適用範囲を説明。Training / Active Recall / Diagnosticsを分け、Resume / Audio transition情報をdefault closedのnative details内へ移した。実行中ボタンがStopへ切り替わる既存操作を維持し、表示で区別する。再生制御、resolver、Resume、queue、Weak、Service Worker、diagnosticデータと4,000件の履歴上限は変更しない。
+
+
+## 現在のlibraryへの補足
+
+本資料の65件は2026-10-04の移行記録。complete-delivery追加後の現在構成は8 Lessons / 85 phrases。
+[通常Lesson昇格記録](COMPLETE-DELIVERY.md)を参照。旧65句saved sessionはlibrary-signature-mismatchで一度fresh queueになり、新85句sessionは通常Resumeする。保存schema・algorithm・既存Weak設定は変更しない。

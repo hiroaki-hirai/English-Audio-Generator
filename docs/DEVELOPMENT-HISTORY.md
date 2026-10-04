@@ -5769,3 +5769,33 @@ viewport spacing and text wrapping, and collapses Resume / Audio transition diag
 using native details (closed by default). Existing button identities and Start/Stop
 handlers remain intact. Playback, resolver, saved sessions, queue/Weak logic, Media
 Session, Service Worker and the 4,000-event history capacity remain unchanged.
+
+
+## 2026-10-05 — Complete Delivery Promoted to a Normal Lesson
+
+Added `complete-delivery` (Complete Delivery / 受け渡し総合, domain delivery) as
+an independent normal lesson with the exact 20 Japanese/English pairs from the
+20-Cue diagnostic. The normal library now has 8 lessons and 85 phrase identities.
+The script/audio had already succeeded in iPhone Safari background diagnostics;
+the new normal lesson itself is pending device verification.
+
+The English lesson and 20 Japanese MP3s were copied byte-for-byte to normal lesson
+paths. Measured English sample boundaries were preserved in normal metadata with
+normal identities and no diagnostic paths. The Japanese manifest extends the
+previous 65 entries to 85 without changing the earlier entries or audio.
+Continuous Training is newly encoded from the completed normal English lesson's
+measured segments: two English repetitions, 1 second between them, 5 seconds of
+recall. Original temporary English recordings were validated against a normalized
+reference waveform before reuse; reconstruction and verification use committed
+normal source/assets and do not require output/. Source/hash provenance is stored.
+
+Library expansion deliberately retains the existing Resume policy: old 65-phrase
+sessions fail library-signature validation and create a fresh 85-phrase queue.
+New sessions resume normally, and existing Weak identities remain valid. No
+migration, schema or signature algorithm change was introduced.
+
+All playback runtime, Japanese resolver/control, Media Session, queue architecture,
+Speech Synthesis legacy mode, Service Worker logic and diagnostic source/audio/
+metadata/session semantics remain unchanged. The generated normal asset list
+contains 24 paths (three per lesson); Japanese MP3s remain online-first and are
+not added to precache. See [Complete Delivery](COMPLETE-DELIVERY.md).

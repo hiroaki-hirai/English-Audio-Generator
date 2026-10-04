@@ -1,0 +1,621 @@
+{
+  "version": 1,
+  "lessonId": "complete-delivery",
+  "source": "training-scripts/complete-delivery.json",
+  "sourceSha256": "d918ed302461eed7fd370c4a59518dd590ff50d4036cebee37715cd5f427ae9f",
+  "sourceHash": "b8de512ba98233f2914f4bbb80c6b54c3a3c94b5b7f24dbfd3f9cfaff90b54ac",
+  "diagnosticMetadataSha256": "6e51a45a40513daca518153e10238d0ae6f3078c5e42a09b46b3a6bc4e73148d",
+  "copies": [
+    {
+      "source": "diagnostics/20-cue-background-test/english/lesson.mp3",
+      "destination": "lessons/complete-delivery/lesson.mp3",
+      "originalSha256": "cf5c9d839f06513a4f8a28e8ed3a6a403bc6bd09c7cfe104033cb16553de59df",
+      "copiedSha256": "cf5c9d839f06513a4f8a28e8ed3a6a403bc6bd09c7cfe104033cb16553de59df",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-001.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-001.mp3",
+      "originalSha256": "30d9bb49806a9696265778dd2d28d53a5f9cee1070558bb69c09d51af2904f3e",
+      "copiedSha256": "30d9bb49806a9696265778dd2d28d53a5f9cee1070558bb69c09d51af2904f3e",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-002.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-002.mp3",
+      "originalSha256": "3b6987f97d2b287246056a33a5845ab2c3491373c8abded8e38b2c31d97e14d9",
+      "copiedSha256": "3b6987f97d2b287246056a33a5845ab2c3491373c8abded8e38b2c31d97e14d9",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-003.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-003.mp3",
+      "originalSha256": "098bd3366e0f3eca6553386d3abce5a86d53d0d0bed297bf3342676e6d0af789",
+      "copiedSha256": "098bd3366e0f3eca6553386d3abce5a86d53d0d0bed297bf3342676e6d0af789",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-004.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-004.mp3",
+      "originalSha256": "df97c1c7f3594d534b6e7067a8011d6c877259608522f4c65f6213ef75552a1b",
+      "copiedSha256": "df97c1c7f3594d534b6e7067a8011d6c877259608522f4c65f6213ef75552a1b",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-005.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-005.mp3",
+      "originalSha256": "30a8fa65636b01747709cba4193d02694d993276e748085bce6509b0ec23bb18",
+      "copiedSha256": "30a8fa65636b01747709cba4193d02694d993276e748085bce6509b0ec23bb18",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-006.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-006.mp3",
+      "originalSha256": "2e01d69f6068d53780d9f83b96b128bc78611a290c4855c598e192f1d4dcf416",
+      "copiedSha256": "2e01d69f6068d53780d9f83b96b128bc78611a290c4855c598e192f1d4dcf416",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-007.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-007.mp3",
+      "originalSha256": "105d34c8f6249779890ac6e88123d96d128c98a5782ae40e5f181e49cac5453d",
+      "copiedSha256": "105d34c8f6249779890ac6e88123d96d128c98a5782ae40e5f181e49cac5453d",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-008.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-008.mp3",
+      "originalSha256": "abc45229183fbc805c60277a61952ab980de75a9f7bb2979a1dfc03ae26fa7b6",
+      "copiedSha256": "abc45229183fbc805c60277a61952ab980de75a9f7bb2979a1dfc03ae26fa7b6",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-009.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-009.mp3",
+      "originalSha256": "ce3e724dfd821df264861e0b9888a312426376b1463183018e0d983296855d80",
+      "copiedSha256": "ce3e724dfd821df264861e0b9888a312426376b1463183018e0d983296855d80",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-010.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-010.mp3",
+      "originalSha256": "f147b54044ac398bb9b61d88ae9cb76c16ccd42e1a45c3bbcb90fbab6cb56868",
+      "copiedSha256": "f147b54044ac398bb9b61d88ae9cb76c16ccd42e1a45c3bbcb90fbab6cb56868",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-011.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-011.mp3",
+      "originalSha256": "a993203e1aa6af8e598e0e329f6334d4a358e88d8b67489ed235e7d2060cc7b5",
+      "copiedSha256": "a993203e1aa6af8e598e0e329f6334d4a358e88d8b67489ed235e7d2060cc7b5",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-012.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-012.mp3",
+      "originalSha256": "42e77d2657b2203000c9de403cf257f185109b234541e37de93d41835d9d19ba",
+      "copiedSha256": "42e77d2657b2203000c9de403cf257f185109b234541e37de93d41835d9d19ba",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-013.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-013.mp3",
+      "originalSha256": "2042534d82365ea6946c27975384685914b216c3d151dfdd76d5fad6852f3399",
+      "copiedSha256": "2042534d82365ea6946c27975384685914b216c3d151dfdd76d5fad6852f3399",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-014.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-014.mp3",
+      "originalSha256": "1226e354411b64e9b6b5d69cfc8eefa152d360fc90bbb17ba01a7f590b54d2ed",
+      "copiedSha256": "1226e354411b64e9b6b5d69cfc8eefa152d360fc90bbb17ba01a7f590b54d2ed",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-015.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-015.mp3",
+      "originalSha256": "90e63529ff157ff472a84afd6afc306b13aab33f4538cd5129ac65b6022b9b56",
+      "copiedSha256": "90e63529ff157ff472a84afd6afc306b13aab33f4538cd5129ac65b6022b9b56",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-016.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-016.mp3",
+      "originalSha256": "9135f6344b6578757326f0c83d79b4143a1f03892fb6008d12aee17c357a0160",
+      "copiedSha256": "9135f6344b6578757326f0c83d79b4143a1f03892fb6008d12aee17c357a0160",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-017.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-017.mp3",
+      "originalSha256": "4d16953884ab890a1e3d6c2494b9ad8d63d7eefc548998516a15f2c6e49b8853",
+      "copiedSha256": "4d16953884ab890a1e3d6c2494b9ad8d63d7eefc548998516a15f2c6e49b8853",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-018.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-018.mp3",
+      "originalSha256": "d5a97fe06178aeeceee1783662366cd98e9be3a9dcd9e67a174b46bf57570016",
+      "copiedSha256": "d5a97fe06178aeeceee1783662366cd98e9be3a9dcd9e67a174b46bf57570016",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-019.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-019.mp3",
+      "originalSha256": "b1d8ef742f6ddeffe1bb568729fba8b8cc07c8cb90fd740dfd729ec03f450ff8",
+      "copiedSha256": "b1d8ef742f6ddeffe1bb568729fba8b8cc07c8cb90fd740dfd729ec03f450ff8",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    },
+    {
+      "source": "diagnostics/20-cue-background-test/japanese/phrase-020.mp3",
+      "destination": "lessons/complete-delivery/japanese-cues/phrase-020.mp3",
+      "originalSha256": "db7959cd15923313778217759c0f99926529c52c14ef132349d94e78ddf0bbfe",
+      "copiedSha256": "db7959cd15923313778217759c0f99926529c52c14ef132349d94e78ddf0bbfe",
+      "reuseReason": "iPhone background-verified diagnostic audio; no TTS or re-encoding."
+    }
+  ],
+  "originalEnglishAudit": [
+    {
+      "phraseIndex": 0,
+      "auditSource": "output/20-cue-background-test/phrase-001.mp3",
+      "originalSha256": "7a56d5e5e3e8a6be104c4b8944c168a4a010d37ca39dfe14eb7f4f1e3af451a0",
+      "correlation": 0.9954093470726257
+    },
+    {
+      "phraseIndex": 1,
+      "auditSource": "output/20-cue-background-test/phrase-002.mp3",
+      "originalSha256": "c45aa67037279bb1d6def6fceac116ff1612636971c718959d7a98939df957a9",
+      "correlation": 0.9914080954121802
+    },
+    {
+      "phraseIndex": 2,
+      "auditSource": "output/20-cue-background-test/phrase-003.mp3",
+      "originalSha256": "0bedd9bbba64cf45e066e0d38e1e3a34df0500419a0206e3b3046fe4f83a908f",
+      "correlation": 0.9943639387899903
+    },
+    {
+      "phraseIndex": 3,
+      "auditSource": "output/20-cue-background-test/phrase-004.mp3",
+      "originalSha256": "06855df49543d6e12dc78d2888ac4e7acba95c9218acf8526fe6f55ff68d641e",
+      "correlation": 0.9950984173916387
+    },
+    {
+      "phraseIndex": 4,
+      "auditSource": "output/20-cue-background-test/phrase-005.mp3",
+      "originalSha256": "b221d73bdb6ff017d28418b07f205e8d99c6f573ecde19476f2fd8ad056aa5c8",
+      "correlation": 0.9917895960353894
+    },
+    {
+      "phraseIndex": 5,
+      "auditSource": "output/20-cue-background-test/phrase-006.mp3",
+      "originalSha256": "755945d6fb63eb0c575044d3bf08d8aca746013d007b605259cccfd0f0608028",
+      "correlation": 0.9958855136341099
+    },
+    {
+      "phraseIndex": 6,
+      "auditSource": "output/20-cue-background-test/phrase-007.mp3",
+      "originalSha256": "56af725d8c5f345daedf7f6b0669003e3802c5a0e2ddef7a0a7f9a0664586e76",
+      "correlation": 0.9930161444993719
+    },
+    {
+      "phraseIndex": 7,
+      "auditSource": "output/20-cue-background-test/phrase-008.mp3",
+      "originalSha256": "4ea3b90aaa86fff4936ce9bfa370e1795076231a7dfec3409393bc857797b2fd",
+      "correlation": 0.99554030352375
+    },
+    {
+      "phraseIndex": 8,
+      "auditSource": "output/20-cue-background-test/phrase-009.mp3",
+      "originalSha256": "4b17d51b89bfe594641d91361bfeedc0c4c13a57eae072e24e5f0edd6bd4237a",
+      "correlation": 0.9976133082657905
+    },
+    {
+      "phraseIndex": 9,
+      "auditSource": "output/20-cue-background-test/phrase-010.mp3",
+      "originalSha256": "61b82af683a1595fa3eed73c898302e6d0e8a918d510c9aed8dc5ad81dd1ab03",
+      "correlation": 0.9917189044404618
+    },
+    {
+      "phraseIndex": 10,
+      "auditSource": "output/20-cue-background-test/phrase-011.mp3",
+      "originalSha256": "36763985b428c702a67f51cda520997f6f876d196a7684accc0ea157d3d137a0",
+      "correlation": 0.9831895851079169
+    },
+    {
+      "phraseIndex": 11,
+      "auditSource": "output/20-cue-background-test/phrase-012.mp3",
+      "originalSha256": "3cb11debffb85f798701c3d65d0e934db7ad7406a3a0d46cc778923bb691ff87",
+      "correlation": 0.9951138870315073
+    },
+    {
+      "phraseIndex": 12,
+      "auditSource": "output/20-cue-background-test/phrase-013.mp3",
+      "originalSha256": "6c6944e7d3017fd76902c1b29cfa968310b3b72aa7777ffef324d1baa4b2868e",
+      "correlation": 0.9879113693924801
+    },
+    {
+      "phraseIndex": 13,
+      "auditSource": "output/20-cue-background-test/phrase-014.mp3",
+      "originalSha256": "303aab39880aa3999467d621327c313a9ae68a19e692dafcae5fec117bf4b4aa",
+      "correlation": 0.9944067696088086
+    },
+    {
+      "phraseIndex": 14,
+      "auditSource": "output/20-cue-background-test/phrase-015.mp3",
+      "originalSha256": "8a8270d6acbbc5e16bf20dde26e41e5fc3da871e082079c240db3c2132300d22",
+      "correlation": 0.9970072677680429
+    },
+    {
+      "phraseIndex": 15,
+      "auditSource": "output/20-cue-background-test/phrase-016.mp3",
+      "originalSha256": "5f8b0db1a258e11ca5358247d13df0a4d239096d2fd7dd1a169f1049cecc1b56",
+      "correlation": 0.9873976236394714
+    },
+    {
+      "phraseIndex": 16,
+      "auditSource": "output/20-cue-background-test/phrase-017.mp3",
+      "originalSha256": "1ba622a43bc30229ab1d879bf2f23d592d7fbcc9c683d843a6578a0e655ca967",
+      "correlation": 0.9943822600702528
+    },
+    {
+      "phraseIndex": 17,
+      "auditSource": "output/20-cue-background-test/phrase-018.mp3",
+      "originalSha256": "315090ba563fa6cc0d0d6defb47f585e52d7c2c98ea39283fd2de6e2ed353486",
+      "correlation": 0.9925360218763267
+    },
+    {
+      "phraseIndex": 18,
+      "auditSource": "output/20-cue-background-test/phrase-019.mp3",
+      "originalSha256": "ffccffb877ff05ef09f285166b7fb54902913106232355e207bf866356df0c79",
+      "correlation": 0.996514883733333
+    },
+    {
+      "phraseIndex": 19,
+      "auditSource": "output/20-cue-background-test/phrase-020.mp3",
+      "originalSha256": "fcb1bc1718f0415be2304c1959b184ef624b52803824b9026562856ff5f2eb3e",
+      "correlation": 0.9967778277850533
+    }
+  ],
+  "continuous": {
+    "reconstructionSource": "lessons/complete-delivery/lesson.mp3",
+    "boundarySource": "lessons/complete-delivery/metadata.json",
+    "config": {
+      "repeatCount": 2,
+      "repetitionIntervalSeconds": 1,
+      "recallIntervalSeconds": 5,
+      "sampleRate": 24000,
+      "codec": "libmp3lame",
+      "loudnessNormalization": {
+        "integratedLoudness": -16,
+        "loudnessRange": 7,
+        "truePeak": -1.5
+      }
+    },
+    "inputPcmSha256": "42fdbfdd051070e052a53f5a21d47202617ce40444849c22aa1859ba08939af2",
+    "totalSamples": 5683968,
+    "segments": [
+      {
+        "phraseIndex": 0,
+        "repetition": 0,
+        "startSample": 0,
+        "endSample": 87552,
+        "silenceEndSample": 111552,
+        "sourcePcmSha256": "0c6d2b1a5eb3a5441a5e80672621eb6214f21b3942c0d8f32a7aadf10aeb70e0"
+      },
+      {
+        "phraseIndex": 0,
+        "repetition": 1,
+        "startSample": 111552,
+        "endSample": 199104,
+        "silenceEndSample": 319104,
+        "sourcePcmSha256": "0c6d2b1a5eb3a5441a5e80672621eb6214f21b3942c0d8f32a7aadf10aeb70e0"
+      },
+      {
+        "phraseIndex": 1,
+        "repetition": 0,
+        "startSample": 319104,
+        "endSample": 374400,
+        "silenceEndSample": 398400,
+        "sourcePcmSha256": "347ea77df4a40f05c2123b3d71620343eca897f05c0ef5b82a2c6dbaeba64a00"
+      },
+      {
+        "phraseIndex": 1,
+        "repetition": 1,
+        "startSample": 398400,
+        "endSample": 453696,
+        "silenceEndSample": 573696,
+        "sourcePcmSha256": "347ea77df4a40f05c2123b3d71620343eca897f05c0ef5b82a2c6dbaeba64a00"
+      },
+      {
+        "phraseIndex": 2,
+        "repetition": 0,
+        "startSample": 573696,
+        "endSample": 660096,
+        "silenceEndSample": 684096,
+        "sourcePcmSha256": "7cf6ed98a629008a22cc3297460a9747a2d9411629fec0f6940daafc390d64a6"
+      },
+      {
+        "phraseIndex": 2,
+        "repetition": 1,
+        "startSample": 684096,
+        "endSample": 770496,
+        "silenceEndSample": 890496,
+        "sourcePcmSha256": "7cf6ed98a629008a22cc3297460a9747a2d9411629fec0f6940daafc390d64a6"
+      },
+      {
+        "phraseIndex": 3,
+        "repetition": 0,
+        "startSample": 890496,
+        "endSample": 974592,
+        "silenceEndSample": 998592,
+        "sourcePcmSha256": "df3dfd1b640eb58db94939fa82a0f85ebae6092fecaef49f45592e1d95e8016c"
+      },
+      {
+        "phraseIndex": 3,
+        "repetition": 1,
+        "startSample": 998592,
+        "endSample": 1082688,
+        "silenceEndSample": 1202688,
+        "sourcePcmSha256": "df3dfd1b640eb58db94939fa82a0f85ebae6092fecaef49f45592e1d95e8016c"
+      },
+      {
+        "phraseIndex": 4,
+        "repetition": 0,
+        "startSample": 1202688,
+        "endSample": 1272384,
+        "silenceEndSample": 1296384,
+        "sourcePcmSha256": "c6cda6115881ccc0defd9a2945c1fa74f92783d361b1d1802d0488b72432e8cd"
+      },
+      {
+        "phraseIndex": 4,
+        "repetition": 1,
+        "startSample": 1296384,
+        "endSample": 1366080,
+        "silenceEndSample": 1486080,
+        "sourcePcmSha256": "c6cda6115881ccc0defd9a2945c1fa74f92783d361b1d1802d0488b72432e8cd"
+      },
+      {
+        "phraseIndex": 5,
+        "repetition": 0,
+        "startSample": 1486080,
+        "endSample": 1543680,
+        "silenceEndSample": 1567680,
+        "sourcePcmSha256": "006471ef966b46a11f00a31ed44d152a63050fab9d5ba73dcc458e24f0b1c3fd"
+      },
+      {
+        "phraseIndex": 5,
+        "repetition": 1,
+        "startSample": 1567680,
+        "endSample": 1625280,
+        "silenceEndSample": 1745280,
+        "sourcePcmSha256": "006471ef966b46a11f00a31ed44d152a63050fab9d5ba73dcc458e24f0b1c3fd"
+      },
+      {
+        "phraseIndex": 6,
+        "repetition": 0,
+        "startSample": 1745280,
+        "endSample": 1813824,
+        "silenceEndSample": 1837824,
+        "sourcePcmSha256": "8090f70de07b6d9ae366f49283861115bdb2239b292c9567b79c126e62fa1d8d"
+      },
+      {
+        "phraseIndex": 6,
+        "repetition": 1,
+        "startSample": 1837824,
+        "endSample": 1906368,
+        "silenceEndSample": 2026368,
+        "sourcePcmSha256": "8090f70de07b6d9ae366f49283861115bdb2239b292c9567b79c126e62fa1d8d"
+      },
+      {
+        "phraseIndex": 7,
+        "repetition": 0,
+        "startSample": 2026368,
+        "endSample": 2108160,
+        "silenceEndSample": 2132160,
+        "sourcePcmSha256": "c686e8fa0a8325836e41b48163765c339e33b6888a8228b48c0c07c743e49330"
+      },
+      {
+        "phraseIndex": 7,
+        "repetition": 1,
+        "startSample": 2132160,
+        "endSample": 2213952,
+        "silenceEndSample": 2333952,
+        "sourcePcmSha256": "c686e8fa0a8325836e41b48163765c339e33b6888a8228b48c0c07c743e49330"
+      },
+      {
+        "phraseIndex": 8,
+        "repetition": 0,
+        "startSample": 2333952,
+        "endSample": 2396736,
+        "silenceEndSample": 2420736,
+        "sourcePcmSha256": "3a751dd422fdb193496759870d79b7a685a7e7bb7c12e30df06db04159dda55b"
+      },
+      {
+        "phraseIndex": 8,
+        "repetition": 1,
+        "startSample": 2420736,
+        "endSample": 2483520,
+        "silenceEndSample": 2603520,
+        "sourcePcmSha256": "3a751dd422fdb193496759870d79b7a685a7e7bb7c12e30df06db04159dda55b"
+      },
+      {
+        "phraseIndex": 9,
+        "repetition": 0,
+        "startSample": 2603520,
+        "endSample": 2662272,
+        "silenceEndSample": 2686272,
+        "sourcePcmSha256": "375cd4e2e1301360461a9295b733714455dcb37036baa0a796d5adc9bd47a3f4"
+      },
+      {
+        "phraseIndex": 9,
+        "repetition": 1,
+        "startSample": 2686272,
+        "endSample": 2745024,
+        "silenceEndSample": 2865024,
+        "sourcePcmSha256": "375cd4e2e1301360461a9295b733714455dcb37036baa0a796d5adc9bd47a3f4"
+      },
+      {
+        "phraseIndex": 10,
+        "repetition": 0,
+        "startSample": 2865024,
+        "endSample": 2950272,
+        "silenceEndSample": 2974272,
+        "sourcePcmSha256": "ffccb6adfe82e39e1a8ca29f8a4d47ed23f35e7b813ac8e86584ef4bb6e417b5"
+      },
+      {
+        "phraseIndex": 10,
+        "repetition": 1,
+        "startSample": 2974272,
+        "endSample": 3059520,
+        "silenceEndSample": 3179520,
+        "sourcePcmSha256": "ffccb6adfe82e39e1a8ca29f8a4d47ed23f35e7b813ac8e86584ef4bb6e417b5"
+      },
+      {
+        "phraseIndex": 11,
+        "repetition": 0,
+        "startSample": 3179520,
+        "endSample": 3310272,
+        "silenceEndSample": 3334272,
+        "sourcePcmSha256": "e9d3f358ecd11424b72ee89558db3c6b7098ca77dc010c667632218d4a33017a"
+      },
+      {
+        "phraseIndex": 11,
+        "repetition": 1,
+        "startSample": 3334272,
+        "endSample": 3465024,
+        "silenceEndSample": 3585024,
+        "sourcePcmSha256": "e9d3f358ecd11424b72ee89558db3c6b7098ca77dc010c667632218d4a33017a"
+      },
+      {
+        "phraseIndex": 12,
+        "repetition": 0,
+        "startSample": 3585024,
+        "endSample": 3675456,
+        "silenceEndSample": 3699456,
+        "sourcePcmSha256": "0d4321038eee775ede3a70cfaa1748c913c473bb6bc2b7f56318482528c72f60"
+      },
+      {
+        "phraseIndex": 12,
+        "repetition": 1,
+        "startSample": 3699456,
+        "endSample": 3789888,
+        "silenceEndSample": 3909888,
+        "sourcePcmSha256": "0d4321038eee775ede3a70cfaa1748c913c473bb6bc2b7f56318482528c72f60"
+      },
+      {
+        "phraseIndex": 13,
+        "repetition": 0,
+        "startSample": 3909888,
+        "endSample": 3948480,
+        "silenceEndSample": 3972480,
+        "sourcePcmSha256": "2327bdc1ce9a296f60ff0d95ecff47d8cc9d28bae3d84c6e8a8818f516951046"
+      },
+      {
+        "phraseIndex": 13,
+        "repetition": 1,
+        "startSample": 3972480,
+        "endSample": 4011072,
+        "silenceEndSample": 4131072,
+        "sourcePcmSha256": "2327bdc1ce9a296f60ff0d95ecff47d8cc9d28bae3d84c6e8a8818f516951046"
+      },
+      {
+        "phraseIndex": 14,
+        "repetition": 0,
+        "startSample": 4131072,
+        "endSample": 4184064,
+        "silenceEndSample": 4208064,
+        "sourcePcmSha256": "3d00f200d4139c47b5099d21685619d2317af9f20a49f38828b038a3194fd9d3"
+      },
+      {
+        "phraseIndex": 14,
+        "repetition": 1,
+        "startSample": 4208064,
+        "endSample": 4261056,
+        "silenceEndSample": 4381056,
+        "sourcePcmSha256": "3d00f200d4139c47b5099d21685619d2317af9f20a49f38828b038a3194fd9d3"
+      },
+      {
+        "phraseIndex": 15,
+        "repetition": 0,
+        "startSample": 4381056,
+        "endSample": 4447296,
+        "silenceEndSample": 4471296,
+        "sourcePcmSha256": "4b6699e05921974fc85e0ea20beda98a39913b7bf36c2c9ba1c3eb67e1e93b9a"
+      },
+      {
+        "phraseIndex": 15,
+        "repetition": 1,
+        "startSample": 4471296,
+        "endSample": 4537536,
+        "silenceEndSample": 4657536,
+        "sourcePcmSha256": "4b6699e05921974fc85e0ea20beda98a39913b7bf36c2c9ba1c3eb67e1e93b9a"
+      },
+      {
+        "phraseIndex": 16,
+        "repetition": 0,
+        "startSample": 4657536,
+        "endSample": 4701888,
+        "silenceEndSample": 4725888,
+        "sourcePcmSha256": "abf91562a5859883cb34891840adc4b96d5fd0cf6ee476b13f9d850dc18ab1af"
+      },
+      {
+        "phraseIndex": 16,
+        "repetition": 1,
+        "startSample": 4725888,
+        "endSample": 4770240,
+        "silenceEndSample": 4890240,
+        "sourcePcmSha256": "abf91562a5859883cb34891840adc4b96d5fd0cf6ee476b13f9d850dc18ab1af"
+      },
+      {
+        "phraseIndex": 17,
+        "repetition": 0,
+        "startSample": 4890240,
+        "endSample": 4951872,
+        "silenceEndSample": 4975872,
+        "sourcePcmSha256": "91e51f0315b510f2ca62e1f0fdc0d4e4460bd8577e8f67cbe47528ea8dc7fa24"
+      },
+      {
+        "phraseIndex": 17,
+        "repetition": 1,
+        "startSample": 4975872,
+        "endSample": 5037504,
+        "silenceEndSample": 5157504,
+        "sourcePcmSha256": "91e51f0315b510f2ca62e1f0fdc0d4e4460bd8577e8f67cbe47528ea8dc7fa24"
+      },
+      {
+        "phraseIndex": 18,
+        "repetition": 0,
+        "startSample": 5157504,
+        "endSample": 5186304,
+        "silenceEndSample": 5210304,
+        "sourcePcmSha256": "d7a2bd1c5c5030d8589ca77f56872164bf9c5d6b72f6cca22dc1160214b8eb9c"
+      },
+      {
+        "phraseIndex": 18,
+        "repetition": 1,
+        "startSample": 5210304,
+        "endSample": 5239104,
+        "silenceEndSample": 5359104,
+        "sourcePcmSha256": "d7a2bd1c5c5030d8589ca77f56872164bf9c5d6b72f6cca22dc1160214b8eb9c"
+      },
+      {
+        "phraseIndex": 19,
+        "repetition": 0,
+        "startSample": 5359104,
+        "endSample": 5449536,
+        "silenceEndSample": 5473536,
+        "sourcePcmSha256": "810303ee0f7cfb34dc2710c6e9dc7414ff33b5896dc721c7ce2d7eaef089d921"
+      },
+      {
+        "phraseIndex": 19,
+        "repetition": 1,
+        "startSample": 5473536,
+        "endSample": 5563968,
+        "silenceEndSample": 5683968,
+        "sourcePcmSha256": "810303ee0f7cfb34dc2710c6e9dc7414ff33b5896dc721c7ce2d7eaef089d921"
+      }
+    ],
+    "audioSha256": "e1807b72aaee78fba7c5262286d07bbeee08a9581fee1afd5d8f448726ac7221"
+  },
+  "diagnosticMetadataHashMethod": "SHA-256 of UTF-8 metadata text with LF line endings"
+}

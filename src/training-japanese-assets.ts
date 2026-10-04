@@ -37,8 +37,8 @@ export async function expectedJapaneseAssets(): Promise<JapaneseAsset[]> {
         ja: phrase.ja, path: trainingJapaneseCueMp3Path(lesson.id, phraseIndex) });
     }
   }
-  if (entries.length !== 65 || new Set(entries.map(entry => entry.phraseId)).size !== 65
-    || new Set(entries.map(entry => entry.path)).size !== 65) throw new Error('Expected 65 unique Japanese cue mappings.');
+  if (entries.length === 0 || new Set(entries.map(entry => entry.phraseId)).size !== entries.length
+    || new Set(entries.map(entry => entry.path)).size !== entries.length) throw new Error('Expected unique Japanese cue mappings.');
   return entries;
 }
 export function inspectJapaneseAudio(path: string): Pick<JapaneseAssetEntry, 'duration' | 'format'> {
@@ -60,7 +60,7 @@ export function inspectJapaneseAudio(path: string): Pick<JapaneseAssetEntry, 'du
 export async function verifyTrainingJapaneseAssets(): Promise<{ files: number; missing: number; extra: number; duplicateIds: number; mismatches: number }> {
   const expected = await expectedJapaneseAssets();
   const manifest = JSON.parse(await readFile(japaneseManifestPath, 'utf8')) as JapaneseManifest;
-  if (manifest.version !== 1 || manifest.entries.length !== 65 || new Set(manifest.entries.map(entry => entry.phraseId)).size !== 65) {
+  if (manifest.version !== 1 || manifest.entries.length !== expected.length || new Set(manifest.entries.map(entry => entry.phraseId)).size !== expected.length) {
     throw new Error('Invalid Japanese manifest size or duplicate phrase IDs.');
   }
   const files: string[] = [];
@@ -74,7 +74,7 @@ export async function verifyTrainingJapaneseAssets(): Promise<{ files: number; m
     for (const name of names) if ((await stat(`${directory}/${name}`)).isFile()) files.push(`lessons/${lesson}/japanese-cues/${name.replaceAll('\\', '/')}`);
   }
   const expectedPaths = new Set(expected.map(entry => entry.path));
-  if (files.length !== 65 || files.some(path => !expectedPaths.has(path))) throw new Error('Missing or unexpected Japanese asset files.');
+  if (files.length !== expected.length || files.some(path => !expectedPaths.has(path))) throw new Error('Missing or unexpected Japanese asset files.');
   for (const asset of expected) {
     const entry = manifest.entries.find(entry => entry.phraseId === asset.phraseId);
     if (!entry || Object.entries(asset).some(([key, value]) => entry[key as keyof JapaneseAsset] !== value)
@@ -88,5 +88,5 @@ export async function verifyTrainingJapaneseAssets(): Promise<{ files: number; m
       throw new Error(`Audio metadata mismatch: ${asset.phraseId}`);
     }
   }
-  return { files: 65, missing: 0, extra: 0, duplicateIds: 0, mismatches: 0 };
+  return { files: files.length, missing: 0, extra: 0, duplicateIds: 0, mismatches: 0 };
 }

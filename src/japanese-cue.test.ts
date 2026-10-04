@@ -179,7 +179,7 @@ test('fresh test uses an independent memory store and preserves normal resume at
   const diagnostic = prepareActiveRecallSession(lessons, store.load(), undefined, 'sequential-category-order');
   assert.equal(diagnostic.resumed, false);
   assert.equal(diagnostic.session.currentIndex, 0);
-  assert.equal(diagnostic.queue.length, 65);
+  assert.equal(diagnostic.queue.length, 85);
   assert.deepEqual(diagnostic.queue.slice(0, japaneseCueTestPhraseCount).map(entry => `${entry.lessonId}:${entry.phraseIndex}`), [
     'basic-delivery:0', 'basic-delivery:1', 'basic-delivery:2',
   ]);
