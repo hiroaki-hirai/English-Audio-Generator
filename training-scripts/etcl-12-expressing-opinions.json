@@ -1,0 +1,32 @@
+{
+  "id": "etcl-12-expressing-opinions",
+  "domain": "everyday",
+  "scenario": "Expressing Opinions",
+  "scenarioJa": "意見を述べる",
+  "phrases": [
+    {
+      "en": "I think AI is a really useful tool for learning.",
+      "ja": "AIを学習に使うことについて意見を聞かれ、とても役立つツールだと思うと答える。"
+    },
+    {
+      "en": "The main reason is that I can get explanations whenever I need them.",
+      "ja": "AIが役立つ理由を聞かれ、必要なときにいつでも説明を受けられることが一番の理由だと説明する。"
+    },
+    {
+      "en": "I think relying too much on AI can be a problem.",
+      "ja": "AIを学習に使うことの問題点を聞かれ、頼りすぎることは問題になり得ると説明する。"
+    },
+    {
+      "en": "Not necessarily. It depends on how you use it.",
+      "ja": "「AIを使うのは学習によくないということ？」と聞かれ、必ずしもそうではなく、使い方次第だと答える。"
+    },
+    {
+      "en": "It's important to think for yourself instead of just accepting what AI tells you.",
+      "ja": "AIをどう使うべきか聞かれ、回答をそのまま受け入れるのではなく、自分で考えることが大切だと説明する。"
+    },
+    {
+      "en": "AI works best when it supports your learning rather than replacing your own thinking.",
+      "ja": "AIの理想的な役割について、自分で考えることをAIに任せるのではなく、学習を支援するために使うのが最も効果的だと説明する。"
+    }
+  ]
+}

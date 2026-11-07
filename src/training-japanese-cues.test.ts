@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -12,7 +13,7 @@ test('all 85 normal Japanese assets match source, unique mapping, manifest hashe
 });
 
 test('all queue modes resolve original phrase identities and preserve resumed queue progress', async () => {
-  const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')));
   const assets = await expectedJapaneseAssets();
   const queues = [createActiveRecallQueue(lessons, () => 0.25), createSequentialCategoryActiveRecallQueue(lessons, () => 0.25), createSequentialCategoryOrderedActiveRecallQueue(lessons)];
   for (const queue of queues) {

@@ -1,0 +1,32 @@
+{
+  "id": "etcl-11-plans-and-possibilities",
+  "domain": "everyday",
+  "scenario": "Plans & Possibilities",
+  "scenarioJa": "予定と可能性",
+  "phrases": [
+    {
+      "en": "I'm planning to spend more time working on my own projects.",
+      "ja": "今後の予定を聞かれ、自分のプロジェクトにもっと時間を使う予定だと説明する。"
+    },
+    {
+      "en": "I'm thinking about trying something new.",
+      "ja": "今後やってみたいことを聞かれ、何か新しいことを試してみようかと考えていると説明する。"
+    },
+    {
+      "en": "I haven't decided yet.",
+      "ja": "具体的に何をするか決めたのか聞かれ、まだ決めていないと答える。"
+    },
+    {
+      "en": "I'm hoping to make some progress on a few things I've been putting off.",
+      "ja": "これから取り組みたいことを聞かれ、先延ばしにしていたいくつかのことを少しでも進めたいと説明する。"
+    },
+    {
+      "en": "I'll see how things go before making any decisions.",
+      "ja": "すぐに何か決めるのか聞かれ、まず状況を見てから判断したいと説明する。"
+    },
+    {
+      "en": "It depends on how things work out.",
+      "ja": "予定どおり進められそうか聞かれ、物事がどう進むか次第だと答える。"
+    }
+  ]
+}

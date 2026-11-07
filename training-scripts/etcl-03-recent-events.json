@@ -1,0 +1,32 @@
+{
+  "id": "etcl-03-recent-events",
+  "domain": "everyday",
+  "scenario": "Recent Events",
+  "scenarioJa": "最近の出来事",
+  "phrases": [
+    {
+      "en": "I ran into a bug the other day.",
+      "ja": "最近の出来事について話していて、この前バグに遭遇したと説明する。"
+    },
+    {
+      "en": "I was working on a new feature when part of the app suddenly stopped working.",
+      "ja": "バグが起きた状況を聞かれ、新機能を開発していたら突然アプリの一部が動かなくなったと説明する。"
+    },
+    {
+      "en": "I used AI to help me figure out what was causing the problem.",
+      "ja": "問題にどう対処したか聞かれ、原因を調べるためにAIを活用したと説明する。"
+    },
+    {
+      "en": "It helped me narrow down the cause.",
+      "ja": "AIが役に立ったか聞かれ、原因を絞り込むのに役立ったと答える。"
+    },
+    {
+      "en": "I was able to fix it.",
+      "ja": "問題を修正できたか聞かれ、修正できたと答える。"
+    },
+    {
+      "en": "It took longer than I expected, but I learned a lot from it.",
+      "ja": "問題への対処が大変だったか聞かれ、予想以上に時間がかかったが、多くのことを学べたと説明する。"
+    }
+  ]
+}

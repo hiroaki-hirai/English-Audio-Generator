@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
 test('20-Cue fixture stays ordered and memory-only while normal resume is preserved', () => {
-  const lessons = JSON.parse(readFileSync('web/src/training-lessons.json', 'utf8'));
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(readFileSync('web/src/training-lessons.json', 'utf8')));
   const normal = prepareActiveRecallSession(lessons, null, undefined, 'sequential-category-order');
   normal.session.currentIndex = 43;
   const saved = JSON.stringify(normal.session);

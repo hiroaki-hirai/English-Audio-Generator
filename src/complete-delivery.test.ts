@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -8,7 +9,7 @@ import { calculateTrainingAudioSourceHash } from './continuous-training.js';
 import { sha256 } from './training-japanese-assets.js';
 import { trainingJapaneseCueMp3Path } from '../web/src/training-japanese-cue.js';
 
-const lessons = JSON.parse(readFileSync('web/src/training-lessons.json', 'utf8')) as Array<{
+const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(readFileSync('web/src/training-lessons.json', 'utf8'))) as Array<{
   id: string; domain: string; phrases: Array<{ en: string; ja: string }>;
 }>;
 const ordered = [...lessons.filter(lesson => lesson.domain === 'delivery'),

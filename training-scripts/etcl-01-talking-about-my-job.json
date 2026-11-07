@@ -1,0 +1,28 @@
+{
+  "id": "etcl-01-talking-about-my-job",
+  "domain": "everyday",
+  "scenario": "Talking About My Job",
+  "scenarioJa": "仕事について話す",
+  "phrases": [
+    {
+      "en": "I'm mainly focused on developing my own apps.",
+      "ja": "普段何をしているか聞かれ、主に自分のアプリ開発に取り組んでいると説明する。"
+    },
+    {
+      "en": "I do food delivery on the side.",
+      "ja": "アプリ開発以外に仕事をしているか聞かれ、フードデリバリーも副業として行っていると説明する。"
+    },
+    {
+      "en": "I like the flexibility.",
+      "ja": "フードデリバリーの仕事をどう思うか聞かれ、自由度の高さが気に入っていると答える。"
+    },
+    {
+      "en": "It gives me more time to work on my own projects.",
+      "ja": "柔軟な働き方を選ぶ理由を聞かれ、自分のプロジェクトに使える時間が増えるからだと説明する。"
+    },
+    {
+      "en": "Eventually, I'd like to make money from my apps.",
+      "ja": "将来の希望を聞かれ、いずれは自分のアプリから収入を得たいと説明する。"
+    }
+  ]
+}

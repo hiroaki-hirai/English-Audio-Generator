@@ -1,0 +1,28 @@
+{
+  "id": "etcl-05-reasons-and-decisions",
+  "domain": "everyday",
+  "scenario": "Reasons & Decisions",
+  "scenarioJa": "理由と決断",
+  "phrases": [
+    {
+      "en": "I wanted an app that fit the way I like to learn.",
+      "ja": "なぜ自分で英語学習アプリを作ったのか聞かれ、自分の学習スタイルに合うアプリが欲しかったと説明する。"
+    },
+    {
+      "en": "I couldn't find one that worked exactly the way I wanted, so I decided to build my own.",
+      "ja": "既存のアプリでは駄目だったのか聞かれ、希望どおりに動くものが見つからなかったので自分で作ることにしたと説明する。"
+    },
+    {
+      "en": "I wanted to practice phrases based on situations I'm likely to encounter in real life.",
+      "ja": "どんな学習方法を求めていたのか聞かれ、実生活で遭遇しそうな状況に基づくフレーズを練習したかったと説明する。"
+    },
+    {
+      "en": "I also thought it would be a good opportunity to improve my programming skills.",
+      "ja": "アプリを作った他の理由を聞かれ、プログラミング能力を高める良い機会にもなると思ったと説明する。"
+    },
+    {
+      "en": "It fits naturally into my daily routine.",
+      "ja": "自分の学習方法について、日常生活の中に無理なく取り入れられると説明する。"
+    }
+  ]
+}

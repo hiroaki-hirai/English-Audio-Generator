@@ -247,10 +247,12 @@ session playing when the installed PWA is in the background. Weak Phrase
 Training and Meaning → English Active Recall retain their existing scheduled
 playback paths and are not covered by background playback yet.
 
-Run `npm run build:training` after changing a training script or an audio build
-parameter. The source hash includes the ordered script content and all
-Continuous Training timing, sample-rate, codec, and normalization settings.
-The generated track is included in the PWA's offline precache.
+`npm run build:training` is an audio-generation command and can invoke paid TTS;
+it is not part of CI or publication. Do not run it during release preparation.
+Source hashes include exact script bytes and Continuous Training configuration.
+Seven legacy hashes predate a domain-only JSON edit; they are pinned historical
+exceptions, not permission to regenerate or overwrite assets. See
+[source-hash investigation and policy](docs/LEGACY-SOURCE-HASH-AUDIT.md).
 
 ## Active Recall Japanese cues
 
@@ -273,7 +275,7 @@ were not supplied. The new 85-phrase library still requires its own device verif
 
 ## Complete Delivery / 受け渡し総合
 
-The current normal library has **8 lessons / 85 phrases**. `complete-delivery`
+The legacy Active Recall library has **8 lessons / 85 phrases**. `complete-delivery`
 is an independent 20-phrase Delivery lesson covering arrival, order verification,
 cash payment, change, handoff, PIN and closing. Its exact script and 21 copied
 English/Japanese assets come from the iPhone background-verified 20-Cue diagnostic.
@@ -289,7 +291,45 @@ session migration is performed. Existing Weak identities remain intact. Sessions
 saved with the new library resume normally. Global Shuffle uses all 85 phrases;
 category modes use 8 lessons. Start Training uses the selected lesson only.
 
+## ETCL integration (local release candidate)
+
+The lesson selector lists Delivery, Everyday, then ETCL. The generated index
+contains **20 lessons / 153 phrases**, including **12 ETCL lessons / 68 phrases**.
+The audited ETCL source files retain their original `everyday` domain and bytes;
+`src/training-script-domain.ts` maps their exact IDs to `etcl` when generating
+the index. File-name sorting and the eight legacy lessons remain unchanged.
+
+All three existing Active Recall modes and normal Japanese cue asset validation
+remain limited to Delivery and Everyday (**8 lessons / 85 phrases**), preserving
+queue order, library signatures and storage keys. ETCL Active Recall is deferred.
+
+ETCL audio is placed locally: **116 files**, including 12 lesson tracks, 12
+Continuous Training tracks, 12 metadata files, 12 source hashes and 68 Japanese
+cues. Copy integrity, source hashes and MP3 decoding were verified. Device playback
+and the real GitHub migration remain unverified; **production publication is HOLD**.
+
 ## Development Status
+
+### CI and publication safety
+
+The local workflow definitions separate push/PR validation and verified candidate
+artifacts from manual Pages publication. The GitHub main branch still has the old
+automatic publication workflow until the approved migration; disable and verify
+that old workflow before any main push. Local manual publication is currently
+hard-blocked pending final publication audit and explicit approval. Legacy asset
+retention and package verification are implemented; see
+[retention storage and packaging](docs/LEGACY-ASSET-RETENTION.md).
+See [candidate format, permissions and safe workflow migration](docs/CI-AND-DEPLOYMENT.md).
+
+### Verified asset manifests
+
+`npm run web:build` now generates separate verified audio and app startup manifests
+after Vite completes. They contain public URLs, byte sizes, SHA-256 hashes and a
+shared deterministic release ID. They cover **222 assets: 213 audio/metadata and
+9 app startup assets**, including all 153 Japanese cues. The new Worker consumes
+these manifests for verified migration. The legacy 24-path array is retained only
+for its compatibility contract; it does not define the new precache inventory.
+See [schema, build order and validation](docs/VERIFIED-ASSET-MANIFESTS.md).
 
 Current status:
 
@@ -300,3 +340,15 @@ EAG v0.1 MVP
 The MVP is intended for real daily use before additional features are added.
 
 Future improvements should primarily be driven by issues observed during actual English-learning use rather than by adding features in advance.
+
+## Verified cache migration (Phase 5B-2B-2)
+
+Production builds bind the Service Worker to verified manifests. Installation
+reuses byte-verified old responses, downloads missing assets, and records completion
+only after every required file passes verification. Updates wait for old clients
+to close. Initial pages are not forcibly claimed either; after activation, normal
+navigation starts Worker control. Previous
+and unrelated caches are retained. Phase 5B-2B-3 adds verified offline single-range
+responses for English, Continuous Training and Japanese Cue audio, including suffix
+ranges. Multiple ranges are forwarded online and return an explicit 503 when offline.
+See [migration, recovery and publishing constraints](docs/VERIFIED-CACHE-MIGRATION.md).

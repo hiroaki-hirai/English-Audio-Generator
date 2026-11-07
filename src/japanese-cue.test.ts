@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -161,7 +162,7 @@ test('bundled sample paths match all three checked-in files and exclude ungenera
 });
 
 test('fresh test uses an independent memory store and preserves normal resume at index 43', () => {
-  const lessons = JSON.parse(readFileSync(new URL('../web/src/training-lessons.json', import.meta.url), 'utf8'));
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(readFileSync(new URL('../web/src/training-lessons.json', import.meta.url), 'utf8')));
   const original = createFreshActiveRecallSession(lessons, undefined, undefined, 'sequential-category-order');
   original.session.currentIndex = 43;
   let persisted = JSON.stringify(original.session);

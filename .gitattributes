@@ -1,2 +1,5 @@
 # Preserve the bytes used by the reused lesson's existing source-hash algorithm.
 training-scripts/complete-delivery.json text eol=lf
+
+# Preserve observed response bytes and their integrity/provenance records on every platform.
+retained-assets/** -text

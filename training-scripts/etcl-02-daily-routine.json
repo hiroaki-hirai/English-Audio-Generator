@@ -1,0 +1,28 @@
+{
+  "id": "etcl-02-daily-routine",
+  "domain": "everyday",
+  "scenario": "Daily Routine",
+  "scenarioJa": "日々の生活",
+  "phrases": [
+    {
+      "en": "My schedule changes from day to day.",
+      "ja": "普段のスケジュールについて聞かれ、日によって変わると説明する。"
+    },
+    {
+      "en": "I work on my apps between deliveries.",
+      "ja": "配達とアプリ開発をどう両立しているか聞かれ、配達の合間にアプリ開発をしていると説明する。"
+    },
+    {
+      "en": "I try to make the most of my downtime.",
+      "ja": "忙しい中で時間をどう使っているか聞かれ、空き時間をできるだけ有効に活用していると説明する。"
+    },
+    {
+      "en": "I practice English while making deliveries.",
+      "ja": "英語を勉強する時間があるか聞かれ、配達をしながら英語を練習していると答える。"
+    },
+    {
+      "en": "I try to make time for exercise as well.",
+      "ja": "運動もしているか聞かれ、運動する時間も確保するようにしていると説明する。"
+    }
+  ]
+}

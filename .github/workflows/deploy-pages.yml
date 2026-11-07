@@ -1,57 +1,167 @@
-name: Deploy EAG PWA to GitHub Pages
+name: EAG Manual Pages Publication (blocked pending final audit)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main push run of EAG CI Validation
+        required: true
+        type: string
+      commit_sha:
+        description: Full 40-character commit SHA (must equal dispatched main SHA)
+        required: true
+        type: string
+      confirmation:
+        description: 'Explicit confirmation: DEPLOY followed by a space and the full commit SHA'
+        required: true
+        type: string
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
+  prepare:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      ci_run_id: ${{ steps.origin.outputs.run_id }}
+      ci_run_attempt: ${{ steps.origin.outputs.run_attempt }}
+      sha: ${{ steps.origin.outputs.sha }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Authenticate candidate run and artifact origin
+        id: origin
+        uses: actions/github-script@v7
+        env:
+          REQUESTED_RUN_ID: ${{ inputs.ci_run_id }}
+          REQUESTED_SHA: ${{ inputs.commit_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        with:
+          script: |
+            const assert = require('node:assert/strict');
+            const policy = require('./.github/scripts/pages-deployment-policy.cjs');
+            assert.match(process.env.REQUESTED_RUN_ID, /^[1-9]\d*$/);
+            assert.equal(process.env.REQUESTED_SHA, context.sha);
+            const repository = `${context.repo.owner}/${context.repo.repo}`;
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              ...context.repo, run_id: Number(process.env.REQUESTED_RUN_ID)
+            });
+            const name = policy.validateRun(run, {
+              repository, sha: context.sha, ref: context.ref,
+              runId: process.env.REQUESTED_RUN_ID, confirmation: process.env.CONFIRMATION
+            });
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: run.id, per_page: 100
+            });
+            const artifactId = policy.validateArtifact(artifacts, name, run);
+            core.setOutput('artifact_id', String(artifactId));
+            core.setOutput('run_id', String(run.id));
+            core.setOutput('run_attempt', String(run.run_attempt));
+            core.setOutput('sha', run.head_sha);
+      - name: Download that exact immutable artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.origin.outputs.artifact_id }}
+          run-id: ${{ steps.origin.outputs.run_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: output/candidate
+          merge-multiple: true
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build web app
-        run: npm run web:build
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - run: npm ci
+      - name: Revalidate candidate without rebuilding
+        run: npm run candidate:verify -- --root output/candidate
+        env:
+          CANDIDATE_REPOSITORY: ${{ github.repository }}
+          CANDIDATE_SHA: ${{ steps.origin.outputs.sha }}
+          CANDIDATE_RUN_ID: ${{ steps.origin.outputs.run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ steps.origin.outputs.run_attempt }}
+          CANDIDATE_EVENT: push
+          CANDIDATE_REF: refs/heads/main
+      - name: Create and verify retained-asset package (no rebuild)
+        run: |
+          npm run package:create -- --input output/candidate --output output/publish-ready
+          npm run package:verify -- --root output/publish-ready
+        env:
+          CANDIDATE_REPOSITORY: ${{ github.repository }}
+          CANDIDATE_SHA: ${{ steps.origin.outputs.sha }}
+          CANDIDATE_RUN_ID: ${{ steps.origin.outputs.run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ steps.origin.outputs.run_attempt }}
+          CANDIDATE_EVENT: push
+          CANDIDATE_REF: refs/heads/main
+      - name: Preserve the verified handoff within this manual run
+        uses: actions/upload-artifact@v4
         with:
-          path: web/dist
+          name: eag-publish-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/publish-ready
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  retention_gate:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Block until final publication audit and approval
+        run: node -e "require('./.github/scripts/pages-deployment-policy.cjs').assertRetentionReady()"
 
   deploy:
+    needs: [prepare, retention_gate]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.retention_gate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    needs: build
-
     steps:
-      - name: Deploy to GitHub Pages
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: eag-publish-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/publish
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Verify the exact handoff again (no rebuild)
+        run: npm run package:verify -- --root output/publish
+        env:
+          CANDIDATE_REPOSITORY: ${{ github.repository }}
+          CANDIDATE_SHA: ${{ needs.prepare.outputs.sha }}
+          CANDIDATE_RUN_ID: ${{ needs.prepare.outputs.ci_run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ needs.prepare.outputs.ci_run_attempt }}
+          CANDIDATE_EVENT: push
+          CANDIDATE_REF: refs/heads/main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: output/publish
+      - name: Deploy only the verified Pages artifact
         id: deployment
         uses: actions/deploy-pages@v4

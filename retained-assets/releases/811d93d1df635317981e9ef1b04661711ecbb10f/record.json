@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "site": "https://hiroaki-hirai.github.io/English-Audio-Generator/",
+  "commitSha": "811d93d1df635317981e9ef1b04661711ecbb10f",
+  "assurance": "live-observation-not-independent-build-proof",
+  "acquisitionEvidence": [
+    "GitHub connector GET actions/runs?head_sha=811d93d1df635317981e9ef1b04661711ecbb10f: run 37218163285, main push, success.",
+    "GitHub connector GET actions/runs/37218163285/artifacts: no available artifacts observed on 2026-11-07.",
+    "GitHub connector GET releases?per_page=100: empty on 2026-11-07.",
+    "Commit association supplied by repository owner and supported by successful workflow run; no independent original build bytes available."
+  ],
+  "html": {
+    "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/",
+    "source": "live-github-pages",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "size": 921,
+    "sha256": "6df99756188ddfa0a66b8dd42b43ed907048cb33fdd44027328f9f8d042018e0",
+    "retrievedAt": "2026-11-07T11:35:47.194Z",
+    "dependencies": [],
+    "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+  },
+  "roots": [
+    "assets/index-CC9-Lhxx.css",
+    "assets/index-CHF6roX8.js"
+  ],
+  "assets": [
+    {
+      "path": "assets/index-CC9-Lhxx.css",
+      "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/assets/index-CC9-Lhxx.css",
+      "source": "live-github-pages",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "size": 3666,
+      "sha256": "3705f9759aa6974afb1892bc1e4e13f733e7e0dd66aa64d6bc837a3cdc93c802",
+      "retrievedAt": "2026-11-07T11:35:47.429Z",
+      "dependencies": [],
+      "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+    },
+    {
+      "path": "assets/index-CHF6roX8.js",
+      "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/assets/index-CHF6roX8.js",
+      "source": "live-github-pages",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "size": 42231,
+      "sha256": "fd7801ca2a7beebb4e75db78bdb506e3b915d7d4a4517696aba3d57b7caecef6",
+      "retrievedAt": "2026-11-07T11:35:47.640Z",
+      "dependencies": [],
+      "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+    }
+  ]
+}

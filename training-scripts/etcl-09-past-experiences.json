@@ -1,0 +1,32 @@
+{
+  "id": "etcl-09-past-experiences",
+  "domain": "everyday",
+  "scenario": "Past Experiences",
+  "scenarioJa": "過去の経験",
+  "phrases": [
+    {
+      "en": "I got into programming because I wanted to build my own apps and services.",
+      "ja": "プログラミングを始めたきっかけを聞かれ、自分のアプリやサービスを作りたかったからだと説明する。"
+    },
+    {
+      "en": "I had to learn almost everything from scratch.",
+      "ja": "学習を始めた頃の経験を聞かれ、ほとんどすべてをゼロから学ぶ必要があったと説明する。"
+    },
+    {
+      "en": "I couldn't figure out why my code wasn't working.",
+      "ja": "学習初期に苦労したことを聞かれ、なぜ自分のコードが動かないのか分からなかったと説明する。"
+    },
+    {
+      "en": "I kept practicing, and things gradually started to make more sense.",
+      "ja": "どうやって理解できるようになったか聞かれ、練習を続けるうちに少しずつ理解できるようになったと説明する。"
+    },
+    {
+      "en": "Looking back, I've come a long way.",
+      "ja": "過去の自分と現在を比較して、振り返ってみるとずいぶん成長したと説明する。"
+    },
+    {
+      "en": "There's still a lot I want to learn.",
+      "ja": "今後も勉強を続けるのか聞かれ、まだまだ学びたいことがたくさんあると答える。"
+    }
+  ]
+}

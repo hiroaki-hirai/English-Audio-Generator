@@ -22,6 +22,7 @@ import {
   type AudioPlayOwner,
   type TrainingRuntimeKind,
 } from './media-session.js';
+import { selectLegacyActiveRecallLessons, orderLegacyActiveRecallLessons } from './legacy-active-recall-library.js';
 import lessonsData from './training-lessons.json';
 import diagnosticFixture from './diagnostic-cues.json';
 import { createTwentyCueSessionStore } from './twenty-cue-diagnostic.js';
@@ -34,7 +35,7 @@ type TrainingPhrase = {
 
 type TrainingScript = {
   id: string;
-  domain: 'delivery' | 'everyday';
+  domain: 'delivery' | 'everyday' | 'etcl';
   scenario: string;
   scenarioJa: string;
   phrases: TrainingPhrase[];
@@ -56,11 +57,9 @@ type PhraseSegment = {
 };
 
 const lessons = lessonsData as TrainingScript[];
-const lessonsByDomain = [
-  ...lessons.filter((lesson) => lesson.domain === 'delivery'),
-  ...lessons.filter((lesson) => lesson.domain === 'everyday'),
-];
-const activeRecallPhraseCount = lessons.reduce(
+const legacyActiveRecallLessons = selectLegacyActiveRecallLessons(lessons);
+const lessonsByDomain = orderLegacyActiveRecallLessons(legacyActiveRecallLessons);
+const activeRecallPhraseCount = legacyActiveRecallLessons.reduce(
   (total, lesson) => total + lesson.phrases.length,
   0,
 );
@@ -335,6 +334,13 @@ Active Recall has not started.</pre>
         <p class="lesson-label">Everyday English</p>
         <div class="lesson-buttons">
           ${renderLessonButtons('everyday')}
+        </div>
+      </nav>
+
+      <nav class="lesson-selector" aria-label="ETCL lessons">
+        <p class="lesson-label">ETCL (English Thinking &amp; Conversation Lessons)</p>
+        <div class="lesson-buttons">
+          ${renderLessonButtons('etcl')}
         </div>
       </nav>
 
@@ -937,7 +943,7 @@ Active Recall has not started.</pre>
   ): Promise<void> {
     const activeRecallLessons = diagnosticTwenty
       ? [{ ...diagnosticFixture, domain: 'delivery' as const, scenarioJa: '20-Cue診断' }]
-      : mode === 'global' ? lessons : lessonsByDomain;
+      : mode === 'global' ? legacyActiveRecallLessons : lessonsByDomain;
     diagnosticDisplayPhraseCount = diagnosticTwenty ? diagnosticFixture.phrases.length : activeRecallPhraseCount;
     const diagnosticCueCount = diagnosticTwenty ? diagnosticFixture.phrases.length : japaneseCueTestPhraseCount;
     const activeRecallSessionStore = diagnosticTwenty

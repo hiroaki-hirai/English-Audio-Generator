@@ -1,0 +1,32 @@
+{
+  "id": "etcl-10-explaining-problems",
+  "domain": "everyday",
+  "scenario": "Explaining Problems",
+  "scenarioJa": "問題を説明する",
+  "phrases": [
+    {
+      "en": "I've been having a problem with it lately.",
+      "ja": "最近使っているアプリの調子を聞かれ、最近問題が起きていると説明する。"
+    },
+    {
+      "en": "It sometimes stops working for no apparent reason.",
+      "ja": "どんな問題か聞かれ、理由が分からないのにときどき動かなくなると説明する。"
+    },
+    {
+      "en": "It only happens under certain conditions.",
+      "ja": "問題がいつ起きるか聞かれ、特定の条件下でしか起きないと説明する。"
+    },
+    {
+      "en": "I've tried a few things, but nothing has worked so far.",
+      "ja": "解決するために何か試したか聞かれ、いくつか試したが今のところ何もうまくいっていないと説明する。"
+    },
+    {
+      "en": "I'm still trying to figure out what's causing the problem.",
+      "ja": "問題の原因が分かったか聞かれ、まだ原因を調べているところだと説明する。"
+    },
+    {
+      "en": "I'm not sure what to do next.",
+      "ja": "次に何をするつもりか聞かれ、まだどうすればよいか分からないと答える。"
+    }
+  ]
+}

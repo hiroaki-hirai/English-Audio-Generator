@@ -15,7 +15,16 @@
     "build:training-audio": "tsx src/build-training-audio.ts",
     "build:training": "npm run build:training-audio && npm run web:build",
     "web:dev": "vite",
-    "web:build": "npm run generate:training-index && vite build"
+    "typecheck": "tsc --noEmit",
+    "verify:built-assets": "tsx src/check-pages-candidate.ts assets",
+    "candidate:record": "tsx src/check-pages-candidate.ts record",
+    "candidate:verify": "tsx src/check-pages-candidate.ts verify",
+    "retention:capture": "tsx src/capture-legacy-assets.ts",
+    "retention:verify": "tsx src/check-publish-package.ts retention",
+    "retention:merge": "tsx src/merge-retained-assets.ts",
+    "package:create": "tsx src/check-publish-package.ts create",
+    "package:verify": "tsx src/check-publish-package.ts verify",
+    "web:build": "npm run generate:training-index && vite build && tsx src/generate-verified-asset-manifests.ts"
   },
   "keywords": [],
   "author": "",

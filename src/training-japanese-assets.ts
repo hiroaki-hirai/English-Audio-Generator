@@ -1,3 +1,5 @@
+import { resolveTrainingScriptDomain } from './training-script-domain.js';
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -29,8 +31,13 @@ export async function expectedJapaneseAssets(): Promise<JapaneseAsset[]> {
   const entries: JapaneseAsset[] = [];
   for (const file of files) {
     const lesson = JSON.parse(await readFile(`training-scripts/${file}`, 'utf8')) as {
-      id: string; phrases: Array<{ ja: string }>;
+      id: string; domain: string; phrases: Array<{ ja: string }>;
     };
+    const normalizedLesson = {
+      ...lesson,
+      domain: resolveTrainingScriptDomain(lesson.id, lesson.domain),
+    };
+    if (selectLegacyActiveRecallLessons([normalizedLesson]).length === 0) continue;
     for (const [phraseIndex, phrase] of lesson.phrases.entries()) {
       if (typeof phrase.ja !== 'string' || !phrase.ja.trim()) throw new Error(`Missing Japanese: ${lesson.id}:${phraseIndex}`);
       entries.push({ phraseId: `${lesson.id}:${phraseIndex}`, lessonId: lesson.id, phraseIndex,
@@ -65,6 +72,8 @@ export async function verifyTrainingJapaneseAssets(): Promise<{ files: number; m
   }
   const files: string[] = [];
   for (const lesson of await readdir('web/public/lessons')) {
+    // Audited ETCL assets are covered by the separate verified audio manifest.
+    if (resolveTrainingScriptDomain(lesson, 'everyday') === 'etcl') continue;
     const directory = `web/public/lessons/${lesson}/japanese-cues`;
     let names: string[];
     try { names = await readdir(directory, { recursive: true }); } catch (error) {

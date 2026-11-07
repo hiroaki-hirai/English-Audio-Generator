@@ -1,0 +1,32 @@
+{
+  "id": "etcl-08-responding-naturally",
+  "domain": "everyday",
+  "scenario": "Responding Naturally",
+  "scenarioJa": "自然に応答する",
+  "phrases": [
+    {
+      "en": "I see.",
+      "ja": "相手の説明を聞き、理解したことを短く伝える。"
+    },
+    {
+      "en": "That makes sense.",
+      "ja": "相手の説明を聞き、その理由や考え方に納得したことを伝える。"
+    },
+    {
+      "en": "I know what you mean.",
+      "ja": "相手の経験や気持ちについて、自分にも似た経験があり、よく分かると伝える。"
+    },
+    {
+      "en": "I can imagine.",
+      "ja": "相手の大変な状況について、自分に同じ経験があるとは限らないが、その大変さを想像できると伝える。"
+    },
+    {
+      "en": "That's good to hear.",
+      "ja": "相手から問題が解決して状況が良くなったと聞き、それはよかったと伝える。"
+    },
+    {
+      "en": "Exactly.",
+      "ja": "相手が自分の考えと完全に一致することを言ったので、強く同意する。"
+    }
+  ]
+}

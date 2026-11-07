@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -148,6 +149,15 @@ test('actual initial page renders five recall buttons and registers every Start 
     assert.equal(button.handlers.get('click')?.length, 1, `${button.textContent} has a click handler`);
   }
   assert.deepEqual(page.requests, ['/English-Audio-Generator/lessons/basic-delivery/metadata.json']);
+  const categoryLabels = [...page.renderedHtml().matchAll(/<nav class="lesson-selector" aria-label="([^"]+)"/g)]
+    .map(match => match[1]);
+  assert.deepEqual(categoryLabels, ['Delivery English lessons', 'Everyday English lessons', 'ETCL lessons']);
+  const lessonButtons = page.app.querySelectorAll('.lesson-button');
+  assert.equal(lessonButtons.length, 20);
+  assert.equal(lessonButtons.filter(button => button.dataset.lessonId?.startsWith('etcl-')).length, 12);
+  assert.equal(lessonButtons.findIndex(button => button.dataset.lessonId === 'giving-directions'), 7);
+  assert.equal(lessonButtons.findIndex(button => button.dataset.lessonId === 'etcl-01-talking-about-my-job'), 8);
+
 });
 
 test('old four-button guard rejects the actual five-button page before any Start registration', async () => {
@@ -225,7 +235,7 @@ test('actual normal playback uses one Japanese cue and two English plays, or thr
 });
 
 test('actual Resume restores Japanese identity without changing saved queue, round or Weak state', async () => {
-  const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')));
   const ordered = [...lessons.filter((lesson: { domain: string }) => lesson.domain === 'delivery'),
     ...lessons.filter((lesson: { domain: string }) => lesson.domain === 'everyday')];
   const initial = prepareActiveRecallSession(ordered, null, undefined, 'sequential-category-order');
@@ -286,7 +296,7 @@ test('actual legacy selection speaks Japanese and does not create an MP3 element
 });
 
 test('a full library Weak round retains its transition history within the 4000-event bound', async () => {
-  const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as Array<{ id: string; phrases: unknown[] }>;
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'))) as Array<{ id: string; phrases: unknown[] }>;
   const weak = lessons.flatMap(lesson => lesson.phrases.map((_phrase, index) => `${lesson.id}:${index}`));
   const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
   const page = createInitialPage(metadata, { 'eag.weakPhrases.v1': JSON.stringify(weak) });
@@ -399,7 +409,7 @@ test('Complete Delivery lesson selection starts continuous Training and preserve
 
 test('Complete Delivery resumes through the unchanged MP3 path in every recall mode, including Weak', async () => {
   const code = await bundleInitialPage();
-  const lessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')));
   const ordered = [...lessons.filter((lesson: { domain: string }) => lesson.domain === 'delivery'),
     ...lessons.filter((lesson: { domain: string }) => lesson.domain === 'everyday')];
   const metadata = JSON.parse(await readFile('web/public/lessons/complete-delivery/metadata.json', 'utf8'));

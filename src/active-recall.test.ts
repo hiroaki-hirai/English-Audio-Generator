@@ -1,3 +1,4 @@
+import { selectLegacyActiveRecallLessons } from '../web/src/legacy-active-recall-library.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -175,12 +176,12 @@ test('sequential category ordered mode remains ordered in the next round', () =>
 });
 
 test('current training library contains 8 lessons and 85 unique phrases', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as typeof lessons;
+  )) as typeof lessons;
   const queue = createActiveRecallQueue(trainingLessons, () => 0.5);
   const identities = queue.map(
     (entry) => `${entry.lessonId}:${entry.phraseIndex}`,
@@ -196,12 +197,12 @@ test('current training library contains 8 lessons and 85 unique phrases', () => 
 });
 
 test('giving-directions contributes 20 unique phrase identities', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as typeof lessons;
+  )) as typeof lessons;
   const givingDirections = trainingLessons.find(
     (lesson) => lesson.id === 'giving-directions',
   );
@@ -221,12 +222,12 @@ test('giving-directions contributes 20 unique phrase identities', () => {
 });
 
 test('giving-directions is the Everyday lesson and all other lessons are Delivery', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as Array<{ id: string; domain: string }>;
+  )) as Array<{ id: string; domain: string }>;
 
   assert.deepEqual(
     trainingLessons
@@ -382,12 +383,12 @@ test('duplicate or missing queue identities reject a saved session', () => {
 });
 
 test('real 85-phrase library session resumes with its saved identity', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as typeof lessons;
+  )) as typeof lessons;
   const fresh = createFreshActiveRecallSession(trainingLessons, () => 0.25);
   fresh.session.currentIndex = 17;
   const resumed = prepareActiveRecallSession(
@@ -403,12 +404,12 @@ test('real 85-phrase library session resumes with its saved identity', () => {
 });
 
 test('old 45-phrase library session falls back after library expansion', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as typeof lessons;
+  )) as typeof lessons;
   const oldTrainingLessons = trainingLessons.filter(
     (lesson) => lesson.id !== 'giving-directions' && lesson.id !== 'complete-delivery',
   );
@@ -429,12 +430,12 @@ test('old 45-phrase library session falls back after library expansion', () => {
 });
 
 test('real library next round creates a fresh 85-entry queue', () => {
-  const trainingLessons = JSON.parse(
+  const trainingLessons = selectLegacyActiveRecallLessons<any>(JSON.parse(
     readFileSync(
       new URL('../web/src/training-lessons.json', import.meta.url),
       'utf8',
     ),
-  ) as typeof lessons;
+  )) as typeof lessons;
   const completed = createFreshActiveRecallSession(
     trainingLessons,
     () => 0,

@@ -1,0 +1,58 @@
+name: EAG CI Validation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate workflow syntax
+        uses: docker://rhysd/actionlint:1.7.12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Ensure audio inspection tools
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y ffmpeg
+          fi
+          ffmpeg -version
+          ffprobe -version
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run web:build
+      - run: npm run verify:built-assets
+      - run: npm run retention:verify
+      - name: Record verified candidate provenance
+        run: npm run candidate:record
+        env:
+          CANDIDATE_REPOSITORY: ${{ github.repository }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          CANDIDATE_RUN_ID: ${{ github.run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          CANDIDATE_EVENT: ${{ github.event_name }}
+          CANDIDATE_REF: ${{ github.ref }}
+      - name: Save candidate (not a Pages deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: eag-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: web/dist
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

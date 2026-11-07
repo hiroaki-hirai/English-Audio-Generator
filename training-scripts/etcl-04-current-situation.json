@@ -1,0 +1,32 @@
+{
+  "id": "etcl-04-current-situation",
+  "domain": "everyday",
+  "scenario": "Current Situation",
+  "scenarioJa": "現在の状況",
+  "phrases": [
+    {
+      "en": "I've been practicing English regularly with an app I built.",
+      "ja": "最近の英語学習について聞かれ、自作アプリを使って継続的に練習していると説明する。"
+    },
+    {
+      "en": "I can come up with phrases I've practiced much more quickly now.",
+      "ja": "上達した点を聞かれ、練習したフレーズが以前よりずっと早く思い浮かぶようになったと説明する。"
+    },
+    {
+      "en": "I'm starting to understand more spoken English than before.",
+      "ja": "リスニングの上達について聞かれ、以前より話されている英語を理解できるようになってきたと説明する。"
+    },
+    {
+      "en": "I still find it difficult to speak freely without relying on memorized phrases.",
+      "ja": "まだ難しいことを聞かれ、暗記したフレーズに頼らず自由に話すことは難しいと説明する。"
+    },
+    {
+      "en": "I still have a long way to go.",
+      "ja": "現在の実力と目標を比較して、まだまだ努力が必要だと説明する。"
+    },
+    {
+      "en": "I feel like I'm making progress.",
+      "ja": "英語学習の成果について、少しずつ進歩している実感があると説明する。"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "etcl-07-asking-questions",
+  "domain": "everyday",
+  "scenario": "Asking Questions",
+  "scenarioJa": "質問する",
+  "phrases": [
+    {
+      "en": "What do you mean by that?",
+      "ja": "相手の発言の意味が分からず、どういう意味なのか確認する。"
+    },
+    {
+      "en": "How did you get into that?",
+      "ja": "相手が新しい趣味や活動を始めたと話している。何がきっかけだったのか尋ねる。"
+    },
+    {
+      "en": "How's it going so far?",
+      "ja": "相手が最近始めた活動について、これまでの進み具合や感想を尋ねる。"
+    },
+    {
+      "en": "What do you find most challenging?",
+      "ja": "相手が新しいことを学んでいる。何を一番難しいと感じているのか尋ねる。"
+    },
+    {
+      "en": "Could you tell me a bit more about that?",
+      "ja": "相手の話は理解できたが、もっと詳しく知りたいので説明を求める。"
+    },
+    {
+      "en": "Are you enjoying it?",
+      "ja": "相手が最近始めた活動について、実際に楽しんでいるか尋ねる。"
+    }
+  ]
+}

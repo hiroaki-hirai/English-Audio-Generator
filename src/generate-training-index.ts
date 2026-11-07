@@ -1,3 +1,5 @@
+import { resolveTrainingScriptDomain } from './training-script-domain.js';
+import { existsSync } from 'node:fs';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 
 type TrainingPhrase = {
@@ -7,7 +9,7 @@ type TrainingPhrase = {
 
 type TrainingScript = {
   id: string;
-  domain: 'delivery' | 'everyday';
+  domain: 'delivery' | 'everyday' | 'etcl';
   scenario: string;
   scenarioJa: string;
   phrases: TrainingPhrase[];
@@ -36,7 +38,11 @@ async function main(): Promise<void> {
       );
     }
 
-    if (lesson.domain !== 'delivery' && lesson.domain !== 'everyday') {
+    if (
+      lesson.domain !== 'delivery' &&
+      lesson.domain !== 'everyday' &&
+      lesson.domain !== 'etcl'
+    ) {
       throw new Error(
         `Training script ${fileName} must contain a valid domain.`,
       );
@@ -48,18 +54,29 @@ async function main(): Promise<void> {
       );
     }
 
-    lessons.push(lesson);
+    if (lessons.some((existing) => existing.id === lesson.id)) {
+      throw new Error(`Training script ${fileName} contains duplicate lesson id: ${lesson.id}.`);
+    }
+
+    lessons.push({
+      ...lesson,
+      domain: resolveTrainingScriptDomain(lesson.id, lesson.domain) as TrainingScript['domain'],
+    });
   }
 
   const output = `${JSON.stringify(lessons, null, 2)}\n`;
 
   await writeFile('web/src/training-lessons.json', output, 'utf8');
 
-  const trainingAssets = lessons.flatMap((lesson) => [
+  // Missing audio must not break Service Worker cache.addAll during installation.
+  // Preserve the current Service Worker contract until cache migration is implemented.
+  const trainingAssets = lessons
+    .filter((lesson) => lesson.domain === 'delivery' || lesson.domain === 'everyday')
+    .flatMap((lesson) => [
     `lessons/${lesson.id}/lesson.mp3`,
     `lessons/${lesson.id}/continuous-training.mp3`,
     `lessons/${lesson.id}/metadata.json`,
-  ]);
+  ]).filter((path) => existsSync(`web/public/${path}`));
 
   const offlineAssetsOutput = [
     'self.EAG_TRAINING_AUDIO_ASSETS = [',

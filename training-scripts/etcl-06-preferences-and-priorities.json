@@ -1,0 +1,28 @@
+{
+  "id": "etcl-06-preferences-and-priorities",
+  "domain": "everyday",
+  "scenario": "Preferences & Priorities",
+  "scenarioJa": "好みと優先順位",
+  "phrases": [
+    {
+      "en": "I prefer working on my own schedule.",
+      "ja": "働き方の好みを聞かれ、自分でスケジュールを決めて働く方が好きだと答える。"
+    },
+    {
+      "en": "I want to earn enough money while still having time to work on my own apps.",
+      "ja": "どんな働き方をしたいか聞かれ、アプリ開発の時間を確保しながら必要な収入も得たいと説明する。"
+    },
+    {
+      "en": "I'm trying to find a balance between work and my own projects.",
+      "ja": "仕事と自分の活動をどう両立しているか聞かれ、そのバランスを模索していると説明する。"
+    },
+    {
+      "en": "What matters most to me is having enough time to work on my own projects.",
+      "ja": "今、一番大切にしていることを聞かれ、自分のプロジェクトに取り組む時間を確保することだと説明する。"
+    },
+    {
+      "en": "My long-term goal is to make app development my main source of income.",
+      "ja": "長期的な目標を聞かれ、アプリ開発を主な収入源にしたいと説明する。"
+    }
+  ]
+}
