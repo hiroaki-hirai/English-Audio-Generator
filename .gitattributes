@@ -1,5 +1,27 @@
 # Preserve the bytes used by the reused lesson's existing source-hash algorithm.
 training-scripts/complete-delivery.json text eol=lf
 
+# Keep distributed text independent of the checkout platform and core.autocrlf.
+web/index.html text eol=lf
+web/public/**/*.js text eol=lf
+web/public/**/*.json text eol=lf
+web/public/**/*.txt text eol=lf
+web/public/**/*.webmanifest text eol=lf
+
+# These audited inputs use LF bytes for their existing Source Hash values.
+# Do not apply this policy to the seven historical legacy source exceptions.
+training-scripts/etcl-01-talking-about-my-job.json text eol=lf
+training-scripts/etcl-02-daily-routine.json text eol=lf
+training-scripts/etcl-03-recent-events.json text eol=lf
+training-scripts/etcl-04-current-situation.json text eol=lf
+training-scripts/etcl-05-reasons-and-decisions.json text eol=lf
+training-scripts/etcl-06-preferences-and-priorities.json text eol=lf
+training-scripts/etcl-07-asking-questions.json text eol=lf
+training-scripts/etcl-08-responding-naturally.json text eol=lf
+training-scripts/etcl-09-past-experiences.json text eol=lf
+training-scripts/etcl-10-explaining-problems.json text eol=lf
+training-scripts/etcl-11-plans-and-possibilities.json text eol=lf
+training-scripts/etcl-12-expressing-opinions.json text eol=lf
+
 # Preserve observed response bytes and their integrity/provenance records on every platform.
 retained-assets/** -text

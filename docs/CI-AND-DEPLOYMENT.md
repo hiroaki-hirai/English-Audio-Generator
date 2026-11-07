@@ -120,6 +120,75 @@ behavior (event dispatch, repository API metadata, fork permissions, artifact ex
 environment rules and deployment blocking) remains to be tested during that
 separately authorized branch migration.
 
+## Scoped LF checkout policy
+
+Build identities hash the actual distribution bytes. CRLF and LF therefore produce
+different releaseId and Worker build ID values even when the text is equivalent.
+Git attributes fix LF at checkout for the following narrowly scoped inputs:
+
+- `web/index.html`, the HTML build entry;
+- JavaScript, JSON, TXT and webmanifest files under `web/public`, copied into the
+  distribution, including metadata, saved hash text and audio provenance;
+- the twelve individually listed, audited ETCL training scripts, whose current
+  Source Hash values depend on their LF bytes.
+
+At this revision the new rules cover 59 tracked files: one HTML entry, 46 public
+text files and twelve ETCL inputs. The existing LF rule for the Complete Delivery
+training script remains separate. Generated lesson indexes, audio asset lists and
+verified manifests already serialize with LF; the build and hash algorithms are
+unchanged. Do not add ignored build output to Git to enforce this policy.
+
+`text eol=lf` takes precedence over Windows `core.autocrlf=true` for these paths.
+Git blobs and working-tree bytes are different concepts: these tracked blobs
+already use LF, while a Windows checkout may contain CRLF. Adding attributes does
+not rewrite an existing working tree. Do not force-refresh the current checkout or
+run a repository-wide renormalization; validate with a new isolated checkout.
+
+Preserve all existing MP3, PNG, lesson-input and saved-hash Git blobs. Saved hash
+values must remain identical; the line terminator of a public hash text file may
+become LF in a new checkout. Do not regenerate audio, lessons or Source Hash files.
+The seven historical source exceptions (basic-delivery, cash-payment,
+change-handling, giving-directions, order-verification, pin-verification and
+restaurant-delay) receive no new input attributes. Their pinned audit cases and
+hash calculation remain unchanged. Binary files are outside the text patterns;
+`retained-assets/** -text` continues to preserve observed bytes and integrity
+records exactly, including retained HTML, CSS, JavaScript and JSON.
+
+### Clean-checkout validation
+
+Use isolated Windows and Ubuntu checkouts of the same revision and the same
+attribute rules, lockfile, Node and npm versions. On Windows explicitly test with
+`core.autocrlf=true`. Before the policy is committed, a checkout of HEAD alone does
+not include it: copy the proposed complete attributes to the isolated repository's
+`.git/info/attributes` before its initial checkout, and copy the proposed
+`.gitattributes` and this document into that checkout afterwards. This local
+override is a test fixture only, never an authenticated CI artifact or a commit.
+After a separately approved commit, repeat using ordinary clean checkouts without
+the override to verify the committed policy itself.
+
+1. Check `git check-attr text eol` for all 59 new targets and the existing Complete
+   Delivery rule. Confirm LF bytes, binary exclusions, unchanged retained bytes and
+   no new attributes on the seven historical source inputs.
+2. Run `npm ci`, `npm test`, `npm run typecheck`, `npm run web:build`,
+   `npm run verify:built-assets` and `npm run retention:verify`. Never substitute
+   `build:training`, an audio builder or TTS. Check workflow syntax with actionlint.
+3. Require at least 149 passing tests, 222 verified runtime assets, seven pinned
+   historical Source Hash cases and thirteen current matches. Preserve Active
+   Recall signatures `fnv1a32:85:32bf4dac` and `fnv1a32:85:a7bb76ae`.
+4. Compare complete output inventories by relative path, size and SHA-256 across
+   both operating systems. Both verified manifests, the bound Worker, releaseId and
+   Worker build ID must match. Validate run-specific candidate provenance separately
+   because its run ID and other origin fields legitimately differ. Repeated builds
+   in each isolated environment must also match; a prior build ID is evidence, not
+   an assumed expected value for a new build.
+5. Confirm protected Git blobs, including all retained resources, are unchanged.
+   Only the two approved policy/document files may differ from the source revision.
+   Keep the unconditional publication gate blocked. Remote CI validation, pushes
+   and publication each remain subject to their separate approval boundaries.
+
+An unavailable Ubuntu environment is an explicit unverified result, not a claim
+of cross-platform reproducibility. Do not promote a local fixture to a CI artifact.
+
 ## Local verification and next boundary
 
 Tests use a real isolated Vite build and corrupt/remove files to prove rejection,
