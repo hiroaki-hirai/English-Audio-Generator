@@ -141,7 +141,7 @@ test('deployment policy rejects wrong workflow/run provenance, failed CI, PRs an
   assert.throws(() => validateOrigin({...origin, commitSha: '$(unsafe)'}));
 });
 
-test('workflows separate validation from publication and retain the unconditional final-audit gate', async () => {
+test('workflows separate validation, release and recovery and require the conditional gate', async () => {
   const ci = await readFile('.github/workflows/ci.yml', 'utf8');
   const publication = await readFile('.github/workflows/deploy-pages.yml', 'utf8');
   const triggers = (source: string) => /^on:\r?\n([\s\S]*?)(?=^\S)/m.exec(source)![1]!;
@@ -152,15 +152,20 @@ test('workflows separate validation from publication and retain the unconditiona
   const commands = ['npm ci', 'npm test', 'npm run typecheck', 'npm run web:build', 'npm run verify:built-assets', 'npm run candidate:record', 'actions/upload-artifact@v4'];
   for (let i = 1; i < commands.length; i++) assert.ok(ci.indexOf(commands[i - 1]!) < ci.indexOf(commands[i]!));
   assert.doesNotMatch(ci, /continue-on-error|always\(\)/);
-  assert.match(publication, /needs: \[prepare, retention_gate\]/);
-  assert.match(publication, /assertRetentionReady\(\)/);
-  assert.match(publication, /needs\.retention_gate\.result == 'success'/);
-  assert.equal((publication.match(/pages: write/g) ?? []).length, 1);
-  assert.ok(publication.indexOf('pages: write') > publication.indexOf('  deploy:'));
+  assert.match(publication, /needs: release_prepare/);
+  assert.match(publication, /needs: recovery_prepare/);
+  assert.match(publication, /needs\.release_prepare\.result == 'success'/);
+  assert.match(publication, /needs\.recovery_prepare\.result == 'success'/);
+  assert.equal((publication.match(/pages: write/g) ?? []).length, 2);
+  assert.ok(publication.indexOf('pages: write') > publication.indexOf('  release_deploy:'));
   assert.doesNotMatch(publication, /npm run web:build|continue-on-error|always\(\)/);
   assert.match(publication, /artifact-ids: \$\{\{ steps.origin.outputs.artifact_id \}\}/);
   assert.match(publication, /candidate:verify -- --root output\/candidate/);
-  assert.match(publication, /package:verify -- --root output\/publish/);
+  assert.match(publication, /verifyForDeploy/);
+  assert.equal((publication.match(/\.verifyForDeploy\(/g) ?? []).length, 2, 'Both deploy paths must reauthenticate and reverify');
+  const recovery = /^  recovery_prepare:\r?\n([\s\S]*?)(?=^  release_deploy:)/m.exec(publication)![1]!;
+  assert.doesNotMatch(recovery, /contents: write|package:create|archiveRelease/);
+  assert.match(recovery, /prepareRecovery/);
   assert.match(publication, /package:create -- --input output\/candidate --output output\/publish-ready/);
   assert.match(ci, /include-hidden-files: true/);
 });

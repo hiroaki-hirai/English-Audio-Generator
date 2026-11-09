@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "repository": "hiroaki-hirai/English-Audio-Generator",
+  "sourceCommit": "35cc6a6c3934aadade6bee0cc04f71e0c4836f04",
+  "l2RunId": "continuous-41140185-b7a4-479b-9ebd-dba9a60c865a",
+  "l2ReportSha256": "e95a415d43455402083264ea024bef8840802369c952ee0f8b27d9d07f6675d8",
+  "lessons": 12,
+  "phrases": 68,
+  "mp3": 92,
+  "packageIdentity": {
+    "releaseId": "552576595a210a2f9eb55e4e190476c65cecb6ff824ee1d800a708912e7cb470",
+    "workerBuildId": "7b80a8e403e6cc07d84155b4354560623abea1634c962ac389edc34031d0262b",
+    "audioManifestSha256": "ae81a2ec2dce03242d8b4b52271fed055c8558deca5b2372ab70833b166fa8ae",
+    "appManifestSha256": "94bdfa70f178193ca18ccc9e27c94e06844a17dd06d34c07201271850f30e7e8",
+    "payloadSha256": "06c87c168067a77d21701c0b427300d8d45584a0257ee99cd8ed1d3441cbea11",
+    "retentionRegistrySha256": "99c4fec43095ddd445653d008942f867a04e1c44665b21843e4146f662b1c20c",
+    "retainedAssetsSha256": "551e49c0a94ed07d484e65439d3436e167281b3409b577b220b2deff1e79d5e4",
+    "files": 276,
+    "runtimeAssets": 222
+  }
+}

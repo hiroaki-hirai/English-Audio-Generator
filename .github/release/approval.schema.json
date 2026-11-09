@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EAG explicit publication or recovery approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "action",
+    "repository",
+    "executionSha",
+    "targetSha",
+    "ciRunId",
+    "ciRunAttempt",
+    "artifactId",
+    "approvedBy",
+    "approvedAt",
+    "expiresAt",
+    "l2BaselineSha256",
+    "package",
+    "archiveSha256",
+    "archiveAssetId",
+    "checksumAssetId",
+    "localCopyReceipt",
+    "localCopyReceiptSha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "const": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "APPROVED"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "release",
+        "recover"
+      ]
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "executionSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "targetSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "ciRunId": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "ciRunAttempt": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "artifactId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "approvedBy": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$"
+    },
+    "approvedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "l2BaselineSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packageId",
+        "packageManifestSha256",
+        "payloadSha256",
+        "releaseId",
+        "workerBuildId",
+        "audioManifestSha256",
+        "appManifestSha256",
+        "retentionRegistrySha256",
+        "retentionManifestSha256",
+        "retainedAssetsSha256",
+        "files",
+        "runtimeAssets"
+      ],
+      "properties": {
+        "packageId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "packageManifestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "payloadSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "releaseId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "workerBuildId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "audioManifestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "appManifestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "retentionRegistrySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "retentionManifestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "retainedAssetsSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runtimeAssets": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "archiveSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archiveAssetId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "checksumAssetId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "localCopyReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "archiveSha256",
+        "packageId",
+        "path",
+        "verifiedAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "const": 1
+        },
+        "archiveSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "packageId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^.+$"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "localCopyReceiptSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

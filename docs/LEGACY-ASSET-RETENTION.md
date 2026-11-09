@@ -2,10 +2,12 @@
 
 ## Publication remains blocked
 
-This slice creates and verifies packages, not releases. `assertRetentionReady()`
-still throws unconditionally. Neither a successful CI run nor a valid package
-authorizes deployment. Final audit, explicit owner approval and a separately
-reviewed gate change are required. No remote settings or publication are changed.
+The local release-gate implementation now makes `assertRetentionReady()` conditional
+on explicit approval, live Actions authority, verified package identity and retrieved
+fixed archive evidence. Missing records still block publication. There is no actual
+APPROVED record here; the workflow remains Disabled and production stays BLOCKED.
+Neither CI success nor package verification alone authorizes deployment. No remote
+settings, archive uploads, Releases/tags or publication were changed by this work.
 
 ## Initial source and assurance
 
@@ -49,10 +51,9 @@ disables text conversion for the complete store.
 | --- | --- |
 | Git-managed snapshots | Chosen: small initial size, reviewable hashes and provenance, same trusted checkout as policy, available without expired artifacts |
 | Actions artifact only | Unsuitable for long-term retention: expiry and deletion |
-| Independent release/archive storage | Useful for larger future releases, but requires separate availability, access and integrity policy; not created here |
+| Fixed full-package archive | Release assets plus persistent local copy are now supported; no production archive has been uploaded by this local implementation |
 
-These files are currently untracked because staging/commit is forbidden in this
-slice. Future authorized commits must include the store. Hashes detect accidental
+The existing retention store is Git-managed. Hashes detect accidental
 or isolated tampering, not malicious replacement of both data and the trusted
 catalog. Repository review and authenticated CI origin remain trust requirements.
 
@@ -99,9 +100,76 @@ records. Runtime manifests remain 213 audio + 9 app entries. No old root file is
 merged and release/build IDs are unchanged. Package metadata is outside the
 runtime manifest; no recursive hashing or Worker self-reference is introduced.
 
-The manual workflow prepares/verifies this merged package without rebuilding,
-uploads it as the one-day handoff, and the final job would verify it again.
-The intervening unconditional publication gate still prevents that job running.
+The manual release workflow prepares/verifies this package without rebuilding,
+archives it in dedicated GitHub Release assets, retrieves it and package-verifies
+it before a conditional gate can pass. Its archive/proof/checksum handoff has 90-day
+Actions retention, but durable custody uses Release assets plus a persistent local
+copy. The deploy job repeats live authorization and remote retrieval/verification.
+The absence of real approval currently prevents reaching these operations.
+
+## Fixed archive and local custody
+
+`pages-release-package.cjs` uses a deterministic JSON data archive with sorted
+path/size/SHA256/base64 entries. This avoids OS-specific tar timestamps and archive
+link/path traversal behavior, without adding a dependency. A bounded decoder rejects
+unknown fields, unsafe/reserved paths, symlinks, duplicates/case collisions, invalid
+base64, size/hash mismatches and excessive input. It validates entries before writing,
+extracts only into a new directory and never executes archived code.
+
+All 276 package files are preserved, including runtime manifests, provenance,
+retention ledger and `publish-package.json`. `package.eag.json.sha256` is an independent
+transport checksum, not permission to publish. The package manifest has a separate
+approved raw SHA and package ID; the full existing package verifier is still required.
+The archive envelope additionally binds repository/source SHA/main CI run/attempt
+and the fixed original artifact ID. Recovery matches this immutable source record
+against its approval and live original CI, even when the CI artifact has expired.
+
+Release preparation, which alone receives contents-write permission, creates a new
+prerelease archive Release/tag per workflow run/attempt. It never overwrites or deletes
+assets. Saving both assets, retrieving them by ID, matching the approved/checksum SHA
+and verifying the unpacked package must all succeed before Pages upload. Each deploy
+job repeats retrieval from GitHub Releases rather than trusting only the handoff proof.
+Missing/deleted/changed archives fail closed. Releases are not assumed administratively
+immutable: independent hashes and fixed asset IDs detect replacement.
+
+Before approving a release, the operator uses the local helper to save a persistent
+archive copy, reread it, match its hash and verify the extracted package. The resulting
+local-copy receipt precedes approval and is bound into the approval JSON by canonical
+SHA256. This is an operator-attested local backup; Actions cannot remotely prove the
+user's disk still exists. The 90-day workflow artifact is another copy, not the durable
+backup policy. Keep the Release asset IDs, independent SHA, approved package snapshot,
+source main CI run/artifact metadata, approval record and deployment receipt with the
+persistent local archive. Exclude profiles, TLS material, `.env` and raw diagnostic
+workspaces: only the verified package file set belongs in the archive.
+
+The existing `retention:capture` helper captures HTML evidence and JS/CSS/static
+dependency closure only. It is not a complete old-site backup and must not be
+described as one. The preserved old-v8 fixture also has historical observation
+limits. Any prepublication full production snapshot needs its own complete file
+inventory/HTTP evidence and preservation; it is not silently manufactured here.
+
+## Recovery after the verified Worker is deployed
+
+Recovery is a separate manual action and approval, with pinned existing archive and
+checksum asset IDs and exact `RECOVER <targetSha> <archiveSha256>` confirmation.
+The recovery preparation job is read-only to repository contents and never uploads,
+rebuilds or chooses a latest asset. It reauthenticates the original successful main
+push CI run; an expired original Actions artifact does not prevent recovery from the
+separately approved fixed archive. Release mode still rejects expired CI artifacts.
+
+Recovery must match the currently committed L-2 payload baseline and retained graph.
+It is useful for redistributing a known package after delivery problems, not for
+repairing a bug inherent in that same package. A behavioral correction needs a new
+reviewed forward release. An old UI or a future incompatible generation needs its
+own compatibility review/baseline; no arbitrary historical replay is permitted.
+
+Do not deploy the old-v8 Worker from commit
+`811d93d1df635317981e9ef1b04661711ecbb10f` as an automatic rollback: its install uses
+skipWaiting and activate deletes other cache generations and claims clients. Keep the
+verified Worker lifecycle and old hashed resources instead. Do not clear learning
+progress/cache, unregister the SW or require PWA reinstallation as routine recovery.
+Pages returns to an approved consistent package as a whole; clients close naturally.
+See [the operational approval and workflow sequence](CI-AND-DEPLOYMENT.md).
 
 ## Future accumulation
 
@@ -123,19 +191,23 @@ After a separately approved successful deployment and HTTP verification:
    `snapshots/<record-sha>/...`; exact records/evidence/bytes are preserved.
 4. Repeat for each release, never automatically deleting older resources. New
    package creation verifies every retained generation and reports cumulative size.
+   A changed retention registry/payload also needs an explicitly reviewed release
+   baseline; do not edit the approval record to bypass the old baseline.
 
 Same path with changed bytes is always a stop condition. Storage grows by unique
 public resources plus generation evidence/records (snapshots may duplicate identical
-bytes). No generation expiry or automatic cleanup is implemented. Long-term full
-published-package archives remain a separate operational decision; the Git snapshot
-registry already removes dependence on Actions artifact retention for legacy files.
+bytes). No generation expiry or automatic cleanup is implemented. Full-package
+archive support is described above; actual storage, operator custody and publication
+still need explicit authorization. The Git snapshot registry independently removes
+dependence on Actions artifact retention for the retained legacy static files.
 
 ## Validation boundary
 
 Tests cover dependency extraction, unsafe/external references, missing/404/206/MIME
 failures, record/file tampering, identical/different collisions, deterministic merge
 and packaging, accumulated generations, provenance mismatch, unchanged 222 entries
-and build IDs, and the hard gate. Existing Active Recall and actual Worker VM tests
-run unchanged. Local validation does not execute GitHub jobs, deploy Pages or test
-iPhone Safari. Final publication audit must verify those separately and follow the
-safe old-workflow disabling/branch-CI migration procedure before any production push.
+and build IDs. The added gate/archive tests use synthetic approval/API/data only;
+existing audio, Chrome and L-2 trials are not repeated. Local validation does not
+execute GitHub jobs, save actual release archives, deploy Pages or test iPhone Safari.
+Real API permissions/storage and final main artifact checks remain an explicitly
+authorized operational boundary. Keep the old workflow Disabled during migration.

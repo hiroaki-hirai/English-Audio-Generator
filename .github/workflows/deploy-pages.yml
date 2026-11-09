@@ -1,18 +1,19 @@
-name: EAG Manual Pages Publication (blocked pending final audit)
+name: EAG Manual Pages Publication
 
 on:
   workflow_dispatch:
     inputs:
-      ci_run_id:
-        description: Successful main push run of EAG CI Validation
+      action:
+        description: Separate manual release or recovery
         required: true
-        type: string
-      commit_sha:
-        description: Full 40-character commit SHA (must equal dispatched main SHA)
+        type: choice
+        options: [release, recover]
+      approval_json:
+        description: Explicit approved JSON record; the DRAFT template is rejected
         required: true
         type: string
       confirmation:
-        description: 'Explicit confirmation: DEPLOY followed by a space and the full commit SHA'
+        description: DEPLOY <targetSHA> or RECOVER <targetSHA> <archiveSHA256>
         required: true
         type: string
 
@@ -23,53 +24,35 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  RELEASE_ACTION: ${{ inputs.action }}
+  APPROVAL_JSON: ${{ inputs.approval_json }}
+  CONFIRMATION: ${{ inputs.confirmation }}
+
 jobs:
-  prepare:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+  release_prepare:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.action == 'release'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write # Only release preparation may create an archive Release.
       actions: read
-    outputs:
-      ci_run_id: ${{ steps.origin.outputs.run_id }}
-      ci_run_attempt: ${{ steps.origin.outputs.run_attempt }}
-      sha: ${{ steps.origin.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Authenticate candidate run and artifact origin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Authenticate manual approval and exact main CI artifact
         id: origin
         uses: actions/github-script@v7
-        env:
-          REQUESTED_RUN_ID: ${{ inputs.ci_run_id }}
-          REQUESTED_SHA: ${{ inputs.commit_sha }}
-          CONFIRMATION: ${{ inputs.confirmation }}
         with:
-          script: |
-            const assert = require('node:assert/strict');
-            const policy = require('./.github/scripts/pages-deployment-policy.cjs');
-            assert.match(process.env.REQUESTED_RUN_ID, /^[1-9]\d*$/);
-            assert.equal(process.env.REQUESTED_SHA, context.sha);
-            const repository = `${context.repo.owner}/${context.repo.repo}`;
-            const { data: run } = await github.rest.actions.getWorkflowRun({
-              ...context.repo, run_id: Number(process.env.REQUESTED_RUN_ID)
-            });
-            const name = policy.validateRun(run, {
-              repository, sha: context.sha, ref: context.ref,
-              runId: process.env.REQUESTED_RUN_ID, confirmation: process.env.CONFIRMATION
-            });
-            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
-              ...context.repo, run_id: run.id, per_page: 100
-            });
-            const artifactId = policy.validateArtifact(artifacts, name, run);
-            core.setOutput('artifact_id', String(artifactId));
-            core.setOutput('run_id', String(run.id));
-            core.setOutput('run_attempt', String(run.run_attempt));
-            core.setOutput('sha', run.head_sha);
-      - name: Download that exact immutable artifact
+          script: await require('./.github/scripts/pages-release-actions.cjs').authenticate({github, context, core})
+      - name: Download only the approved immutable artifact ID
         uses: actions/download-artifact@v4
         with:
           artifact-ids: ${{ steps.origin.outputs.artifact_id }}
@@ -78,22 +61,9 @@ jobs:
           repository: ${{ github.repository }}
           path: output/candidate
           merge-multiple: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - name: Revalidate candidate without rebuilding
-        run: npm run candidate:verify -- --root output/candidate
-        env:
-          CANDIDATE_REPOSITORY: ${{ github.repository }}
-          CANDIDATE_SHA: ${{ steps.origin.outputs.sha }}
-          CANDIDATE_RUN_ID: ${{ steps.origin.outputs.run_id }}
-          CANDIDATE_RUN_ATTEMPT: ${{ steps.origin.outputs.run_attempt }}
-          CANDIDATE_EVENT: push
-          CANDIDATE_REF: refs/heads/main
-      - name: Create and verify retained-asset package (no rebuild)
+      - name: Verify candidate and create package without rebuilding
         run: |
+          npm run candidate:verify -- --root output/candidate
           npm run package:create -- --input output/candidate --output output/publish-ready
           npm run package:verify -- --root output/publish-ready
         env:
@@ -103,33 +73,60 @@ jobs:
           CANDIDATE_RUN_ATTEMPT: ${{ steps.origin.outputs.run_attempt }}
           CANDIDATE_EVENT: push
           CANDIDATE_REF: refs/heads/main
-      - name: Preserve the verified handoff within this manual run
+      - name: Save Release archive, retrieve it, verify package and conditional gate
+        uses: actions/github-script@v7
+        with:
+          script: await require('./.github/scripts/pages-release-actions.cjs').archiveRelease({github, context, core})
+      - name: Preserve exact archive and checksum for local custody
         uses: actions/upload-artifact@v4
         with:
-          name: eag-publish-input-${{ github.run_id }}-${{ github.run_attempt }}
-          path: output/publish-ready
+          name: eag-release-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/handoff
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 90
 
-  retention_gate:
-    needs: prepare
+  recovery_prepare:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.action == 'recover'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Block until final publication audit and approval
-        run: node -e "require('./.github/scripts/pages-deployment-policy.cjs').assertRetentionReady()"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Authenticate separate recovery approval and original main CI
+        uses: actions/github-script@v7
+        with:
+          script: await require('./.github/scripts/pages-release-actions.cjs').authenticate({github, context, core})
+      - name: Retrieve only the approved existing archive and verify recovery gate
+        uses: actions/github-script@v7
+        with:
+          script: await require('./.github/scripts/pages-release-actions.cjs').prepareRecovery({github, context})
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eag-release-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/handoff
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
 
-  deploy:
-    needs: [prepare, retention_gate]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && needs.retention_gate.result == 'success'
+  release_deploy:
+    needs: release_prepare
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.action == 'release' && needs.release_prepare.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -140,28 +137,62 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/download-artifact@v4
-        with:
-          name: eag-publish-input-${{ github.run_id }}-${{ github.run_attempt }}
-          path: output/publish
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Verify the exact handoff again (no rebuild)
-        run: npm run package:verify -- --root output/publish
-        env:
-          CANDIDATE_REPOSITORY: ${{ github.repository }}
-          CANDIDATE_SHA: ${{ needs.prepare.outputs.sha }}
-          CANDIDATE_RUN_ID: ${{ needs.prepare.outputs.ci_run_id }}
-          CANDIDATE_RUN_ATTEMPT: ${{ needs.prepare.outputs.ci_run_attempt }}
-          CANDIDATE_EVENT: push
-          CANDIDATE_REF: refs/heads/main
+      - uses: actions/download-artifact@v4
+        with:
+          name: eag-release-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/handoff
+      - name: Reauthenticate, retrieve fixed archive and reverify package before release
+        uses: actions/github-script@v7
+        with:
+          script: await require('./.github/scripts/pages-release-actions.cjs').verifyForDeploy({github, context, core})
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: output/publish
-      - name: Deploy only the verified Pages artifact
+      - name: Deploy only the approved release
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  recovery_deploy:
+    needs: recovery_prepare
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.action == 'recover' && needs.recovery_prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: eag-release-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/handoff
+      - name: Reauthenticate and reverify the separately approved recovery archive
+        uses: actions/github-script@v7
+        with:
+          script: await require('./.github/scripts/pages-release-actions.cjs').verifyForDeploy({github, context, core})
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: output/publish
+      - name: Deploy only the approved recovery
         id: deployment
         uses: actions/deploy-pages@v4

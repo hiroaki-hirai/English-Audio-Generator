@@ -1,204 +1,175 @@
-# CI validation and manual publication (Phase 5B-2C-2B)
+# CI validation and explicitly approved publication
 
-## Scope
+## Current boundary
 
-CI validates code and records a candidate. It never deploys. The separate manual
-Pages workflow authenticates/revalidates one candidate, but publication is currently
-hard-blocked pending final publication audit and explicit owner approval. Legacy
-asset retention and verified packaging are now implemented; see
-[retention records and package verification](LEGACY-ASSET-RETENTION.md). No GitHub
-settings, pushes, workflow disabling/enabling or deployments were performed here.
+This is a local implementation, not release authorization. The production workflow
+remains Disabled. No real APPROVED record exists in this repository. The committed
+`approval.template.json` is DRAFT, expired and contains placeholders; it is rejected.
+No production archive, Release, tag, Pages deployment or repository setting has
+been created or changed. The production publication gate remains **BLOCKED**.
 
-## Workflows and permissions
+The previous unconditional `assertRetentionReady()` exception is replaced with a
+conditional, fail-closed policy. Calling it without approval and verified evidence
+still throws `DEPLOYMENT BLOCKED`. Package integrity alone does not grant approval:
+the existing package verifier deliberately still returns `publicationAllowed:false`.
 
-`.github/workflows/ci.yml` runs on push to any branch and on pull_request, with
-`contents: read` only. It checks workflow syntax with actionlint 1.7.12, ensures
-ffmpeg/ffprobe exist, then runs `npm ci`, `npm test`, `npm run typecheck`,
-`npm run web:build`, `npm run verify:built-assets`, `npm run retention:verify`
-and `npm run candidate:record`.
-No continue-on-error/always bypass is used. Upload happens only after success.
-There is no pull_request_target, workflow_run deployment or PR deployment permission.
+## Validation remains separate
 
-`.github/workflows/deploy-pages.yml` is manual-only. Preparation requires
-workflow_dispatch on main, a full commit SHA matching the dispatched main revision,
-a CI run ID and exact `DEPLOY <sha>` confirmation. It uses contents/actions read.
-The CI run must belong to this repository and head repository, originate from push
-on main, have the expected workflow path/commit, and be completed successfully.
+`.github/workflows/ci.yml` is unchanged. Push/PR CI has `contents:read`, no Pages or
+OIDC write permission, and never deploys. It validates workflows, tests, types,
+build output and retention, then records candidate provenance. Candidate artifacts
+are named `eag-candidate-<sha>-<runId>-<attempt>` and retained for 14 days.
 
-Artifact selection is by that run's exact SHA/run/attempt-derived name and unique
-artifact ID. Expired artifacts, invalid expiry, wrong run/commit and ambiguity fail
-closed. PR/fork runs cannot be promoted. Input values enter scripts through env,
-not interpolated shell/program text. Checkout is fixed to the dispatched commit,
-with credential persistence disabled; downloaded candidate data is never executed.
+The candidate verifier authenticates independently supplied repository, SHA, run,
+attempt, event and ref; recomputes all distribution entries; rebinds the Worker;
+checks both runtime manifests, 222 assets and the two legacy Active Recall signatures
+`fnv1a32:85:32bf4dac` / `fnv1a32:85:a7bb76ae`. The package verifier also checks the
+retention registry, old resource closure, collision rules and exact package inventory.
+Publication never rebuilds a downloaded candidate or executes its assets.
 
-Only the final deploy job has pages/id-token write permissions. It depends on both
-successful prepare and retention_gate jobs. The gate calls the trusted checked-out
-`assertRetentionReady()` policy, which unconditionally throws. It cannot be opened
-by inputs, repository variables, secrets or a CI success. No Pages upload/configure/
-deploy step can run in this slice. Removing/replacing this gate requires the next
-separately reviewed final audit and explicit approval, not a manual checkbox.
+## L-2 identity and commit changes
 
-The github-pages environment name remains for future use, but no required reviewer
-or plan-specific environment protection is assumed. Repository visibility, plan,
-Pages settings and reviewer availability were not checked remotely. Manual dispatch,
-exact commit confirmation and the closed code gate do not depend on those features.
+`.github/release/etcl12-l2-baseline.json` records the existing PASS evidence and the
+12 lessons / 68 phrases / 92 MP3 identity. It is a validation baseline, **not approval**.
+Its SHA is SHA256 of `JSON.stringify(parsedBaseline)`, independent of checkout EOL.
 
-## Candidate format and verification
+The existing CI candidate has 273 files including provenance. The retained publish
+package has 276 files; the runtime manifests contain 213 audio + 9 app assets. The
+gate checks these existing package bytes without rerunning audio or L-2 tests.
 
-CI uploads `web/dist` as `eag-candidate-<sha>-<runId>-<attempt>` with retention 14 days.
-The artifact includes hidden files deliberately because `.vite/manifest.json` is
-needed to independently recheck the app dependency graph. No checkout root is uploaded.
-The candidate also includes `candidate-provenance.json` with:
+`payloadSha256` hashes the sorted path/size/SHA256 inventory of every package file
+except these three origin-bearing records:
 
-- schemaVersion 1 and originating workflow path;
-- repository, commitSha, runId, runAttempt, eventName and ref;
-- releaseId, workerBuildId, basePath and assetCount;
-- sorted full distribution inventory (path, byte size and SHA-256);
-- distributionSha256 over `JSON.stringify(files)`.
+- `candidate-provenance.json`;
+- `retained-assets.json`;
+- `publish-package.json` (the release/package manifest).
 
-Provenance excludes itself from its inventory to avoid self-reference. It is
-created with exclusive write, never silently overwritten. It is not part of the
-222 runtime assets and does not change the Worker or verified manifests. Hashes
-alone do not prove CI origin: the GitHub run/artifact checks are also mandatory.
+Changing gate code or docs changes the commit and main CI provenance legitimately.
+All other package bytes must remain equal to the L-2 baseline, including both raw
+runtime manifests, SW, HTML/JS/CSS, metadata, MP3 and retained old assets. The three
+excluded records are not unchecked: the full package verifier validates their origin,
+graphs and contents, and approval pins the final package ID, raw package-manifest
+SHA and retention-manifest SHA. The archive SHA covers all 276 files including them.
+Do not reuse a validation-branch provenance record as a main record.
 
-`verify:built-assets` re-derives manifests from the actual output and trusted source
-lesson index, including Vite static/dynamic dependencies, HTML/CSS/icon references,
-all 60 normal audio/metadata files and all 153 cues. It rebinds the Worker in memory,
-compares its exact stamped bytes and both complete manifests, checks counts 20/153/
-213/9/222, and verifies both legacy Active Recall signatures. It writes no build data.
+## Approval record and Actions authority
 
-`candidate:verify` also recomputes every distribution file and compares the complete
-provenance record to independently supplied expected origin. Extra/missing/changed
-files, symlinks, case collisions and origin changes fail. It does not trust a
-candidate's self-declared SHA/run/release values as the expected values.
+The closed JSON schema and DRAFT template are under `.github/release/`. No new
+schema library is required. The runtime validator implements the schema's small
+keyword set and rejects unknown fields, missing fields and unsupported keywords.
 
-Candidate commands require CANDIDATE_REPOSITORY, CANDIDATE_SHA, CANDIDATE_RUN_ID,
-CANDIDATE_RUN_ATTEMPT, CANDIDATE_EVENT and CANDIDATE_REF. The root defaults to Vite
-output; verification supports `--root <downloaded-directory>`.
+The authorized operator supplies an actual record as the `approval_json` dispatch
+input; records are not committed with their own future commit SHA (which would be
+self-referential). Its `executionSha` fixes the reviewed main workflow revision;
+`targetSha`, CI run/attempt and artifact ID fix the package source. Approval includes
+an approver, UTC approval/expiry dates, baseline SHA, exact package snapshot, archive
+SHA, and a separately verified persistent local-copy receipt and its canonical SHA.
 
-Manual preparation downloads only the authenticated artifact, runs npm ci and the
-candidate verifier (no rebuild), creates/verifies a separate retained-asset package,
-then uploads that package as the exact handoff within the manual run with one-day
-retention. The deploy job would revalidate the package again before creating a
-Pages artifact, but the unconditional final-audit gate still blocks it.
-An unavailable/expired source artifact is a stop condition; do not guess a latest
-artifact, download an arbitrary user-selected artifact, or silently rebuild it.
-Long-term authoritative published release archives are explicitly deferred.
+JSON alone is insufficient. Prepare and deploy both retrieve live GitHub metadata:
 
-## Safe transition from the existing production workflow
+- event must be `workflow_dispatch`, ref main, workflow path this repository's
+  `deploy-pages.yml@refs/heads/main`, workflow SHA the dispatched SHA;
+- dispatched SHA must still equal live main and `executionSha`;
+- the triggering actor (including reruns) must be the named approver, and both
+  permission checks must return write/maintain/admin;
+- original CI must be this repository's successful main **push** run of `ci.yml`,
+  with exact source SHA, run ID and attempt;
+- release mode additionally authenticates the exact live, unexpired artifact ID,
+  expected name, run and SHA; PR/fork/failed/ambiguous/expired inputs are rejected.
 
-The repository's currently deployed main still has the old automatic push workflow
-until a separately authorized migration is completed. Local YAML edits alone do
-not disable it on GitHub. Do not use a production main push as the first experiment.
+An approval record has no secrets. Do not put tokens, certificates, profile data or
+logs in it. The persistent local receipt is a fact attested by the dispatching user;
+Actions cannot inspect the user's disk. The helper produces it only after writing,
+rereading, hashing and verifying the local package. It does not guarantee future
+disk availability; the operator must retain the copy.
 
-| Option | Benefit | Limitation |
-| --- | --- | --- |
-| Validate on a separate branch, then approve merge | Test new CI without a main push | Does not independently disable existing production automation |
-| Disable the old workflow on GitHub first | Removes the known old execution path | Requires authorized admin operation; check queued/in-progress runs too |
-| Change Pages/environment protection first | Can add a separate publication barrier | Availability/plan/settings must be confirmed; do not assume reviewers exist |
+## Manual release path
 
-Recommended sequence is option 2 followed by option 1:
+`deploy-pages.yml` has only `workflow_dispatch` and a single `pages` concurrency
+group with no cancellation. Inputs are passed as environment data, never executable
+interpolation. No continue-on-error/always deployment bypass exists.
 
-1. With separate explicit authorization, an administrator disables the current
-   automatic Pages workflow and verifies no queued/in-progress publication can
-   complete. Do not assume disabling cancels an already-running deployment.
-2. Verify the current published release is preserved. Do not change Pages URL,
-   origin, scope or client site data as part of this operation.
-3. With authorization, create/push a validation branch containing the complete
-   required source/audio changes and these workflow changes. Validate push/PR CI,
-   artifacts, permissions and rejection cases remotely; do not dispatch production.
-4. Review/approve migration to main. Confirm main now contains only the new CI and
-   manual publication workflow, with the unconditional retention gate intact.
-5. Re-enable only the intended workflows as appropriate, checking workflow identity
-   and state; the replaced deploy workflow may inherit its disabled state.
-6. Keep publication blocked pending final audit and explicit approval, including
-   remote CI/provenance and retention-package verification. Any environment protection
-   is an additional verified control, not a substitute for these steps.
+1. `release_prepare` authenticates approval and source artifact, downloads only its
+   immutable ID, then runs existing candidate/package verification and packaging.
+2. It verifies the final package against approval and the L-2 baseline, creates a
+   deterministic data-only archive and checks its preapproved SHA.
+3. Only this job has `contents:write`: it creates a dedicated prerelease archive
+   Release/tag `eag-archive-<workflowRun>-<attempt>`, without replacing existing assets.
+   It uploads `package.eag.json` and independent `package.eag.json.sha256` assets.
+4. Both assets are downloaded again by ID, hashed, safely decoded into a fresh
+   directory and package-verified. Missing/failed storage or retrieval blocks deploy.
+5. The exact archive/proof/checksum handoff is preserved as
+   `eag-release-handoff-<workflowRun>-<attempt>` for 90 days, for local custody too.
+6. `release_deploy` requires successful release preparation. In a fresh job it
+   reauthenticates live API authority, downloads the remote archive again, repeats
+   package/gate checks, and only then uploads `output/publish` to Pages.
 
-Do not perform any of these remote operations in this slice. The GitHub-only
-behavior (event dispatch, repository API metadata, fork permissions, artifact expiry,
-environment rules and deployment blocking) remains to be tested during that
-separately authorized branch migration.
+Only the two mutually exclusive deploy jobs have Pages/OIDC write permission and
+use the `github-pages` environment. No environment reviewer protection is assumed.
+The environment can add protection but is not a replacement for the code gate.
+Release confirmation must equal `DEPLOY <targetSha>` exactly.
 
-## Scoped LF checkout policy
+## Separately approved recovery path
 
-Build identities hash the actual distribution bytes. CRLF and LF therefore produce
-different releaseId and Worker build ID values even when the text is equivalent.
-Git attributes fix LF at checkout for the following narrowly scoped inputs:
+Recovery uses `action:recover`, a new approval for the current execution SHA, the
+original target SHA/run/attempt, existing archive/checksum asset IDs, and exact
+`RECOVER <targetSha> <archiveSha256>` confirmation. Release approval cannot be reused.
 
-- `web/index.html`, the HTML build entry;
-- JavaScript, JSON, TXT and webmanifest files under `web/public`, copied into the
-  distribution, including metadata, saved hash text and audio provenance;
-- the twelve individually listed, audited ETCL training scripts, whose current
-  Source Hash values depend on their LF bytes.
+`recovery_prepare` has contents/actions **read only**, cannot create a Release, does
+not rebuild and does not download a CI candidate. Original successful main CI is
+still authenticated, but its Actions artifact may have expired: the independently
+approved fixed archive replaces that transport dependency. The approved original
+artifact ID remains in the audit record. The baseline and package-byte requirements
+are identical to release; arbitrary/old-v8 archives are not accepted.
 
-At this revision the new rules cover 59 tracked files: one HTML entry, 46 public
-text files and twelve ETCL inputs. The existing LF rule for the Complete Delivery
-training script remains separate. Generated lesson indexes, audio asset lists and
-verified manifests already serialize with LF; the build and hash algorithms are
-unchanged. Do not add ignored build output to Git to enforce this policy.
+`recovery_deploy` depends only on successful recovery preparation and repeats live
+authorization, remote retrieval and full package verification before Pages upload.
+Current baseline restricts recovery to this verified ETCL12 payload. It does not
+promise rollback to an untested old UI or safe replay across future incompatible
+releases. New payloads or retention generations need an explicitly reviewed baseline.
 
-`text eol=lf` takes precedence over Windows `core.autocrlf=true` for these paths.
-Git blobs and working-tree bytes are different concepts: these tracked blobs
-already use LF, while a Windows checkout may contain CRLF. Adding attributes does
-not rewrite an existing working tree. Do not force-refresh the current checkout or
-run a repository-wide renormalization; validate with a new isolated checkout.
+## Future authorized operation sequence (not executed)
 
-Preserve all existing MP3, PNG, lesson-input and saved-hash Git blobs. Saved hash
-values must remain identical; the line terminator of a public hash text file may
-become LF in a new checkout. Do not regenerate audio, lessons or Source Hash files.
-The seven historical source exceptions (basic-delivery, cash-payment,
-change-handling, giving-directions, order-verification, pin-verification and
-restaurant-delay) receive no new input attributes. Their pinned audit cases and
-hash calculation remain unchanged. Binary files are outside the text patterns;
-`retained-assets/** -text` continues to preserve observed bytes and integrity
-records exactly, including retained HTML, CSS, JavaScript and JSON.
+1. Keep the old automatic Pages workflow Disabled while reviewing/committing this
+   implementation and moving the complete validation branch to main. Check queued
+   publication runs as disabling does not itself cancel them.
+2. Obtain a successful **main push** CI artifact. Download that fixed ID; provide
+   independently checked `CANDIDATE_*` origin values and create a fresh package with
+   existing `package:create`. Do not rebuild it.
+3. Use the archive helper below and make a persistent local copy. Inspect the full
+   snapshot, L-2 byte identity and receipt; separately authorize an APPROVED record.
+4. Only with explicit permission, re-enable the replaced manual workflow after
+   confirming its main definition has no push/PR/workflow_run deployment trigger.
+5. Dispatch release on that exact main SHA with approved JSON and exact confirmation.
+   Archive storage/retrieval must succeed before any Pages deployment.
+6. Preserve Release IDs, asset IDs, archive SHA, package snapshot, approval and deploy
+   result outside short-lived Actions artifacts. Check deployment and iPhone Safari.
 
-### Clean-checkout validation
+The helper uses existing dependencies only:
 
-Use isolated Windows and Ubuntu checkouts of the same revision and the same
-attribute rules, lockfile, Node and npm versions. On Windows explicitly test with
-`core.autocrlf=true`. Before the policy is committed, a checkout of HEAD alone does
-not include it: copy the proposed complete attributes to the isolated repository's
-`.git/info/attributes` before its initial checkout, and copy the proposed
-`.gitattributes` and this document into that checkout afterwards. This local
-override is a test fixture only, never an authenticated CI artifact or a commit.
-After a separately approved commit, repeat using ordinary clean checkouts without
-the override to verify the committed policy itself.
+```text
+node .github/scripts/pages-release-package.cjs archive <verified-package> <fresh-archive-directory> <expected-main-origin.json>
+node .github/scripts/pages-release-package.cjs local-copy <package.eag.json> <fresh-persistent-backup-directory> <expected-main-origin.json>
+```
 
-1. Check `git check-attr text eol` for all 59 new targets and the existing Complete
-   Delivery rule. Confirm LF bytes, binary exclusions, unchanged retained bytes and
-   no new attributes on the seven historical source inputs.
-2. Run `npm ci`, `npm test`, `npm run typecheck`, `npm run web:build`,
-   `npm run verify:built-assets` and `npm run retention:verify`. Never substitute
-   `build:training`, an audio builder or TTS. Check workflow syntax with actionlint.
-3. Require at least 149 passing tests, 222 verified runtime assets, seven pinned
-   historical Source Hash cases and thirteen current matches. Preserve Active
-   Recall signatures `fnv1a32:85:32bf4dac` and `fnv1a32:85:a7bb76ae`.
-4. Compare complete output inventories by relative path, size and SHA-256 across
-   both operating systems. Both verified manifests, the bound Worker, releaseId and
-   Worker build ID must match. Validate run-specific candidate provenance separately
-   because its run ID and other origin fields legitimately differ. Repeated builds
-   in each isolated environment must also match; a prior build ID is evidence, not
-   an assumed expected value for a new build.
-5. Confirm protected Git blobs, including all retained resources, are unchanged.
-   Only the two approved policy/document files may differ from the source revision.
-   Keep the unconditional publication gate blocked. Remote CI validation, pushes
-   and publication each remain subject to their separate approval boundaries.
+The origin JSON has repository, commitSha, runId, runAttempt, eventName=`push`,
+ref=`refs/heads/main`, and the integer artifactId. The immutable archive envelope
+binds all seven fields, so recovery still checks the original artifact ID after
+Actions expiry. Supply them from authenticated CI metadata, not by trusting
+self-declared package fields. Archive output gives the full approval snapshot and
+archive SHA; local-copy output gives the receipt and SHA256(JSON.stringify(receipt)).
+Neither helper creates approval, uploads, or deploys. Both use fresh exclusive outputs.
 
-An unavailable Ubuntu environment is an explicit unverified result, not a claim
-of cross-platform reproducibility. Do not promote a local fixture to a CI artifact.
+## Checkout and validation constraints
 
-## Local verification and next boundary
+Existing `.gitattributes` preserves distributed public text and the audited twelve
+ETCL inputs as LF; retained resources remain `-text`. Do not renormalize old lesson
+inputs, regenerate MP3 or change source-hash values. The seven historical source
+exceptions remain unchanged. No new dependency, production asset or Service Worker
+change is needed for this gate.
 
-Tests use a real isolated Vite build and corrupt/remove files to prove rejection,
-check cross-commit/run/attempt provenance, failed/cancelled/PR workflow runs and
-expired/wrong/ambiguous artifacts, and assert trigger/permission/gate separation.
-Actionlint validates the YAML and GitHub expression schema; local runs do not
-execute GitHub Actions jobs or mutate account settings.
-
-Retained hashed asset packaging is now implemented and locally tested. It keeps
-a single authenticated candidate unchanged, adds verified old resources, and
-revalidates the complete merged inventory. Git snapshots preserve old resources
-without artifact expiry. No gate bypass or full published-release archive is
-implemented. Final audit and explicit approval must precede any gate change.
+Local synthetic policy/archive/API-adapter tests, typecheck and actionlint establish
+implementation behavior only. They do not prove actual GitHub token permissions,
+Release storage/download behavior, workflow dispatch, Pages deployment or Safari.
+Those are the next separately authorized operational boundary. Existing candidate,
+audio and L-2 successes are not rerun merely for gate/document changes.
