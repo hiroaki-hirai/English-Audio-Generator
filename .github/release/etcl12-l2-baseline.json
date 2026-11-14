@@ -1,21 +1,131 @@
 {
   "schemaVersion": 1,
   "repository": "hiroaki-hirai/English-Audio-Generator",
-  "sourceCommit": "3a1fb3e85efac9f52f5c57e830333a714e77696d",
-  "l2RunId": "continuous-1228d23a-0b52-4107-abc7-2723fbf4203c",
-  "l2ReportSha256": "dad2b2e006875182342bdaad822db219c62650329072f11355877b09b4f247aa",
+  "sourceCommit": "28f177ebd1af449b87395c0e1870adaf4c385270",
+  "l2RunId": "continuous-43daac96-0f65-4da0-8f14-cf4de761da73",
+  "l2ReportSha256": "7f869e613496db7bf4df1a606281467e72a5f20dcaaaac553ffb1c755d71096f",
   "lessons": 12,
   "phrases": 68,
   "mp3": 92,
   "packageIdentity": {
-    "releaseId": "45c9cf82112a4322fa5e565c626512f7f7e1f671f0e7771cbdaaf6456b6e9b30",
-    "workerBuildId": "af570b2b190ed5546d0ce36041d5af015208d42837647f5a04c8fd83a7d52ae0",
-    "audioManifestSha256": "ebc8e53dea993701b2a078ab5f0a928b55c1361cb99dfaab09674a85ac191295",
-    "appManifestSha256": "e7577032c14903a1ad541877584b4b1ee40f3ceb41aef6d6ba81bfd0270c9c75",
-    "payloadSha256": "704e184ca809b5dda17e23f236c63adcf5f55aa81112cdb2112085bb3aed02c9",
-    "retentionRegistrySha256": "99c4fec43095ddd445653d008942f867a04e1c44665b21843e4146f662b1c20c",
-    "retainedAssetsSha256": "551e49c0a94ed07d484e65439d3436e167281b3409b577b220b2deff1e79d5e4",
-    "files": 276,
+    "releaseId": "3ca8962a292f42f4ec714dc8e1e546be6ee28d74f16a016081795717d7b4969e",
+    "workerBuildId": "4400b2202d74a650c86bd5ff3e262571b8431452e5a7bb4d71a26b377abe8a5b",
+    "audioManifestSha256": "ea30af2eaafefb212188a9ed98e988d037606c8d555426426d3398ff64c83772",
+    "appManifestSha256": "c37a171987741dc3d578e3f1dc24184f2ef258c886088b62ca1e96c42b51acd0",
+    "payloadSha256": "44d8570166928bde6b750c621c517888fc78d5d9f4798afc81972f52e65909b0",
+    "retentionRegistrySha256": "5cc835c116b8cf63a0fb7f8051e3e1507b8e974da2cc647bd7a5e7e494dc4a1a",
+    "retainedAssetsSha256": "0b90dd93aa2e43b61d2d4e247d5d82baa92a5df83c3a258ab7de57814d4613ce",
+    "files": 277,
     "runtimeAssets": 222
+  },
+  "l2Extended": {
+    "note": "Descriptive record only; no gate reads this block. Automated verdicts are recorded as produced and are not overwritten by the review.",
+    "testedPackage": {
+      "ciRunId": "43616218756",
+      "artifactId": 14122706307,
+      "artifactDigest": "sha256:9caf8ade72a6b4e486846ad7cbbc7bd9257cf3554e6c8fb1a33e7a90c5c4f5b6",
+      "packageId": "baf434bd93b6041847cca1b7dbb3ef47c028b29d24f33d39089e2732a35d8236",
+      "archiveSha256": "64f0c0ca05d7be61e1a484a30ee939e1fcbf81c73dee9fc033af2f21d4525a2c"
+    },
+    "runs": {
+      "v8Update": {
+        "runId": "continuous-43daac96-0f65-4da0-8f14-cf4de761da73",
+        "environment": "output/limited-l2-v8-28f177e",
+        "automated": "PASS",
+        "finalReportSha256": "7f869e613496db7bf4df1a606281467e72a5f20dcaaaac553ffb1c755d71096f",
+        "inventorySha256": "9d8fc8bbb29da9d234ff32248866f4181edf5a7130ec9114de5fa6383f41b28f",
+        "evidenceFiles": 322
+      },
+      "verifiedUpdateBlocked": {
+        "runId": "continuous-5649251d-5f31-4e63-a4f9-bc321a07314e",
+        "environment": "output/limited-l2-verified-update",
+        "automated": "BLOCKED",
+        "finalReportSha256": "fb2019d6a930463bd72a3724226f55481f73144e701cd85812a6c1f65f243611",
+        "inventorySha256": "6597df9c1f9be19c002f6a1178be1b4f8f32de97e94891961dddfe46b84c8887",
+        "evidenceFiles": 21,
+        "cause": "old-version first install failed: net::ERR_NO_BUFFER_SPACE"
+      },
+      "verifiedUpdate": {
+        "runId": "continuous-fb4e891d-33bc-4cf4-a644-e21f935b988f",
+        "environment": "output/limited-l2-verified-update",
+        "automated": "FAIL",
+        "finalReportSha256": "b0f23f86316a6f26a58459d253cb1743ab6cc8582667bb39505d0894d22c79c6",
+        "inventorySha256": "2c7cd42ee00f5044a3ae923018b68024b7bc25150eea381c6034dd7c0673111e",
+        "evidenceFiles": 341,
+        "checks": {
+          "naturalUpdate": "PASS",
+          "manifestCache": "PASS",
+          "audioContinuity": "PASS",
+          "A_update": "PASS",
+          "B_progress": "PASS",
+          "C_legacyResume": "PASS",
+          "D_filterOff": "PASS",
+          "E_filterOn": "PASS",
+          "F_ui": "PASS",
+          "G_offline": "NOT TESTED",
+          "H_retention": "PASS"
+        }
+      },
+      "offlineOnly": {
+        "runId": "continuous-47ffc9bb-3761-49fa-856e-c72a4a9dfb98",
+        "environment": "output/limited-l2-offline-g",
+        "automated": "FAIL",
+        "finalReportSha256": "33adf0a21b29b2e53869d8ae119d5530d92cf5384a32badc6947f9da667ffe8e",
+        "inventorySha256": "490d5f3313a9852900b07baba7575681b4551721e3371e8de0f21ed705310e7c",
+        "evidenceFiles": 248,
+        "checks": {
+          "G_offline": "FAIL"
+        }
+      }
+    },
+    "verdicts": {
+      "A": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "B": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "C": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "D": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "E": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "F": {
+        "automated": "PASS",
+        "review": "PASS"
+      },
+      "G": {
+        "automated": "FAIL",
+        "review": "PASS (evidence-based functional)",
+        "automatedFailureCauses": [
+          "Run 2 retry: browser-process Service Worker update check reached the server (not blocked by page/worker emulation)",
+          "G-only: checker classified four data: SVG resources as non-Service-Worker network responses"
+        ]
+      },
+      "H": {
+        "automated": "PASS",
+        "review": "PASS"
+      }
+    },
+    "review": {
+      "gReviewSha256": "453e96e3f850ff92474b4054816df05b62a11af5a14fb1551f7f6b3a0819e237",
+      "consolidatedSha256": "f5ffd0c424c471df3256a5f6b73bac534809f495dfcc18965e265dafce8dc756",
+      "consolidatedReviewMdSha256": "24f711716fd3157a62a1c39368132dc6d9d335ee9bc82ca92b126aba513d8fae"
+    },
+    "postReleaseChecks": [
+      "iPhone Safari: update from published 29d414a to the new release",
+      "iPhone Safari: saved progress and Weak preserved, legacy 85-phrase resume",
+      "iPhone Safari: filter UI, Include/Exclude playback, lock-screen continuity",
+      "iPhone Safari: offline (Airplane Mode) reload, Japanese cue and English audio"
+    ]
   }
 }
