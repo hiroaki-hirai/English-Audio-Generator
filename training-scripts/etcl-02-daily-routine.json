@@ -6,23 +6,23 @@
   "phrases": [
     {
       "en": "My schedule changes from day to day.",
-      "ja": "普段のスケジュールについて聞かれ、日によって変わると説明する。"
+      "ja": "私のスケジュールは日によって変わります。"
     },
     {
       "en": "I work on my apps between deliveries.",
-      "ja": "配達とアプリ開発をどう両立しているか聞かれ、配達の合間にアプリ開発をしていると説明する。"
+      "ja": "配達の合間に自分のアプリを開発しています。"
     },
     {
       "en": "I try to make the most of my downtime.",
-      "ja": "忙しい中で時間をどう使っているか聞かれ、空き時間をできるだけ有効に活用していると説明する。"
+      "ja": "空き時間をできるだけ有効に使うようにしています。"
     },
     {
       "en": "I practice English while making deliveries.",
-      "ja": "英語を勉強する時間があるか聞かれ、配達をしながら英語を練習していると答える。"
+      "ja": "配達をしながら英語を練習しています。"
     },
     {
       "en": "I try to make time for exercise as well.",
-      "ja": "運動もしているか聞かれ、運動する時間も確保するようにしていると説明する。"
+      "ja": "運動する時間も確保するようにしています。"
     }
   ]
 }

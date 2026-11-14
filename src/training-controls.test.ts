@@ -296,7 +296,9 @@ test('actual legacy selection speaks Japanese and does not create an MP3 element
 });
 
 test('a full library Weak round retains its transition history within the 4000-event bound', async () => {
-  const lessons = selectLegacyActiveRecallLessons<any>(JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'))) as Array<{ id: string; phrases: unknown[] }>;
+  const allLessons = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const lessons = [...selectLegacyActiveRecallLessons<any>(allLessons),
+    ...allLessons.filter((lesson: { domain: string }) => lesson.domain === 'etcl')] as Array<{ id: string; phrases: unknown[] }>;
   const weak = lessons.flatMap(lesson => lesson.phrases.map((_phrase, index) => `${lesson.id}:${index}`));
   const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
   const page = createInitialPage(metadata, { 'eag.weakPhrases.v1': JSON.stringify(weak) });
@@ -323,8 +325,8 @@ test('a full library Weak round retains its transition history within the 4000-e
   assert.equal(japanese.plays, weak.length + 1, 'Normal training retains next-round behavior');
   const lines = page.diagnostic.textContent;
   const retained = Number(lines.match(/retained (\d+)\/4000/)?.[1]);
-  assert.ok(retained > 2000 && retained < 4000);
-  assert.match(lines, /active-recall start/);
+  // A 153-phrase Weak round exceeds the bound, so only the newest 4000 events remain.
+  assert.equal(retained, 4000);
   assert.ok(lines.includes(`"queueIndex":${weak.length - 1}`));
   assert.match(lines, /japanese-mp3 ended/);
   assert.match(lines, /english seek-setting/);
@@ -475,5 +477,106 @@ test('fresh three- and twenty-cue diagnostics terminate exactly and remain memor
     assert.equal(page.app.querySelectorAll('.training-button')[0]!.textContent, 'Start Training');
     assert.deepEqual(page.saved, {});
     assert.ok(page.diagnostic.textContent.includes(`completed (${count} cues)`));
+  }
+});
+
+const recallModeKeys = [
+  ['global', 'eag.activeRecallSession.v1'],
+  ['sequential-category', 'eag.sequentialCategoryActiveRecallSession.v1'],
+  ['sequential-category-order', 'eag.sequentialCategoryOrderedActiveRecallSession.v1'],
+] as const;
+
+async function playRecallEntries(page: ReturnType<typeof createInitialPage>, count: number, weak: Set<string>) {
+  const japanese = page.japaneseAudio[0]!;
+  const played: Array<{ cue: string; english: string; repetitions: number }> = [];
+  for (let index = 0; index < count; index += 1) {
+    assert.equal(japanese.plays, index + 1);
+    const cue = japanese.src;
+    const [, lessonId, number] = cue.match(/\/lessons\/([^/]+)\/japanese-cues\/phrase-(\d{3})\.mp3$/)!;
+    const before = page.audio.plays;
+    japanese.emit('ended');
+    await flush();
+    const english = page.audio.src;
+    const repetitions = weak.has(`${lessonId}:${Number(number) - 1}`) ? 3 : 2;
+    for (let repeat = 0; repeat < repetitions; repeat += 1) {
+      page.audio.currentTime = 1000;
+      page.audio.emit('timeupdate');
+      await flush();
+    }
+    played.push({ cue, english, repetitions: page.audio.plays - before });
+  }
+  return played;
+}
+
+test('ETCL v2 cues join every recall mode after the legacy lessons, cross lessons and honor Weak', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as Array<{ id: string; domain: string; phrases: unknown[] }>;
+  const legacy = selectLegacyActiveRecallLessons(all);
+  const etcl = all.filter(lesson => lesson.domain === 'etcl');
+  const ordered = [...legacy.filter(lesson => lesson.domain === 'delivery'), ...legacy.filter(lesson => lesson.domain === 'everyday'), ...etcl];
+  const identities = (lessons: typeof all) => lessons.flatMap(lesson => lesson.phrases.map((_p, index) => trainingJapaneseCueMp3Path(lesson.id, index)));
+  const weakValue = JSON.stringify(['basic-delivery:0', 'etcl-01-talking-about-my-job:0', 'etcl-12-expressing-opinions:5']);
+  const weak = new Set<string>(JSON.parse(weakValue));
+  const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
+  for (const [mode, key] of recallModeKeys) {
+    const page = createInitialPage(metadata, { 'eag.weakPhrases.v1': weakValue });
+    runInNewContext(code, page.context);
+    await page.context.__trainingInitialization;
+    const button = page.app.querySelectorAll('.active-recall-button').find(button => button.dataset.activeRecallMode === mode && !button.dataset.diagnosticFresh)!;
+    button.emit('click');
+    const played = await playRecallEntries(page, 153, weak);
+    const cues = played.map(entry => entry.cue.replace('/English-Audio-Generator/', ''));
+    assert.equal(new Set(cues).size, 153);
+    assert.deepEqual([...cues].sort(), identities(all).sort());
+    if (mode === 'sequential-category-order') assert.deepEqual(cues, identities(ordered));
+    if (mode !== 'global') {
+      // Categories stay contiguous; the 68 ETCL cues follow all 85 legacy cues.
+      assert.deepEqual([...new Set(cues.map(cue => cue.split('/')[1]))], ordered.map(lesson => lesson.id));
+    }
+    for (const entry of played) {
+      assert.equal(entry.english, entry.cue.replace(/japanese-cues\/phrase-\d{3}\.mp3$/, 'lesson.mp3'));
+      const [, lessonId, number] = entry.cue.match(/lessons\/([^/]+)\/japanese-cues\/phrase-(\d{3})/)!;
+      assert.equal(entry.repetitions, weak.has(`${lessonId}:${Number(number) - 1}`) ? 3 : 2);
+    }
+    assert.equal(page.japaneseAudio[0]!.plays, 154, 'The next round starts automatically');
+    const saved = JSON.parse(page.saved[key]!);
+    assert.equal(saved.queue.length, 153);
+    assert.equal(saved.currentIndex, 0);
+    assert.equal(JSON.parse(page.saved[key.replace('Session.v1', 'DiagnosticRound.v1')]!).currentRound, 2);
+    assert.equal(page.saved['eag.weakPhrases.v1'], weakValue);
+    button.emit('click');
+    await flush();
+  }
+});
+
+test('a saved legacy 85-phrase session resumes unchanged and the next round adds ETCL', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8'));
+  const legacy = selectLegacyActiveRecallLessons<any>(all);
+  const ordered = [...legacy.filter((lesson: { domain: string }) => lesson.domain === 'delivery'),
+    ...legacy.filter((lesson: { domain: string }) => lesson.domain === 'everyday')];
+  const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
+  for (const [mode, key] of recallModeKeys) {
+    const prepared = prepareActiveRecallSession(mode === 'global' ? legacy : ordered, null, () => 0.25, mode);
+    prepared.session.currentIndex = 83;
+    const roundKey = key.replace('Session.v1', 'DiagnosticRound.v1');
+    const savedRound = JSON.stringify({ version: 1, currentRound: 4, lastCompletedRound: 3 });
+    const page = createInitialPage(metadata, { [key]: JSON.stringify(prepared.session), [roundKey]: savedRound });
+    runInNewContext(code, page.context);
+    await page.context.__trainingInitialization;
+    const button = page.app.querySelectorAll('.active-recall-button').find(button => button.dataset.activeRecallMode === mode && !button.dataset.diagnosticFresh)!;
+    button.emit('click');
+    const japanese = page.japaneseAudio[0]!;
+    assert.equal(japanese.src, '/English-Audio-Generator/' + trainingJapaneseCueMp3Path(prepared.queue[83]!.lessonId, prepared.queue[83]!.phraseIndex));
+    assert.deepEqual(JSON.parse(page.saved[key]!).queue, prepared.session.queue, 'Saved legacy queue is resumed, not replaced');
+    assert.equal(JSON.parse(page.saved[roundKey]!).currentRound, 4);
+    await playRecallEntries(page, 2, new Set());
+    assert.equal(japanese.plays, 3);
+    const next = JSON.parse(page.saved[key]!);
+    assert.equal(next.queue.length, 153);
+    assert.match(next.librarySignature, /^fnv1a32:153:/);
+    assert.equal(JSON.parse(page.saved[roundKey]!).currentRound, 5);
+    button.emit('click');
+    await flush();
   }
 });

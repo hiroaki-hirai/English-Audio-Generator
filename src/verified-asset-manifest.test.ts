@@ -28,7 +28,7 @@ test('20 registered lessons produce 213 independently verified audio and metadat
     assert.equal(asset.sha256, createHash('sha256').update(bytes).digest('hex'));
     assert.equal(asset.url, '/English-Audio-Generator/' + asset.path);
   }
-  assert.equal(assets.reduce((total, asset) => total + asset.size, 0), 28491461);
+  assert.equal(assets.reduce((total, asset) => total + asset.size, 0), 25264709);
   assert.deepEqual(await describeAssets('web/public', [...names].reverse(), '/English-Audio-Generator/'), assets);
   assert.equal(createActiveRecallLibrarySignature(selectLegacyActiveRecallLessons<any>(lessons)), 'fnv1a32:85:32bf4dac');
   assert.equal(createActiveRecallLibrarySignature(orderLegacyActiveRecallLessons<any>(lessons)), 'fnv1a32:85:a7bb76ae');

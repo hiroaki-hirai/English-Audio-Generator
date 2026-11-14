@@ -6,27 +6,27 @@
   "phrases": [
     {
       "en": "I got into programming because I wanted to build my own apps and services.",
-      "ja": "プログラミングを始めたきっかけを聞かれ、自分のアプリやサービスを作りたかったからだと説明する。"
+      "ja": "自分のアプリやサービスを作りたかったので、プログラミングを始めました。"
     },
     {
       "en": "I had to learn almost everything from scratch.",
-      "ja": "学習を始めた頃の経験を聞かれ、ほとんどすべてをゼロから学ぶ必要があったと説明する。"
+      "ja": "ほとんどすべてをゼロから学ばなければなりませんでした。"
     },
     {
       "en": "I couldn't figure out why my code wasn't working.",
-      "ja": "学習初期に苦労したことを聞かれ、なぜ自分のコードが動かないのか分からなかったと説明する。"
+      "ja": "なぜ自分のコードが動かないのか分かりませんでした。"
     },
     {
       "en": "I kept practicing, and things gradually started to make more sense.",
-      "ja": "どうやって理解できるようになったか聞かれ、練習を続けるうちに少しずつ理解できるようになったと説明する。"
+      "ja": "練習を続けるうちに、少しずつ理解できるようになりました。"
     },
     {
       "en": "Looking back, I've come a long way.",
-      "ja": "過去の自分と現在を比較して、振り返ってみるとずいぶん成長したと説明する。"
+      "ja": "振り返ると、ずいぶん成長しました。"
     },
     {
       "en": "There's still a lot I want to learn.",
-      "ja": "今後も勉強を続けるのか聞かれ、まだまだ学びたいことがたくさんあると答える。"
+      "ja": "まだまだ学びたいことがたくさんあります。"
     }
   ]
 }

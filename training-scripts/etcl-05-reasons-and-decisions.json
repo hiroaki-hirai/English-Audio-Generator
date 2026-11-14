@@ -6,23 +6,23 @@
   "phrases": [
     {
       "en": "I wanted an app that fit the way I like to learn.",
-      "ja": "なぜ自分で英語学習アプリを作ったのか聞かれ、自分の学習スタイルに合うアプリが欲しかったと説明する。"
+      "ja": "自分の好きな学び方に合うアプリが欲しかったんです。"
     },
     {
       "en": "I couldn't find one that worked exactly the way I wanted, so I decided to build my own.",
-      "ja": "既存のアプリでは駄目だったのか聞かれ、希望どおりに動くものが見つからなかったので自分で作ることにしたと説明する。"
+      "ja": "自分の希望どおりに動くものが見つからなかったので、自分で作ることにしました。"
     },
     {
       "en": "I wanted to practice phrases based on situations I'm likely to encounter in real life.",
-      "ja": "どんな学習方法を求めていたのか聞かれ、実生活で遭遇しそうな状況に基づくフレーズを練習したかったと説明する。"
+      "ja": "実生活で遭遇しそうな状況に基づいたフレーズを練習したかったんです。"
     },
     {
       "en": "I also thought it would be a good opportunity to improve my programming skills.",
-      "ja": "アプリを作った他の理由を聞かれ、プログラミング能力を高める良い機会にもなると思ったと説明する。"
+      "ja": "プログラミングのスキルを伸ばす良い機会にもなると思いました。"
     },
     {
       "en": "It fits naturally into my daily routine.",
-      "ja": "自分の学習方法について、日常生活の中に無理なく取り入れられると説明する。"
+      "ja": "それは私の日常生活に無理なく取り入れられます。"
     }
   ]
 }

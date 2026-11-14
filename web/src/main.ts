@@ -9,6 +9,7 @@ import {
 } from './japanese-cue.js';
 
 import {
+  createActiveRecallLibrarySignature,
   createNextActiveRecallRound,
   createActiveRecallSessionStore,
   prepareActiveRecallSession,
@@ -63,6 +64,20 @@ const activeRecallPhraseCount = legacyActiveRecallLessons.reduce(
   (total, lesson) => total + lesson.phrases.length,
   0,
 );
+// ETCL follows the legacy lessons so their order and queue identities stay unchanged.
+const etclActiveRecallLessons = lessons.filter((lesson) => lesson.domain === 'etcl');
+const globalActiveRecallLessons = [...legacyActiveRecallLessons, ...etclActiveRecallLessons];
+const orderedActiveRecallLessons = [...lessonsByDomain, ...etclActiveRecallLessons];
+
+function readSavedLibrarySignature(storedValue: string | null): string | null {
+  try {
+    const parsedValue: unknown = storedValue ? JSON.parse(storedValue) : null;
+    const signature = (parsedValue as { librarySignature?: unknown } | null)?.librarySignature;
+    return typeof signature === 'string' ? signature : null;
+  } catch {
+    return null;
+  }
+}
 
 const weakPhrasesStorageKey = 'eag.weakPhrases.v1';
 const selectedLessonStorageKey = 'eag.selectedLesson.v1';
@@ -941,9 +956,11 @@ Active Recall has not started.</pre>
     diagnosticFresh = false,
     diagnosticTwenty = false,
   ): Promise<void> {
-    const activeRecallLessons = diagnosticTwenty
+    const legacyModeLessons = mode === 'global' ? legacyActiveRecallLessons : lessonsByDomain;
+    const fullModeLessons = mode === 'global' ? globalActiveRecallLessons : orderedActiveRecallLessons;
+    let activeRecallLessons: TrainingScript[] = diagnosticTwenty
       ? [{ ...diagnosticFixture, domain: 'delivery' as const, scenarioJa: '20-Cue診断' }]
-      : mode === 'global' ? legacyActiveRecallLessons : lessonsByDomain;
+      : diagnosticFresh ? legacyModeLessons : fullModeLessons;
     diagnosticDisplayPhraseCount = diagnosticTwenty ? diagnosticFixture.phrases.length : activeRecallPhraseCount;
     const diagnosticCueCount = diagnosticTwenty ? diagnosticFixture.phrases.length : japaneseCueTestPhraseCount;
     const activeRecallSessionStore = diagnosticTwenty
@@ -963,6 +980,11 @@ Active Recall has not started.</pre>
     const storageAvailableBeforeLoad =
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
+    // Finish a saved pre-ETCL round unchanged; the next round includes ETCL.
+    if (!diagnosticFresh && readSavedLibrarySignature(storedSession)
+      === createActiveRecallLibrarySignature(legacyModeLessons)) {
+      activeRecallLessons = legacyModeLessons;
+    }
     let preparedSession = prepareActiveRecallSession(
       activeRecallLessons,
       storedSession,
@@ -970,6 +992,7 @@ Active Recall has not started.</pre>
       mode,
     );
     let { queue, session } = preparedSession;
+    if (!diagnosticTwenty) diagnosticDisplayPhraseCount = queue.length;
     let roundState = preparedSession.resumed
       ? prepareActiveRecallRoundState(loadActiveRecallRoundState(mode))
       : prepareActiveRecallRoundState(null);
@@ -1158,6 +1181,7 @@ Active Recall has not started.</pre>
         updateResumeDiagnostic();
         activeRecallSessionStore.clear();
 
+        if (!diagnosticFresh) activeRecallLessons = fullModeLessons;
         const nextRound = createNextActiveRecallRound(
           activeRecallLessons,
           roundState,
@@ -1168,6 +1192,7 @@ Active Recall has not started.</pre>
         roundState = nextRound.roundState;
         preparedSession = nextRound.preparedSession;
         ({ queue, session } = preparedSession);
+        if (!diagnosticTwenty) diagnosticDisplayPhraseCount = queue.length;
         currentRound = roundState.currentRound;
         lastCompletedRound = roundState.lastCompletedRound;
         if (!diagnosticFresh) saveActiveRecallRoundState(roundState, mode);

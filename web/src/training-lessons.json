@@ -239,23 +239,23 @@
     "phrases": [
       {
         "en": "I'm mainly focused on developing my own apps.",
-        "ja": "普段何をしているか聞かれ、主に自分のアプリ開発に取り組んでいると説明する。"
+        "ja": "私は主に自分のアプリ開発に取り組んでいます。"
       },
       {
         "en": "I do food delivery on the side.",
-        "ja": "アプリ開発以外に仕事をしているか聞かれ、フードデリバリーも副業として行っていると説明する。"
+        "ja": "副業でフードデリバリーをしています。"
       },
       {
         "en": "I like the flexibility.",
-        "ja": "フードデリバリーの仕事をどう思うか聞かれ、自由度の高さが気に入っていると答える。"
+        "ja": "その自由度の高さが気に入っています。"
       },
       {
         "en": "It gives me more time to work on my own projects.",
-        "ja": "柔軟な働き方を選ぶ理由を聞かれ、自分のプロジェクトに使える時間が増えるからだと説明する。"
+        "ja": "そのおかげで、自分のプロジェクトに取り組む時間が増えます。"
       },
       {
         "en": "Eventually, I'd like to make money from my apps.",
-        "ja": "将来の希望を聞かれ、いずれは自分のアプリから収入を得たいと説明する。"
+        "ja": "いずれは自分のアプリで収入を得たいです。"
       }
     ]
   },
@@ -267,23 +267,23 @@
     "phrases": [
       {
         "en": "My schedule changes from day to day.",
-        "ja": "普段のスケジュールについて聞かれ、日によって変わると説明する。"
+        "ja": "私のスケジュールは日によって変わります。"
       },
       {
         "en": "I work on my apps between deliveries.",
-        "ja": "配達とアプリ開発をどう両立しているか聞かれ、配達の合間にアプリ開発をしていると説明する。"
+        "ja": "配達の合間に自分のアプリを開発しています。"
       },
       {
         "en": "I try to make the most of my downtime.",
-        "ja": "忙しい中で時間をどう使っているか聞かれ、空き時間をできるだけ有効に活用していると説明する。"
+        "ja": "空き時間をできるだけ有効に使うようにしています。"
       },
       {
         "en": "I practice English while making deliveries.",
-        "ja": "英語を勉強する時間があるか聞かれ、配達をしながら英語を練習していると答える。"
+        "ja": "配達をしながら英語を練習しています。"
       },
       {
         "en": "I try to make time for exercise as well.",
-        "ja": "運動もしているか聞かれ、運動する時間も確保するようにしていると説明する。"
+        "ja": "運動する時間も確保するようにしています。"
       }
     ]
   },
@@ -295,27 +295,27 @@
     "phrases": [
       {
         "en": "I ran into a bug the other day.",
-        "ja": "最近の出来事について話していて、この前バグに遭遇したと説明する。"
+        "ja": "この前、バグに遭遇しました。"
       },
       {
         "en": "I was working on a new feature when part of the app suddenly stopped working.",
-        "ja": "バグが起きた状況を聞かれ、新機能を開発していたら突然アプリの一部が動かなくなったと説明する。"
+        "ja": "新しい機能を開発していたら、突然アプリの一部が動かなくなりました。"
       },
       {
         "en": "I used AI to help me figure out what was causing the problem.",
-        "ja": "問題にどう対処したか聞かれ、原因を調べるためにAIを活用したと説明する。"
+        "ja": "問題の原因を突き止めるためにAIを使いました。"
       },
       {
         "en": "It helped me narrow down the cause.",
-        "ja": "AIが役に立ったか聞かれ、原因を絞り込むのに役立ったと答える。"
+        "ja": "そのおかげで原因を絞り込むことができました。"
       },
       {
         "en": "I was able to fix it.",
-        "ja": "問題を修正できたか聞かれ、修正できたと答える。"
+        "ja": "それを修正することができました。"
       },
       {
         "en": "It took longer than I expected, but I learned a lot from it.",
-        "ja": "問題への対処が大変だったか聞かれ、予想以上に時間がかかったが、多くのことを学べたと説明する。"
+        "ja": "予想以上に時間がかかりましたが、そこから多くのことを学びました。"
       }
     ]
   },
@@ -327,27 +327,27 @@
     "phrases": [
       {
         "en": "I've been practicing English regularly with an app I built.",
-        "ja": "最近の英語学習について聞かれ、自作アプリを使って継続的に練習していると説明する。"
+        "ja": "自分で作ったアプリを使って、定期的に英語を練習しています。"
       },
       {
         "en": "I can come up with phrases I've practiced much more quickly now.",
-        "ja": "上達した点を聞かれ、練習したフレーズが以前よりずっと早く思い浮かぶようになったと説明する。"
+        "ja": "練習したフレーズが、今では以前よりずっと早く思い浮かびます。"
       },
       {
         "en": "I'm starting to understand more spoken English than before.",
-        "ja": "リスニングの上達について聞かれ、以前より話されている英語を理解できるようになってきたと説明する。"
+        "ja": "以前よりも、話されている英語を理解できるようになってきました。"
       },
       {
         "en": "I still find it difficult to speak freely without relying on memorized phrases.",
-        "ja": "まだ難しいことを聞かれ、暗記したフレーズに頼らず自由に話すことは難しいと説明する。"
+        "ja": "暗記したフレーズに頼らずに自由に話すのは、まだ難しいと感じます。"
       },
       {
         "en": "I still have a long way to go.",
-        "ja": "現在の実力と目標を比較して、まだまだ努力が必要だと説明する。"
+        "ja": "まだまだ先は長いです。"
       },
       {
         "en": "I feel like I'm making progress.",
-        "ja": "英語学習の成果について、少しずつ進歩している実感があると説明する。"
+        "ja": "上達していると感じます。"
       }
     ]
   },
@@ -359,23 +359,23 @@
     "phrases": [
       {
         "en": "I wanted an app that fit the way I like to learn.",
-        "ja": "なぜ自分で英語学習アプリを作ったのか聞かれ、自分の学習スタイルに合うアプリが欲しかったと説明する。"
+        "ja": "自分の好きな学び方に合うアプリが欲しかったんです。"
       },
       {
         "en": "I couldn't find one that worked exactly the way I wanted, so I decided to build my own.",
-        "ja": "既存のアプリでは駄目だったのか聞かれ、希望どおりに動くものが見つからなかったので自分で作ることにしたと説明する。"
+        "ja": "自分の希望どおりに動くものが見つからなかったので、自分で作ることにしました。"
       },
       {
         "en": "I wanted to practice phrases based on situations I'm likely to encounter in real life.",
-        "ja": "どんな学習方法を求めていたのか聞かれ、実生活で遭遇しそうな状況に基づくフレーズを練習したかったと説明する。"
+        "ja": "実生活で遭遇しそうな状況に基づいたフレーズを練習したかったんです。"
       },
       {
         "en": "I also thought it would be a good opportunity to improve my programming skills.",
-        "ja": "アプリを作った他の理由を聞かれ、プログラミング能力を高める良い機会にもなると思ったと説明する。"
+        "ja": "プログラミングのスキルを伸ばす良い機会にもなると思いました。"
       },
       {
         "en": "It fits naturally into my daily routine.",
-        "ja": "自分の学習方法について、日常生活の中に無理なく取り入れられると説明する。"
+        "ja": "それは私の日常生活に無理なく取り入れられます。"
       }
     ]
   },
@@ -387,23 +387,23 @@
     "phrases": [
       {
         "en": "I prefer working on my own schedule.",
-        "ja": "働き方の好みを聞かれ、自分でスケジュールを決めて働く方が好きだと答える。"
+        "ja": "私は自分のスケジュールで働く方が好きです。"
       },
       {
         "en": "I want to earn enough money while still having time to work on my own apps.",
-        "ja": "どんな働き方をしたいか聞かれ、アプリ開発の時間を確保しながら必要な収入も得たいと説明する。"
+        "ja": "自分のアプリに取り組む時間を確保しながら、十分な収入も得たいです。"
       },
       {
         "en": "I'm trying to find a balance between work and my own projects.",
-        "ja": "仕事と自分の活動をどう両立しているか聞かれ、そのバランスを模索していると説明する。"
+        "ja": "仕事と自分のプロジェクトのバランスを取ろうとしています。"
       },
       {
         "en": "What matters most to me is having enough time to work on my own projects.",
-        "ja": "今、一番大切にしていることを聞かれ、自分のプロジェクトに取り組む時間を確保することだと説明する。"
+        "ja": "私にとって最も大切なのは、自分のプロジェクトに取り組む時間を十分に確保することです。"
       },
       {
         "en": "My long-term goal is to make app development my main source of income.",
-        "ja": "長期的な目標を聞かれ、アプリ開発を主な収入源にしたいと説明する。"
+        "ja": "長期的な目標は、アプリ開発を主な収入源にすることです。"
       }
     ]
   },
@@ -415,27 +415,27 @@
     "phrases": [
       {
         "en": "What do you mean by that?",
-        "ja": "相手の発言の意味が分からず、どういう意味なのか確認する。"
+        "ja": "それはどういう意味ですか？"
       },
       {
         "en": "How did you get into that?",
-        "ja": "相手が新しい趣味や活動を始めたと話している。何がきっかけだったのか尋ねる。"
+        "ja": "どういうきっかけでそれを始めたんですか？"
       },
       {
         "en": "How's it going so far?",
-        "ja": "相手が最近始めた活動について、これまでの進み具合や感想を尋ねる。"
+        "ja": "今のところ、どんな調子ですか？"
       },
       {
         "en": "What do you find most challenging?",
-        "ja": "相手が新しいことを学んでいる。何を一番難しいと感じているのか尋ねる。"
+        "ja": "何が一番難しいと感じますか？"
       },
       {
         "en": "Could you tell me a bit more about that?",
-        "ja": "相手の話は理解できたが、もっと詳しく知りたいので説明を求める。"
+        "ja": "それについてもう少し詳しく教えてもらえますか？"
       },
       {
         "en": "Are you enjoying it?",
-        "ja": "相手が最近始めた活動について、実際に楽しんでいるか尋ねる。"
+        "ja": "それを楽しんでいますか？"
       }
     ]
   },
@@ -447,27 +447,27 @@
     "phrases": [
       {
         "en": "I see.",
-        "ja": "相手の説明を聞き、理解したことを短く伝える。"
+        "ja": "なるほど。"
       },
       {
         "en": "That makes sense.",
-        "ja": "相手の説明を聞き、その理由や考え方に納得したことを伝える。"
+        "ja": "それなら納得です。"
       },
       {
         "en": "I know what you mean.",
-        "ja": "相手の経験や気持ちについて、自分にも似た経験があり、よく分かると伝える。"
+        "ja": "言いたいことは分かります。"
       },
       {
         "en": "I can imagine.",
-        "ja": "相手の大変な状況について、自分に同じ経験があるとは限らないが、その大変さを想像できると伝える。"
+        "ja": "想像できます。"
       },
       {
         "en": "That's good to hear.",
-        "ja": "相手から問題が解決して状況が良くなったと聞き、それはよかったと伝える。"
+        "ja": "それはよかったです。"
       },
       {
         "en": "Exactly.",
-        "ja": "相手が自分の考えと完全に一致することを言ったので、強く同意する。"
+        "ja": "まさにそのとおりです。"
       }
     ]
   },
@@ -479,27 +479,27 @@
     "phrases": [
       {
         "en": "I got into programming because I wanted to build my own apps and services.",
-        "ja": "プログラミングを始めたきっかけを聞かれ、自分のアプリやサービスを作りたかったからだと説明する。"
+        "ja": "自分のアプリやサービスを作りたかったので、プログラミングを始めました。"
       },
       {
         "en": "I had to learn almost everything from scratch.",
-        "ja": "学習を始めた頃の経験を聞かれ、ほとんどすべてをゼロから学ぶ必要があったと説明する。"
+        "ja": "ほとんどすべてをゼロから学ばなければなりませんでした。"
       },
       {
         "en": "I couldn't figure out why my code wasn't working.",
-        "ja": "学習初期に苦労したことを聞かれ、なぜ自分のコードが動かないのか分からなかったと説明する。"
+        "ja": "なぜ自分のコードが動かないのか分かりませんでした。"
       },
       {
         "en": "I kept practicing, and things gradually started to make more sense.",
-        "ja": "どうやって理解できるようになったか聞かれ、練習を続けるうちに少しずつ理解できるようになったと説明する。"
+        "ja": "練習を続けるうちに、少しずつ理解できるようになりました。"
       },
       {
         "en": "Looking back, I've come a long way.",
-        "ja": "過去の自分と現在を比較して、振り返ってみるとずいぶん成長したと説明する。"
+        "ja": "振り返ると、ずいぶん成長しました。"
       },
       {
         "en": "There's still a lot I want to learn.",
-        "ja": "今後も勉強を続けるのか聞かれ、まだまだ学びたいことがたくさんあると答える。"
+        "ja": "まだまだ学びたいことがたくさんあります。"
       }
     ]
   },
@@ -511,27 +511,27 @@
     "phrases": [
       {
         "en": "I've been having a problem with it lately.",
-        "ja": "最近使っているアプリの調子を聞かれ、最近問題が起きていると説明する。"
+        "ja": "最近、それに問題が起きています。"
       },
       {
         "en": "It sometimes stops working for no apparent reason.",
-        "ja": "どんな問題か聞かれ、理由が分からないのにときどき動かなくなると説明する。"
+        "ja": "明らかな理由もなく、ときどき動かなくなります。"
       },
       {
         "en": "It only happens under certain conditions.",
-        "ja": "問題がいつ起きるか聞かれ、特定の条件下でしか起きないと説明する。"
+        "ja": "それは特定の条件下でしか起こりません。"
       },
       {
         "en": "I've tried a few things, but nothing has worked so far.",
-        "ja": "解決するために何か試したか聞かれ、いくつか試したが今のところ何もうまくいっていないと説明する。"
+        "ja": "いくつか試しましたが、今のところ何もうまくいっていません。"
       },
       {
         "en": "I'm still trying to figure out what's causing the problem.",
-        "ja": "問題の原因が分かったか聞かれ、まだ原因を調べているところだと説明する。"
+        "ja": "まだ何が問題の原因なのか突き止めようとしているところです。"
       },
       {
         "en": "I'm not sure what to do next.",
-        "ja": "次に何をするつもりか聞かれ、まだどうすればよいか分からないと答える。"
+        "ja": "次にどうすればいいのか分かりません。"
       }
     ]
   },
@@ -543,27 +543,27 @@
     "phrases": [
       {
         "en": "I'm planning to spend more time working on my own projects.",
-        "ja": "今後の予定を聞かれ、自分のプロジェクトにもっと時間を使う予定だと説明する。"
+        "ja": "自分のプロジェクトに取り組む時間をもっと増やす予定です。"
       },
       {
         "en": "I'm thinking about trying something new.",
-        "ja": "今後やってみたいことを聞かれ、何か新しいことを試してみようかと考えていると説明する。"
+        "ja": "何か新しいことを試してみようかと考えています。"
       },
       {
         "en": "I haven't decided yet.",
-        "ja": "具体的に何をするか決めたのか聞かれ、まだ決めていないと答える。"
+        "ja": "まだ決めていません。"
       },
       {
         "en": "I'm hoping to make some progress on a few things I've been putting off.",
-        "ja": "これから取り組みたいことを聞かれ、先延ばしにしていたいくつかのことを少しでも進めたいと説明する。"
+        "ja": "先延ばしにしていたいくつかのことを、少しでも進められたらと思っています。"
       },
       {
         "en": "I'll see how things go before making any decisions.",
-        "ja": "すぐに何か決めるのか聞かれ、まず状況を見てから判断したいと説明する。"
+        "ja": "何か決める前に、しばらく様子を見ます。"
       },
       {
         "en": "It depends on how things work out.",
-        "ja": "予定どおり進められそうか聞かれ、物事がどう進むか次第だと答える。"
+        "ja": "物事がどう進むかによります。"
       }
     ]
   },
@@ -575,27 +575,27 @@
     "phrases": [
       {
         "en": "I think AI is a really useful tool for learning.",
-        "ja": "AIを学習に使うことについて意見を聞かれ、とても役立つツールだと思うと答える。"
+        "ja": "AIは学習にとても役立つツールだと思います。"
       },
       {
         "en": "The main reason is that I can get explanations whenever I need them.",
-        "ja": "AIが役立つ理由を聞かれ、必要なときにいつでも説明を受けられることが一番の理由だと説明する。"
+        "ja": "一番の理由は、必要なときにいつでも説明を受けられることです。"
       },
       {
         "en": "I think relying too much on AI can be a problem.",
-        "ja": "AIを学習に使うことの問題点を聞かれ、頼りすぎることは問題になり得ると説明する。"
+        "ja": "AIに頼りすぎるのは問題になり得ると思います。"
       },
       {
         "en": "Not necessarily. It depends on how you use it.",
-        "ja": "「AIを使うのは学習によくないということ？」と聞かれ、必ずしもそうではなく、使い方次第だと答える。"
+        "ja": "必ずしもそうではありません。使い方次第です。"
       },
       {
         "en": "It's important to think for yourself instead of just accepting what AI tells you.",
-        "ja": "AIをどう使うべきか聞かれ、回答をそのまま受け入れるのではなく、自分で考えることが大切だと説明する。"
+        "ja": "AIが言うことをそのまま受け入れるのではなく、自分で考えることが大切です。"
       },
       {
         "en": "AI works best when it supports your learning rather than replacing your own thinking.",
-        "ja": "AIの理想的な役割について、自分で考えることをAIに任せるのではなく、学習を支援するために使うのが最も効果的だと説明する。"
+        "ja": "AIは、自分で考えることの代わりにするのではなく、学習を支えるために使うと最も効果的です。"
       }
     ]
   },

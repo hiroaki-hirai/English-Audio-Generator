@@ -6,27 +6,27 @@
   "phrases": [
     {
       "en": "I've been having a problem with it lately.",
-      "ja": "最近使っているアプリの調子を聞かれ、最近問題が起きていると説明する。"
+      "ja": "最近、それに問題が起きています。"
     },
     {
       "en": "It sometimes stops working for no apparent reason.",
-      "ja": "どんな問題か聞かれ、理由が分からないのにときどき動かなくなると説明する。"
+      "ja": "明らかな理由もなく、ときどき動かなくなります。"
     },
     {
       "en": "It only happens under certain conditions.",
-      "ja": "問題がいつ起きるか聞かれ、特定の条件下でしか起きないと説明する。"
+      "ja": "それは特定の条件下でしか起こりません。"
     },
     {
       "en": "I've tried a few things, but nothing has worked so far.",
-      "ja": "解決するために何か試したか聞かれ、いくつか試したが今のところ何もうまくいっていないと説明する。"
+      "ja": "いくつか試しましたが、今のところ何もうまくいっていません。"
     },
     {
       "en": "I'm still trying to figure out what's causing the problem.",
-      "ja": "問題の原因が分かったか聞かれ、まだ原因を調べているところだと説明する。"
+      "ja": "まだ何が問題の原因なのか突き止めようとしているところです。"
     },
     {
       "en": "I'm not sure what to do next.",
-      "ja": "次に何をするつもりか聞かれ、まだどうすればよいか分からないと答える。"
+      "ja": "次にどうすればいいのか分かりません。"
     }
   ]
 }
