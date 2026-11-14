@@ -8,6 +8,10 @@
     {
       "path": "snapshots/9c0d794bb2fef39f2ddb202a3628c625cf193ac2722664d5baffdd27dae4a682/record.json",
       "sha256": "9c0d794bb2fef39f2ddb202a3628c625cf193ac2722664d5baffdd27dae4a682"
+    },
+    {
+      "path": "snapshots/a40b92e748abf3686b56c1c9c23b814198a63b8730ef8be450838255873355b2/record.json",
+      "sha256": "a40b92e748abf3686b56c1c9c23b814198a63b8730ef8be450838255873355b2"
     }
   ]
 }

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "site": "https://hiroaki-hirai.github.io/English-Audio-Generator/",
+  "commitSha": "0e5b6cfae777c3c05926259703d0f6714533f332",
+  "assurance": "live-observation-not-independent-build-proof",
+  "acquisitionEvidence": [
+    "Post-publication live observation. Commit association explicitly supplied by operator; no independent original-build proof."
+  ],
+  "html": {
+    "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/",
+    "source": "live-github-pages",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "size": 921,
+    "sha256": "069e48bb3f2897faea96908fa9db1c91b38b41525a0edf06969444035289454e",
+    "retrievedAt": "2026-11-14T19:03:14.980Z",
+    "dependencies": [],
+    "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+  },
+  "roots": [
+    "assets/index-CC9-Lhxx.css",
+    "assets/index-DRUrkFcX.js"
+  ],
+  "assets": [
+    {
+      "path": "assets/index-CC9-Lhxx.css",
+      "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/assets/index-CC9-Lhxx.css",
+      "source": "live-github-pages",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "size": 3666,
+      "sha256": "3705f9759aa6974afb1892bc1e4e13f733e7e0dd66aa64d6bc837a3cdc93c802",
+      "retrievedAt": "2026-11-14T19:03:15.185Z",
+      "dependencies": [],
+      "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+    },
+    {
+      "path": "assets/index-DRUrkFcX.js",
+      "url": "https://hiroaki-hirai.github.io/English-Audio-Generator/assets/index-DRUrkFcX.js",
+      "source": "live-github-pages",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "size": 59029,
+      "sha256": "fe42c8300e29fe75fd5f140132afd6e0523bd9fdb06bb33df45c79c672b9b54d",
+      "retrievedAt": "2026-11-14T19:03:15.399Z",
+      "dependencies": [],
+      "verification": "HTTP headers, exact bytes and static dependency graph; not independent original-build proof"
+    }
+  ]
+}

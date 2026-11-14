@@ -68,7 +68,7 @@ test('candidate verifies 222 built assets and fails for missing/corrupt assets, 
       const first = path.join(packageRoot, 'first'), second = path.join(packageRoot, 'second');
       const packaged = await createPublishPackage(root, 'retained-assets', first, lessons, base, origin);
       assert.equal(packaged.publicationAllowed, false);
-      assert.equal(packaged.retainedFiles, 3); assert.equal(packaged.retainedBytes, 99327);
+      assert.equal(packaged.retainedFiles, 4); assert.equal(packaged.retainedBytes, 158356);
       assert.equal(packaged.addedFiles, 2); assert.equal(packaged.addedBytes, 95661);
       assert.equal((await createPublishPackage(root, 'retained-assets', second, lessons, base, origin)).packageId, packaged.packageId);
       for (const name of ['verified-audio-assets.json', 'verified-app-assets.json', 'sw.js', 'index.html']) {
