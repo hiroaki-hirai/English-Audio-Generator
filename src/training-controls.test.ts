@@ -16,6 +16,7 @@ class Control {
   src = ''; currentSrc = ''; currentTime = 0; duration = 300;
   readyState = 4; networkState = 1; paused = true; loop = false; error = null;
   plays = 0;
+  checked = false; indeterminate = false; value = ''; type = ''; name = '';
   constructor(readonly classes: string, readonly textContent: string) {}
   addEventListener(type: string, listener: () => void): void {
     this.handlers.set(type, [...(this.handlers.get(type) ?? []), listener]);
@@ -31,8 +32,11 @@ class Control {
 
 // Only the DOM operations needed during initial rendering are implemented.
 // Buttons come from main.ts's actual rendered HTML, not a copied button list.
-function createInitialPage(metadata: unknown, saved: Record<string, string> = {}) {
+function createInitialPage(metadata: unknown, saved: Record<string, string> = {},
+  options: { failSetItem?: (key: string) => boolean } = {}) {
   let buttons: Control[] = [];
+  // Filter inputs and status text are separate so existing button queries are unchanged.
+  let filterElements: Control[] = [];
   let selectedMode = '';
   let renderedHtml = '';
   const japaneseAudio: Control[] = [];
@@ -53,9 +57,20 @@ function createInitialPage(metadata: unknown, saved: Record<string, string> = {}
         }
         return button;
       });
+      filterElements = [...html.matchAll(/<(input|span|p)\b([^>]*\bclass="recall-filter-[^"]*"[^>]*)>/g)].map(match => {
+        const element = new Control(match[2]!.match(/class="([^"]*)"/)?.[1] ?? '', '');
+        for (const attribute of match[2]!.matchAll(/data-([a-z-]+)="([^"]*)"/g)) {
+          element.dataset[attribute[1]!.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())] = attribute[2]!;
+        }
+        element.type = match[2]!.match(/\btype="([^"]*)"/)?.[1] ?? '';
+        element.name = match[2]!.match(/\bname="([^"]*)"/)?.[1] ?? '';
+        element.value = match[2]!.match(/\bvalue="([^"]*)"/)?.[1] ?? '';
+        element.checked = /\schecked\b/.test(match[2]!);
+        return element;
+      });
     },
     querySelectorAll(selector: string): Control[] {
-      return buttons.filter(button => button.classes.split(/\s+/).includes(selector.slice(1)));
+      return [...buttons, ...filterElements].filter(button => button.classes.split(/\s+/).includes(selector.slice(1)));
     },
     querySelector(selector: string) {
       if (selector === 'audio') return audio;
@@ -68,8 +83,13 @@ function createInitialPage(metadata: unknown, saved: Record<string, string> = {}
     },
   };
   const storage = { getItem: (key: string) => saved[key] ?? null,
-    setItem: (key: string, value: string) => { saved[key] = value; }, removeItem: (key: string) => { delete saved[key]; } };
+    setItem: (key: string, value: string) => {
+      writes.push('set:' + key);
+      if (options.failSetItem?.(key)) throw new Error('QuotaExceededError');
+      saved[key] = value;
+    }, removeItem: (key: string) => { writes.push('remove:' + key); delete saved[key]; } };
   const requests: string[] = [];
+  const writes: string[] = [];
   const context = {
     document: {
       createElement: () => ({ relList: { supports: () => true } }),
@@ -98,7 +118,7 @@ function createInitialPage(metadata: unknown, saved: Record<string, string> = {}
     },
     __trainingInitialization: undefined as Promise<void> | undefined,
   };
-  return { app, context, requests, japaneseAudio, utterances, audio, diagnostic, selectedMode: () => selectedMode,
+  return { app, context, requests, writes, japaneseAudio, utterances, audio, diagnostic, selectedMode: () => selectedMode,
     selectMode: (value: string) => { selectedMode = value; }, renderedHtml: () => renderedHtml, saved };
 }
 
@@ -486,10 +506,10 @@ const recallModeKeys = [
   ['sequential-category-order', 'eag.sequentialCategoryOrderedActiveRecallSession.v1'],
 ] as const;
 
-async function playRecallEntries(page: ReturnType<typeof createInitialPage>, count: number, weak: Set<string>) {
+async function playRecallEntries(page: ReturnType<typeof createInitialPage>, count: number, weak: Set<string>, start = 0) {
   const japanese = page.japaneseAudio[0]!;
   const played: Array<{ cue: string; english: string; repetitions: number }> = [];
-  for (let index = 0; index < count; index += 1) {
+  for (let index = start; index < start + count; index += 1) {
     assert.equal(japanese.plays, index + 1);
     const cue = japanese.src;
     const [, lessonId, number] = cue.match(/\/lessons\/([^/]+)\/japanese-cues\/phrase-(\d{3})\.mp3$/)!;
@@ -578,5 +598,322 @@ test('a saved legacy 85-phrase session resumes unchanged and the next round adds
     assert.equal(JSON.parse(page.saved[roundKey]!).currentRound, 5);
     button.emit('click');
     await flush();
+  }
+});
+
+type FilterLesson = { id: string; domain: string; phrases: unknown[] };
+const filterKeyName = 'eag.activeRecallFilter.v1';
+const existingRecallKeys = recallModeKeys.flatMap(([, key]) => [key, key.replace('Session.v1', 'DiagnosticRound.v1')]);
+const filterValue = (mode: string, lessonIds: string[]) => JSON.stringify({ version: 1, mode, lessonIds });
+const startRecall = (page: ReturnType<typeof createInitialPage>, mode: string) => page.app.querySelectorAll('.active-recall-button')
+  .find(button => button.dataset.activeRecallMode === mode && !button.dataset.diagnosticFresh)!;
+const filterInput = (page: ReturnType<typeof createInitialPage>, selector: string, match: (element: Control) => boolean) =>
+  page.app.querySelectorAll(selector).find(match)!;
+
+function recallBases(all: FilterLesson[]) {
+  const legacy = selectLegacyActiveRecallLessons(all);
+  const etcl = all.filter(lesson => lesson.domain === 'etcl');
+  return { global: [...legacy, ...etcl], ordered: [...legacy.filter(l => l.domain === 'delivery'), ...legacy.filter(l => l.domain === 'everyday'), ...etcl] };
+}
+
+// Realistic saved progress in all six existing Session/Round keys.
+function existingProgress(all: FilterLesson[]): Record<string, string> {
+  const legacy = selectLegacyActiveRecallLessons(all) as any[];
+  const ordered = [...legacy.filter(l => l.domain === 'delivery'), ...legacy.filter(l => l.domain === 'everyday')];
+  const saved: Record<string, string> = {};
+  for (const [mode, key] of recallModeKeys) {
+    const prepared = prepareActiveRecallSession(mode === 'global' ? legacy : ordered, null, () => 0.25, mode);
+    prepared.session.currentIndex = 40;
+    saved[key] = JSON.stringify(prepared.session);
+    saved[key.replace('Session.v1', 'DiagnosticRound.v1')] = JSON.stringify({ version: 1, currentRound: 7, lastCompletedRound: 6 });
+  }
+  return saved;
+}
+
+async function openPage(code: string, saved: Record<string, string>, options: { failSetItem?: (key: string) => boolean } = {}) {
+  const metadata = JSON.parse(await readFile('web/public/lessons/basic-delivery/metadata.json', 'utf8'));
+  const page = createInitialPage(metadata, saved, options);
+  runInNewContext(code, page.context);
+  await page.context.__trainingInitialization;
+  return page;
+}
+
+test('Include and Exclude filters play only target lessons, in existing order, in all three modes', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const bases = recallBases(all);
+  const weakValue = JSON.stringify(['etcl-01-talking-about-my-job:0', 'cash-payment:1']);
+  const weak = new Set<string>(JSON.parse(weakValue));
+  const cases: Array<[string, string[], string[]]> = [
+    ['include', ['etcl-03-recent-events', 'basic-delivery', 'etcl-01-talking-about-my-job'], ['basic-delivery', 'etcl-01-talking-about-my-job', 'etcl-03-recent-events']],
+    ['exclude', all.map(l => l.id).filter(id => !['cash-payment', 'etcl-12-expressing-opinions'].includes(id)), ['cash-payment', 'etcl-12-expressing-opinions']],
+  ];
+  for (const [mode] of recallModeKeys) {
+    for (const [filterMode, lessonIds, targetIds] of cases) {
+      const saved = { ...existingProgress(all), 'eag.weakPhrases.v1': weakValue, [filterKeyName]: filterValue(filterMode, lessonIds) };
+      const before = { ...saved };
+      const page = await openPage(code, saved);
+      const button = startRecall(page, mode);
+      button.emit('click');
+      const target = (mode === 'global' ? bases.global : bases.ordered).filter(lesson => targetIds.includes(lesson.id));
+      const expected = target.flatMap(lesson => lesson.phrases.map((_p, index) => trainingJapaneseCueMp3Path(lesson.id, index)));
+      const played = await playRecallEntries(page, expected.length, weak);
+      const cues = played.map(entry => entry.cue.replace('/English-Audio-Generator/', ''));
+      assert.deepEqual([...cues].sort(), [...expected].sort(), `${mode} ${filterMode}`);
+      if (mode === 'sequential-category-order') assert.deepEqual(cues, expected);
+      if (mode !== 'global') assert.deepEqual([...new Set(cues.map(cue => cue.split('/')[1]))], target.map(lesson => lesson.id));
+      for (const entry of played) {
+        assert.equal(entry.english, entry.cue.replace(/japanese-cues\/phrase-\d{3}\.mp3$/, 'lesson.mp3'));
+        const [, lessonId, number] = entry.cue.match(/lessons\/([^/]+)\/japanese-cues\/phrase-(\d{3})/)!;
+        assert.equal(entry.repetitions, weak.has(`${lessonId}:${Number(number) - 1}`) ? 3 : 2);
+      }
+      assert.equal(page.japaneseAudio[0]!.plays, expected.length + 1, 'The next filtered round starts automatically');
+      const key = `${mode}:${[...targetIds].sort().join(',')}`;
+      const session = JSON.parse(page.saved['eag.filteredActiveRecallSession.v1:' + key]!);
+      assert.equal(session.queue.length, expected.length);
+      assert.equal(session.currentIndex, 0);
+      assert.equal(JSON.parse(page.saved['eag.filteredActiveRecallRound.v1:' + key]!).currentRound, 2, 'Filtered round completion saved separately');
+      for (const [name, value] of Object.entries(before)) assert.equal(page.saved[name], value, name + ' is byte-identical');
+      assert.deepEqual(Object.keys(page.saved).sort(), [...Object.keys(before),
+        'eag.filteredActiveRecallSession.v1:' + key, 'eag.filteredActiveRecallRound.v1:' + key].sort());
+      button.emit('click');
+      await flush();
+    }
+  }
+});
+
+test('a category checkbox bulk-selects its lessons, a lesson can then be unselected, and the UI shows partial state', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const etclIds = all.filter(l => l.domain === 'etcl').map(l => l.id);
+  const saved: Record<string, string> = {};
+  const page = await openPage(code, saved);
+  const domain = filterInput(page, '.recall-filter-domain', e => e.dataset.domain === 'etcl');
+  domain.checked = true;
+  domain.emit('change');
+  assert.deepEqual(JSON.parse(saved[filterKeyName]!), { version: 1, mode: 'off', lessonIds: etclIds });
+  assert.deepEqual([domain.checked, domain.indeterminate], [true, false]);
+  const lesson = filterInput(page, '.recall-filter-lesson', e => e.dataset.lessonId === 'etcl-05-reasons-and-decisions');
+  assert.equal(lesson.checked, true);
+  lesson.checked = false;
+  lesson.emit('change');
+  const kept = etclIds.filter(id => id !== 'etcl-05-reasons-and-decisions');
+  assert.deepEqual(JSON.parse(saved[filterKeyName]!).lessonIds, kept);
+  assert.deepEqual([domain.checked, domain.indeterminate], [false, true], 'Partially selected category');
+  assert.equal(filterInput(page, '.recall-filter-domain-count', e => e.dataset.domain === 'etcl').textContent, '(11/12)');
+  const delivery = filterInput(page, '.recall-filter-domain', e => e.dataset.domain === 'delivery');
+  assert.deepEqual([delivery.checked, delivery.indeterminate], [false, false]);
+  const include = filterInput(page, '.recall-filter-mode', e => e.value === 'include');
+  include.checked = true;
+  include.emit('change');
+  const phrases = all.filter(l => kept.includes(l.id)).reduce((n, l) => n + l.phrases.length, 0);
+  assert.deepEqual(JSON.parse(saved[filterKeyName]!), { version: 1, mode: 'include', lessonIds: kept });
+  assert.equal(page.app.querySelectorAll('.recall-filter-summary')[0]!.textContent, `Include selected — 11 lessons / ${phrases} phrases`);
+  const button = startRecall(page, 'sequential-category-order');
+  button.emit('click');
+  assert.equal(page.japaneseAudio[0]!.src, '/English-Audio-Generator/lessons/etcl-01-talking-about-my-job/japanese-cues/phrase-001.mp3');
+  assert.equal(JSON.parse(saved['eag.filteredActiveRecallSession.v1:sequential-category-order:' + [...kept].sort().join(',')]!).queue.length, phrases);
+  button.emit('click');
+  await flush();
+  // A fresh render restores the saved selection and its partial category state.
+  const again = await openPage(code, saved);
+  assert.deepEqual([filterInput(again, '.recall-filter-domain', e => e.dataset.domain === 'etcl').indeterminate,
+    filterInput(again, '.recall-filter-lesson', e => e.dataset.lessonId === 'etcl-05-reasons-and-decisions').checked,
+    filterInput(again, '.recall-filter-mode', e => e.value === 'include').checked], [true, false, true]);
+});
+
+test('each filter condition resumes its own progress without touching other conditions or existing keys', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const saved: Record<string, string> = { ...existingProgress(all), [filterKeyName]: filterValue('include', ['cash-payment']) };
+  const existing = Object.fromEntries(existingRecallKeys.map(key => [key, saved[key]!]));
+  const keyA = 'eag.filteredActiveRecallSession.v1:sequential-category-order:cash-payment';
+  const roundA = 'eag.filteredActiveRecallRound.v1:sequential-category-order:cash-payment';
+  const pageA = await openPage(code, saved);
+  startRecall(pageA, 'sequential-category-order').emit('click');
+  await playRecallEntries(pageA, 2, new Set());
+  startRecall(pageA, 'sequential-category-order').emit('click');
+  await flush();
+  const storedA = saved[keyA]!, storedRoundA = saved[roundA]!;
+  assert.equal(JSON.parse(storedA).currentIndex, 2);
+  saved[filterKeyName] = filterValue('include', ['etcl-02-daily-routine']);
+  const pageB = await openPage(code, saved);
+  startRecall(pageB, 'sequential-category-order').emit('click');
+  assert.equal(pageB.japaneseAudio[0]!.src, '/English-Audio-Generator/lessons/etcl-02-daily-routine/japanese-cues/phrase-001.mp3');
+  await playRecallEntries(pageB, 1, new Set());
+  startRecall(pageB, 'sequential-category-order').emit('click');
+  await flush();
+  assert.equal(saved[keyA], storedA, 'Condition A progress untouched by condition B');
+  assert.equal(saved[roundA], storedRoundA);
+  // The same target set expressed as an Exclude filter resumes condition A.
+  saved[filterKeyName] = filterValue('exclude', all.map(l => l.id).filter(id => id !== 'cash-payment'));
+  const pageA2 = await openPage(code, saved);
+  startRecall(pageA2, 'sequential-category-order').emit('click');
+  assert.equal(pageA2.japaneseAudio[0]!.src, '/English-Audio-Generator/lessons/cash-payment/japanese-cues/phrase-003.mp3', 'Resumes at saved index 2');
+  assert.deepEqual(JSON.parse(saved[keyA]!).queue, JSON.parse(storedA).queue);
+  startRecall(pageA2, 'sequential-category-order').emit('click');
+  await flush();
+  for (const [key, value] of Object.entries(existing)) assert.equal(saved[key], value, key + ' is byte-identical');
+});
+
+test('a full storage is reported for filter progress and settings without deleting any data', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const saved: Record<string, string> = { ...existingProgress(all), [filterKeyName]: filterValue('include', ['pin-verification']) };
+  const before = { ...saved };
+  const page = await openPage(code, saved, { failSetItem: key => key.startsWith('eag.filteredActiveRecall') });
+  const button = startRecall(page, 'global');
+  button.emit('click');
+  assert.equal(page.japaneseAudio[0]!.plays, 1, 'Playback continues without saving');
+  assert.match(page.app.querySelectorAll('.recall-filter-summary')[0]!.textContent, /WARNING: progress is not being saved$/);
+  assert.match(page.app.querySelectorAll('.recall-filter-status')[0]!.textContent,
+    /WARNING: Progress for this filter is not being saved \(storage full or unavailable\)\. Playback continues, but this position will be lost when you stop\. Existing data was not deleted\./);
+  await playRecallEntries(page, 1, new Set());
+  assert.equal(page.japaneseAudio[0]!.plays, 2);
+  button.emit('click');
+  await flush();
+  assert.deepEqual(saved, before, 'Nothing written or deleted');
+  const settingsPage = await openPage(code, saved, { failSetItem: key => key === filterKeyName });
+  const lesson = filterInput(settingsPage, '.recall-filter-lesson', e => e.dataset.lessonId === 'cash-payment');
+  lesson.checked = true;
+  lesson.emit('change');
+  assert.match(settingsPage.app.querySelectorAll('.recall-filter-status')[0]!.textContent, /Filter settings could not be saved on this device/);
+  assert.equal(saved[filterKeyName], before[filterKeyName]);
+});
+
+test('a filter with no target phrases does not start or change any progress', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  for (const value of [filterValue('include', []), filterValue('include', ['unknown-lesson']), filterValue('exclude', all.map(l => l.id))]) {
+    const saved = { ...existingProgress(all), [filterKeyName]: value };
+    const before = { ...saved };
+    const page = await openPage(code, saved);
+    assert.match(page.app.querySelectorAll('.recall-filter-summary')[0]!.textContent, /no phrases; will not start/);
+    for (const [mode] of recallModeKeys) {
+      const button = startRecall(page, mode);
+      const label = button.textContent;
+      button.emit('click');
+      await flush();
+      assert.equal(button.textContent, label);
+      assert.equal(page.app.querySelectorAll('.training-button')[0]!.disabled, false);
+    }
+    assert.equal(page.japaneseAudio.length, 0);
+    assert.equal(page.utterances.length, 0);
+    assert.equal(page.audio.plays, 0);
+    assert.deepEqual(saved, before);
+  }
+});
+
+test('changing the filter during playback applies only from the next start', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const cash = all.find(l => l.id === 'cash-payment')!.phrases.length;
+  const saved: Record<string, string> = { [filterKeyName]: filterValue('include', ['cash-payment']) };
+  const page = await openPage(code, saved);
+  const button = startRecall(page, 'sequential-category-order');
+  button.emit('click');
+  await playRecallEntries(page, 1, new Set());
+  const pin = filterInput(page, '.recall-filter-lesson', e => e.dataset.lessonId === 'pin-verification');
+  pin.checked = true;
+  pin.emit('change');
+  const exclude = filterInput(page, '.recall-filter-mode', e => e.value === 'exclude');
+  exclude.checked = true;
+  exclude.emit('change');
+  assert.deepEqual(JSON.parse(saved[filterKeyName]!), { version: 1, mode: 'exclude', lessonIds: ['cash-payment', 'pin-verification'] });
+  const rest = await playRecallEntries(page, cash - 1, new Set(), 1);
+  assert.ok(rest.every(entry => entry.cue.includes('/lessons/cash-payment/')), 'Running queue unchanged');
+  assert.match(page.japaneseAudio[0]!.src, /\/lessons\/cash-payment\//, 'The running next round keeps its start-time filter');
+  button.emit('click');
+  await flush();
+  button.emit('click');
+  assert.equal(page.japaneseAudio[0]!.src, '/English-Audio-Generator/lessons/basic-delivery/japanese-cues/phrase-001.mp3', 'Next start uses the new filter');
+  button.emit('click');
+  await flush();
+});
+
+test('filter OFF, or corrupt settings, keeps the existing storage keys and the 153-phrase library', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const ordered = recallBases(all).ordered.flatMap(l => l.phrases.map((_p, phraseIndex) => ({ lessonId: l.id, phraseIndex })));
+  for (const value of [undefined, filterValue('off', ['cash-payment']), '{corrupt']) {
+    for (const [mode, key] of recallModeKeys) {
+      const saved: Record<string, string> = value === undefined ? {} : { [filterKeyName]: value };
+      const page = await openPage(code, saved);
+      if (value === '{corrupt') {
+        assert.match(page.app.querySelectorAll('.recall-filter-status')[0]!.textContent, /Saved filter settings were invalid, so the filter is OFF/);
+      }
+      const button = startRecall(page, mode);
+      button.emit('click');
+      await playRecallEntries(page, 1, new Set());
+      const session = JSON.parse(saved[key]!);
+      assert.equal(session.queue.length, 153);
+      assert.match(session.librarySignature, /^fnv1a32:153:/);
+      if (mode === 'sequential-category-order') assert.deepEqual(session.queue, ordered);
+      assert.ok(!Object.keys(saved).some(name => name.startsWith('eag.filteredActiveRecall')), 'No filtered storage when OFF');
+      assert.equal(saved[filterKeyName], value, 'Settings are not rewritten by playback');
+      button.emit('click');
+      await flush();
+    }
+  }
+  // OFF still finishes a saved legacy 85-phrase round first.
+  const legacySaved: Record<string, string> = { ...existingProgress(all), [filterKeyName]: filterValue('off', ['cash-payment']) };
+  const legacyQueue = JSON.parse(legacySaved['eag.activeRecallSession.v1']!).queue;
+  const page = await openPage(code, legacySaved);
+  startRecall(page, 'global').emit('click');
+  const first = legacyQueue[40];
+  assert.equal(page.japaneseAudio[0]!.src, '/English-Audio-Generator/' + trainingJapaneseCueMp3Path(first.lessonId, first.phraseIndex));
+  assert.equal(JSON.parse(legacySaved['eag.activeRecallSession.v1']!).queue.length, 85);
+  startRecall(page, 'global').emit('click');
+  await flush();
+});
+
+test('fresh three- and twenty-cue diagnostics ignore an active filter and stay memory-only', async () => {
+  const code = await bundleInitialPage();
+  for (const count of [3, 20]) {
+    const saved: Record<string, string> = { [filterKeyName]: filterValue('include', ['etcl-01-talking-about-my-job']) };
+    const before = { ...saved };
+    const page = await openPage(code, saved);
+    const button = page.app.querySelectorAll('.active-recall-button').find(button => button.dataset.diagnosticFresh === 'true'
+      && (count === 20 ? button.dataset.diagnosticTwenty === 'true' : !button.dataset.diagnosticTwenty))!;
+    button.emit('click');
+    const japanese = page.japaneseAudio[0]!;
+    for (let cue = 0; cue < count; cue += 1) {
+      assert.equal(japanese.plays, cue + 1);
+      assert.match(japanese.src, /\/diagnostics\//);
+      japanese.emit('ended');
+      await flush();
+      for (let repeat = 0; repeat < 2; repeat += 1) {
+        page.audio.currentTime = 1000;
+        page.audio.emit('timeupdate');
+        await flush();
+      }
+    }
+    assert.equal(japanese.plays, count);
+    assert.ok(page.diagnostic.textContent.includes(`completed (${count} cues)`));
+    assert.deepEqual(saved, before);
+  }
+});
+
+test('filter ON never writes or deletes the six existing Session/Round keys or the Weak key, even with equal values', async () => {
+  const code = await bundleInitialPage();
+  const all = JSON.parse(await readFile('web/src/training-lessons.json', 'utf8')) as FilterLesson[];
+  const protectedKeys = [...existingRecallKeys, 'eag.weakPhrases.v1'];
+  const target = ['pin-verification', 'etcl-01-talking-about-my-job'];
+  const phrases = all.filter(l => target.includes(l.id)).reduce((n, l) => n + l.phrases.length, 0);
+  for (const [mode] of recallModeKeys) {
+    const saved = { ...existingProgress(all), 'eag.weakPhrases.v1': '["pin-verification:0"]', [filterKeyName]: filterValue('include', target) };
+    const page = await openPage(code, saved);
+    const button = startRecall(page, mode);
+    button.emit('click');
+    // A full round, the automatic next round's first cue, and Stop.
+    await playRecallEntries(page, phrases, new Set(['pin-verification:0']));
+    assert.equal(page.japaneseAudio[0]!.plays, phrases + 1);
+    button.emit('click');
+    await flush();
+    const written = new Set(page.writes.map(entry => entry.slice(entry.indexOf(':') + 1)));
+    assert.ok(page.writes.length > 0);
+    for (const key of protectedKeys) assert.ok(!written.has(key), `${mode}: ${key} must not be written`);
+    const key = `${mode}:${[...target].sort().join(',')}`;
+    assert.deepEqual([...written].sort(), ['eag.filteredActiveRecallRound.v1:' + key, 'eag.filteredActiveRecallSession.v1:' + key].sort());
   }
 });

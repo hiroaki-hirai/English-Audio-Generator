@@ -28,6 +28,12 @@ import lessonsData from './training-lessons.json';
 import diagnosticFixture from './diagnostic-cues.json';
 import { createTwentyCueSessionStore } from './twenty-cue-diagnostic.js';
 import { lessonMediaPath } from './diagnostic-fixture.js';
+import {
+  createFilteredActiveRecallStores,
+  loadRecallFilterSettings,
+  selectFilteredLessons,
+} from './recall-filter.js';
+import { bindRecallFilter, renderRecallFilter } from './recall-filter-ui.js';
 
 type TrainingPhrase = {
   en: string;
@@ -198,6 +204,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
   }
 
   const metadata = (await metadataResponse.json()) as LessonMetadata;
+  const recallFilterLoad = loadRecallFilterSettings(() => window.localStorage);
 
   const renderLessonButtons = (domain: TrainingScript['domain']): string =>
     lessons
@@ -278,6 +285,7 @@ async function renderLesson(selectedLesson: TrainingScript): Promise<void> {
       <section class="control-group recall-controls" aria-labelledby="recall-heading">
         <h3 id="recall-heading">Active Recall</h3>
         <small>During playback, the running button becomes Stop Active Recall.</small>
+        ${renderRecallFilter(lessons, recallFilterLoad.settings)}
       <button
         class="training-button active-recall-button"
         type="button"
@@ -418,6 +426,9 @@ Active Recall has not started.</pre>
   ) {
     throw new Error('Training controls were not found.');
   }
+
+  // Filter edits are saved immediately but only read when the next run starts.
+  const recallFilterControls = bindRecallFilter(app, lessons, () => window.localStorage, recallFilterLoad);
 
   const repeatGapMilliseconds = 0;
   const trainingSeekLeadSeconds = 0.5;
@@ -958,16 +969,34 @@ Active Recall has not started.</pre>
   ): Promise<void> {
     const legacyModeLessons = mode === 'global' ? legacyActiveRecallLessons : lessonsByDomain;
     const fullModeLessons = mode === 'global' ? globalActiveRecallLessons : orderedActiveRecallLessons;
+    // Diagnostics ignore the filter; OFF keeps the existing lessons and storage.
+    const recallFilter = diagnosticFresh
+      ? null
+      : loadRecallFilterSettings(() => window.localStorage).settings;
+    const filterActive = recallFilter !== null && recallFilter.mode !== 'off';
+    const roundLessons = filterActive ? selectFilteredLessons(fullModeLessons, recallFilter) : fullModeLessons;
+    if (filterActive && roundLessons.every((lesson) => lesson.phrases.length === 0)) {
+      trainingStatus.textContent = 'Active Recall not started: the filter matches no phrases.';
+      return;
+    }
     let activeRecallLessons: TrainingScript[] = diagnosticTwenty
       ? [{ ...diagnosticFixture, domain: 'delivery' as const, scenarioJa: '20-Cue診断' }]
-      : diagnosticFresh ? legacyModeLessons : fullModeLessons;
+      : diagnosticFresh ? legacyModeLessons : roundLessons;
     diagnosticDisplayPhraseCount = diagnosticTwenty ? diagnosticFixture.phrases.length : activeRecallPhraseCount;
     const diagnosticCueCount = diagnosticTwenty ? diagnosticFixture.phrases.length : japaneseCueTestPhraseCount;
+    const filteredStores = filterActive
+      ? createFilteredActiveRecallStores(() => window.localStorage, mode, roundLessons,
+        () => recallFilterControls.reportProgressNotSaved())
+      : null;
     const activeRecallSessionStore = diagnosticTwenty
       ? createTwentyCueSessionStore()
       : diagnosticFresh
       ? createJapaneseCueTestSessionStore(activeRecallLessons)
-      : activeRecallSessionStores[mode];
+      : filteredStores?.session ?? activeRecallSessionStores[mode];
+    const roundStore = filteredStores?.round ?? {
+      load: () => loadActiveRecallRoundState(mode),
+      save: (state: ActiveRecallRoundState) => saveActiveRecallRoundState(state, mode),
+    };
     audioTransitionDiagnostic.reset();
     audioTransitionDiagnostic.record('active-recall start', `diagnosticFresh=${diagnosticFresh}`);
     japaneseCueMode = diagnosticTwenty ? 'mp3-diagnostic' : getJapaneseCueMode(japaneseCueModeSelector?.value);
@@ -981,7 +1010,7 @@ Active Recall has not started.</pre>
       activeRecallSessionStore.isAvailable();
     const storedSession = activeRecallSessionStore.load();
     // Finish a saved pre-ETCL round unchanged; the next round includes ETCL.
-    if (!diagnosticFresh && readSavedLibrarySignature(storedSession)
+    if (!diagnosticFresh && !filterActive && readSavedLibrarySignature(storedSession)
       === createActiveRecallLibrarySignature(legacyModeLessons)) {
       activeRecallLessons = legacyModeLessons;
     }
@@ -994,13 +1023,13 @@ Active Recall has not started.</pre>
     let { queue, session } = preparedSession;
     if (!diagnosticTwenty) diagnosticDisplayPhraseCount = queue.length;
     let roundState = preparedSession.resumed
-      ? prepareActiveRecallRoundState(loadActiveRecallRoundState(mode))
+      ? prepareActiveRecallRoundState(roundStore.load())
       : prepareActiveRecallRoundState(null);
 
     currentRound = roundState.currentRound;
     lastCompletedRound = roundState.lastCompletedRound;
     sessionClearedThisRound = false;
-    if (!diagnosticFresh) saveActiveRecallRoundState(roundState, mode);
+    if (!diagnosticFresh) roundStore.save(roundState);
 
     const initialCheckpointSaved = activeRecallSessionStore.save(session);
     const diagnosticReason =
@@ -1051,6 +1080,8 @@ Active Recall has not started.</pre>
       };
 
       while (trainingActive && trainingRunId === runId) {
+        // An empty queue would complete rounds forever without yielding.
+        if (queue.length === 0) break;
         for (
           let queueIndex = session.currentIndex;
           queueIndex < queue.length;
@@ -1181,7 +1212,7 @@ Active Recall has not started.</pre>
         updateResumeDiagnostic();
         activeRecallSessionStore.clear();
 
-        if (!diagnosticFresh) activeRecallLessons = fullModeLessons;
+        if (!diagnosticFresh) activeRecallLessons = roundLessons;
         const nextRound = createNextActiveRecallRound(
           activeRecallLessons,
           roundState,
@@ -1195,7 +1226,7 @@ Active Recall has not started.</pre>
         if (!diagnosticTwenty) diagnosticDisplayPhraseCount = queue.length;
         currentRound = roundState.currentRound;
         lastCompletedRound = roundState.lastCompletedRound;
-        if (!diagnosticFresh) saveActiveRecallRoundState(roundState, mode);
+        if (!diagnosticFresh) roundStore.save(roundState);
 
         sessionClearedThisRound = false;
         runtimeQueueIndex = session.currentIndex;
