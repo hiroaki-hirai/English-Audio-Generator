@@ -2,7 +2,11 @@
   "schemaVersion": 1,
   "records": [
     {
-      "path": "releases/811d93d1df635317981e9ef1b04661711ecbb10f/record.json",
+      "path": "snapshots/0f04e42a6a3ad1757bf6ed534dfb36c72aa00da628c06222d75edbd86dba384a/record.json",
+      "sha256": "0f04e42a6a3ad1757bf6ed534dfb36c72aa00da628c06222d75edbd86dba384a"
+    },
+    {
+      "path": "snapshots/9c0d794bb2fef39f2ddb202a3628c625cf193ac2722664d5baffdd27dae4a682/record.json",
       "sha256": "9c0d794bb2fef39f2ddb202a3628c625cf193ac2722664d5baffdd27dae4a682"
     }
   ]

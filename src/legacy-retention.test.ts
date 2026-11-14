@@ -97,8 +97,8 @@ test('merging keeps all generations deterministically, allows identical bytes an
 
 test('actual published snapshot is independently rehashed and explicitly marked as an observation', async () => {
   const result = await verifyRetention('retained-assets');
-  assert.equal(result.files.size, 2);
-  assert.equal([...result.files.values()].reduce((n, file) => n + file.bytes.length, 0), 45897);
+  assert.equal(result.files.size, 3);
+  assert.equal([...result.files.values()].reduce((n, file) => n + file.bytes.length, 0), 99327);
   const record = JSON.parse(await readFile(path.join('retained-assets', result.generations[0]!.recordPath), 'utf8'));
   assert.equal(record.assurance, 'live-observation-not-independent-build-proof');
   assert.ok(record.acquisitionEvidence.length > 0);
